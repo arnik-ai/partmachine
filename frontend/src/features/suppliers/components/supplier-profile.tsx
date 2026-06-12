@@ -42,7 +42,7 @@ export function SupplierProfile({ id }: { id: string }) {
 
   if (!supplier) {
     return (
-      <p className="py-12 text-center text-muted-foreground">
+      <p className="py-12 text-center text-white/65">
         تأمین‌کننده پیدا نشد.
       </p>
     );

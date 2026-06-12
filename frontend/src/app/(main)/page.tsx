@@ -36,9 +36,9 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="flex flex-col items-center gap-6 text-center">
         <h1 className="max-w-3xl text-3xl font-bold leading-relaxed sm:text-4xl sm:leading-relaxed">
-          بازار صنعتی <span className="text-primary">قطعه‌سازی</span> ایران
+          بازار صنعتی <span className="text-gold">قطعه‌سازی</span> ایران
         </h1>
-        <p className="max-w-2xl text-muted-foreground">
+        <p className="max-w-2xl text-white/70">
           کارفرمایان را به بهترین قطعه‌سازان و آزمایشگاه‌های کنترل کیفیت متصل
           می‌کنیم — با امتیاز اعتماد هوش مصنوعی و پرداخت امن امانی.
         </p>
@@ -53,7 +53,7 @@ export default function LandingPage() {
             جستجوی قطعه‌سازان
           </Link>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-white/70">
           <ShieldCheck className="h-4 w-4 text-success" />
           پرداخت امانی + بازرسی کیفیت مستقل روی تمام سفارش‌ها
         </div>
@@ -67,7 +67,7 @@ export default function LandingPage() {
             <Link
               key={cap.value}
               href={`/suppliers?capability=${cap.value}`}
-              className="rounded-lg border bg-card p-4 text-center text-sm font-medium transition-colors hover:border-primary hover:text-primary"
+              className="rounded-lg border bg-card p-4 text-center text-sm font-medium text-card-foreground transition-colors hover:border-gold hover:text-primary"
             >
               {cap.label}
             </Link>

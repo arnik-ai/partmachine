@@ -28,7 +28,7 @@ export function SuppliersList() {
           ))}
         </div>
       ) : (
-        <p className="py-12 text-center text-muted-foreground">
+        <p className="py-12 text-center text-white/65">
           تأمین‌کننده‌ای با این فیلترها پیدا نشد.
         </p>
       )}

@@ -2,7 +2,9 @@
 
 :root {
   /* تم سورمه‌ای + طلایی — روشنایی متوسط */
-  --background: oklch(0.912 0.016 265);
+  /* پس‌زمینه‌ی سورمه‌ای — متن روی شِل روشن، داخل کارت‌ها تیره */
+  --background: oklch(0.3 0.052 266);
+  --shell-foreground: oklch(0.95 0.012 265);
   --foreground: oklch(0.25 0.035 265);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.25 0.035 265);
@@ -60,7 +62,8 @@
 
 body {
   background-color: var(--background);
-  color: var(--foreground);
+  /* متن مستقیم روی پس‌زمینه‌ی سورمه‌ای روشن است؛ کارت‌ها رنگ خود را ست می‌کنند */
+  color: var(--shell-foreground);
 }
 
 * {

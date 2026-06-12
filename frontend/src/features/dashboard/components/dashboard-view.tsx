@@ -259,7 +259,7 @@ export function DashboardView() {
   return (
     <div className="flex flex-col gap-6">
       {/* بنر خوش‌آمد — سورمه‌ای با لمسه‌های طلایی */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-primary-deep via-primary to-primary p-6 text-primary-foreground shadow-lg sm:p-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-primary-deep via-primary to-primary p-6 text-primary-foreground shadow-lg ring-1 ring-white/15 sm:p-8">
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-bold">سلام، {user.fullName} 👋</h1>

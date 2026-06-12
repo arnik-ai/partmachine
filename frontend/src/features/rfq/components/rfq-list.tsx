@@ -33,7 +33,7 @@ export function RfqList() {
           ))}
         </div>
       ) : (
-        <p className="py-12 text-center text-muted-foreground">
+        <p className="py-12 text-center text-white/65">
           هنوز درخواستی ثبت نکرده‌اید.
         </p>
       )}

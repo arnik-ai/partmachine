@@ -21,7 +21,7 @@ export function Header() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-card/95 text-card-foreground backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 font-bold">
