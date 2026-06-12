@@ -11,6 +11,7 @@ import { roleLabel } from "@/lib/constants";
 const NAV_LINKS = [
   { href: "/suppliers", label: "قطعه‌سازان" },
   { href: "/rfqs", label: "درخواست‌های من" },
+  { href: "/orders", label: "سفارش‌ها" },
 ] as const;
 
 export function Header() {

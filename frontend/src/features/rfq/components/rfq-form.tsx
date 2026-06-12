@@ -16,6 +16,11 @@ import {
 } from "@/components/ui/card";
 import { CAPABILITIES, CITIES, MATERIALS } from "@/lib/constants";
 import type { CapabilityValue } from "@/lib/constants";
+import { BUYER_ORDER_TERMS } from "@/features/agreements/terms";
+import {
+  TermsChecklist,
+  allTermsAccepted,
+} from "@/features/agreements/components/terms-checklist";
 import { useCreateRfq } from "../hooks";
 import type { RfqFile } from "../types";
 import { RfqFileUpload } from "./file-upload";
@@ -24,7 +29,10 @@ export function RfqForm() {
   const router = useRouter();
   const createRfq = useCreateRfq();
   const [files, setFiles] = useState<RfqFile[]>([]);
+  const [accepted, setAccepted] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
+
+  const termsOk = allTermsAccepted(BUYER_ORDER_TERMS, accepted);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -132,6 +140,13 @@ export function RfqForm() {
             <RfqFileUpload files={files} onChange={setFiles} />
           </div>
 
+          <TermsChecklist
+            title="قوانین و تعهدات کارفرما"
+            terms={BUYER_ORDER_TERMS}
+            accepted={accepted}
+            onChange={setAccepted}
+          />
+
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end gap-3">
@@ -142,7 +157,11 @@ export function RfqForm() {
             >
               انصراف
             </Button>
-            <Button type="submit" disabled={createRfq.isPending}>
+            <Button
+              type="submit"
+              disabled={createRfq.isPending || !termsOk}
+              title={!termsOk ? "ابتدا همه‌ی قوانین را تیک بزنید" : undefined}
+            >
               {createRfq.isPending ? "در حال ثبت..." : "انتشار درخواست"}
             </Button>
           </div>

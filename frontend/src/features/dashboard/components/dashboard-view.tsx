@@ -11,6 +11,7 @@ import {
   FileSearch,
   Images,
   MessageSquareQuote,
+  PackageSearch,
   Plus,
   Search,
   ShieldCheck,
@@ -121,6 +122,12 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
       description: "پیگیری وضعیت و مقایسه‌ی استعلام‌ها",
       icon: ClipboardList,
     },
+    {
+      href: "/orders",
+      label: "رهگیری سفارش‌ها",
+      description: "مرحله‌ی فعلی هر سفارش: تولید، QC، ارسال...",
+      icon: PackageSearch,
+    },
   ],
   supplier: [
     {
@@ -128,6 +135,12 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
       label: "RFQهای باز",
       description: "درخواست‌های منطبق با توانمندی شما",
       icon: FileSearch,
+    },
+    {
+      href: "/orders",
+      label: "سفارش‌های در دست اجرا",
+      description: "وضعیت تولید و تسویه‌ی امانی",
+      icon: PackageSearch,
     },
     {
       href: "/suppliers",

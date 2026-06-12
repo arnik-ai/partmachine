@@ -15,6 +15,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ROLES } from "@/lib/constants";
+import { signupTermsForRole } from "@/features/agreements/terms";
+import {
+  TermsChecklist,
+  allTermsAccepted,
+} from "@/features/agreements/components/terms-checklist";
 import { buildDemoSession, isBackendDown, register } from "../api";
 import { useAuthStore } from "../store";
 import type { RegisterInput } from "../types";
@@ -25,8 +30,11 @@ export function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<RegisterInput["role"]>("buyer");
+  const [accepted, setAccepted] = useState<Record<string, boolean>>({});
 
   const needsCompany = role === "supplier" || role === "qc";
+  const terms = signupTermsForRole(role);
+  const termsOk = allTermsAccepted(terms, accepted);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,9 +81,11 @@ export function RegisterForm() {
               id="role"
               name="role"
               value={role}
-              onChange={(e) =>
-                setRole(e.target.value as RegisterInput["role"])
-              }
+              onChange={(e) => {
+                setRole(e.target.value as RegisterInput["role"]);
+                // با تغییر نقش، قوانین عوض می‌شود و باید دوباره تیک بخورد
+                setAccepted({});
+              }}
             >
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -118,8 +128,26 @@ export function RegisterForm() {
               minLength={8}
             />
           </div>
+          <TermsChecklist
+            title={
+              role === "supplier"
+                ? "تعهدات قطعه‌ساز (شامل عدم افشا)"
+                : role === "qc"
+                  ? "تعهدات آزمایشگاه کنترل کیفیت"
+                  : role === "agent"
+                    ? "تعهدات مأمور خرید"
+                    : "قوانین پلتفرم"
+            }
+            terms={terms}
+            accepted={accepted}
+            onChange={setAccepted}
+          />
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={loading}>
+          <Button
+            type="submit"
+            disabled={loading || !termsOk}
+            title={!termsOk ? "ابتدا همه‌ی قوانین را تیک بزنید" : undefined}
+          >
             {loading ? "در حال ثبت‌نام..." : "ایجاد حساب"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
