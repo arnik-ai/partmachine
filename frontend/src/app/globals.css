@@ -69,3 +69,26 @@ body {
 * {
   border-color: var(--border);
 }
+
+/* چاپ قرارداد: فقط خود سند، روی کاغذ سفید */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .contract-sheet {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+}

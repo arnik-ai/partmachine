@@ -6,7 +6,10 @@ export const MOCK_ORDERS: Order[] = [
     id: "ord-3001",
     title: "۵۰۰ عدد فلنج استیل ۳۰۴",
     supplierName: "صنایع دقیق‌تراش آریا",
+    supplierCity: "تهران",
     quantity: 500,
+    material: "استیل 304",
+    deliveryCity: "تهران",
     amountRials: 1_850_000_000,
     stage: "qc_inspection",
     stageDates: {
@@ -21,7 +24,10 @@ export const MOCK_ORDERS: Order[] = [
     id: "ord-3002",
     title: "قالب تزریق + ۱۰هزار قطعه ABS",
     supplierName: "قالب‌سازان پیشرو اصفهان",
+    supplierCity: "اصفهان",
     quantity: 10000,
+    material: "ABS",
+    deliveryCity: "تهران",
     amountRials: 6_400_000_000,
     stage: "in_production",
     stageDates: {
@@ -35,7 +41,10 @@ export const MOCK_ORDERS: Order[] = [
     id: "ord-3003",
     title: "۲۰۰ عدد براکت ورق فولادی",
     supplierName: "ورق‌کاران صنعت تبریز",
+    supplierCity: "تبریز",
     quantity: 200,
+    material: "فولاد St37",
+    deliveryCity: "کرج",
     amountRials: 320_000_000,
     stage: "released",
     stageDates: {

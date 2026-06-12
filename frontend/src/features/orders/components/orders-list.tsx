@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { ChevronDown, Factory, Package } from "lucide-react";
+import { ChevronDown, Factory, Package, ScrollText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn, faNumber, faToman, faDate } from "@/lib/utils";
 import { MOCK_ORDERS } from "../mock";
@@ -51,9 +53,18 @@ function OrderCard({ order }: { order: Order }) {
         {open && (
           <div className="border-t pt-4">
             <OrderTimeline order={order} />
-            <p className="text-xs text-muted-foreground">
-              تحویل پیش‌بینی‌شده: {faDate(order.expectedDelivery)}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                تحویل پیش‌بینی‌شده: {faDate(order.expectedDelivery)}
+              </p>
+              <Link
+                href={`/orders/${order.id}/contract`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                <ScrollText className="h-4 w-4 text-gold" />
+                مشاهده‌ی قرارداد
+              </Link>
+            </div>
           </div>
         )}
       </CardContent>

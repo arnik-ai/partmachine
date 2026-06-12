@@ -54,7 +54,11 @@ export interface Order {
   id: string;
   title: string;
   supplierName: string;
+  /** شهر محل استقرار مجری — در قرارداد درج می‌شود */
+  supplierCity: string;
   quantity: number;
+  material: string;
+  deliveryCity: string;
   amountRials: number;
   stage: OrderStage;
   /** تاریخ رسیدن به هر مرحله (مراحل انجام‌شده) */
