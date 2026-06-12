@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+:root {
+  /* تم سورمه‌ای + طلایی — روشنایی متوسط */
+  --background: oklch(0.982 0.004 265);
+  --foreground: oklch(0.25 0.035 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.035 265);
+  --primary: oklch(0.38 0.085 265);
+  --primary-deep: oklch(0.28 0.075 268);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.94 0.015 265);
+  --secondary-foreground: oklch(0.32 0.06 265);
+  --muted: oklch(0.955 0.008 265);
+  --muted-foreground: oklch(0.48 0.025 265);
+  --accent: oklch(0.93 0.025 265);
+  --accent-foreground: oklch(0.32 0.06 265);
+  --destructive: oklch(0.58 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.6 0.15 150);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.75 0.15 80);
+  --gold: oklch(0.66 0.13 82);
+  --gold-soft: oklch(0.94 0.05 90);
+  --border: oklch(0.905 0.01 265);
+  --input: oklch(0.905 0.01 265);
+  --ring: oklch(0.46 0.09 265);
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-deep: var(--primary-deep);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+* {
+  border-color: var(--border);
+}
