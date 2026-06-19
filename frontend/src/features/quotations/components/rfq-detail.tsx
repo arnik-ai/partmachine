@@ -77,7 +77,14 @@ export function RfqDetail({ rfqId }: { rfqId: string }) {
         <h2 className="text-lg font-bold">
           مقایسه‌ی استعلام‌های دریافتی ({faNumber(quotes.length)})
         </h2>
-        <QuotationCompare rfqId={rfqId} rfqTitle={rfq.title} quotes={quotes} />
+        <QuotationCompare
+          rfqId={rfqId}
+          rfqTitle={rfq.title}
+          quotes={quotes}
+          capability={rfq.capability}
+          material={rfq.material}
+          quantity={rfq.quantity}
+        />
       </div>
     </div>
   );

@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StarRating, scoreToStars } from "@/components/ui/star-rating";
 import { cn, faNumber, faToman, faDate } from "@/lib/utils";
+import { estimatePrice, judgeQuotePrice } from "@/features/pricing/engine";
+import type { CapabilityValue } from "@/lib/constants";
+import type { ComplexityValue } from "@/features/pricing/data";
 import { useAwardStore } from "../award-store";
 import type { Quotation } from "../types";
 
@@ -40,16 +43,34 @@ export function QuotationCompare({
   rfqId,
   rfqTitle,
   quotes,
+  capability,
+  material,
+  quantity,
 }: {
   rfqId: string;
   rfqTitle: string;
   quotes: Quotation[];
+  capability: CapabilityValue;
+  material: string;
+  quantity: number;
 }) {
   const router = useRouter();
   const { awardedQuotationId, award } = useAwardStore();
   const [pending, setPending] = useState<string | null>(null);
 
   const ranked = useMemo(() => rankQuotations(quotes), [quotes]);
+
+  // برآورد قیمت منطقی برای سنجش هر استعلام (پیچیدگی متوسط فرض می‌شود)
+  const estimate = useMemo(
+    () =>
+      estimatePrice({
+        capability,
+        material,
+        quantity,
+        complexity: "normal" as ComplexityValue,
+      }),
+    [capability, material, quantity],
+  );
   const bestPrice = Math.min(...quotes.map((q) => q.totalPriceRials));
   const bestLead = Math.min(...quotes.map((q) => q.leadTimeDays));
   const bestScore = Math.max(...quotes.map((q) => q.supplierScore));
@@ -141,6 +162,28 @@ export function QuotationCompare({
                     bestLabel="معتبرترین"
                   />
                 </div>
+
+                {/* سنجش قیمت نسبت به برآورد منطقی */}
+                {(() => {
+                  const j = judgeQuotePrice(quote.totalPriceRials, estimate);
+                  const styles =
+                    j.verdict === "fair"
+                      ? "bg-success/10 text-success"
+                      : j.verdict === "low"
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-warning/15 text-foreground";
+                  return (
+                    <div
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium",
+                        styles,
+                      )}
+                    >
+                      <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                      {j.message}
+                    </div>
+                  );
+                })()}
 
                 {quote.note && (
                   <p className="rounded-lg bg-muted/50 p-2.5 text-xs leading-relaxed text-muted-foreground">

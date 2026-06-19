@@ -21,6 +21,8 @@ import {
   TermsChecklist,
   allTermsAccepted,
 } from "@/features/agreements/components/terms-checklist";
+import { PriceEstimator } from "@/features/pricing/components/price-estimator";
+import type { ComplexityValue } from "@/features/pricing/data";
 import { useCreateRfq } from "../hooks";
 import type { RfqFile } from "../types";
 import { RfqFileUpload } from "./file-upload";
@@ -31,6 +33,14 @@ export function RfqForm() {
   const [files, setFiles] = useState<RfqFile[]>([]);
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
+
+  // فیلدهای مؤثر بر برآورد قیمت — کنترل‌شده تا برآورد زنده به‌روز شود
+  const [capability, setCapability] = useState<CapabilityValue>(
+    CAPABILITIES[0].value,
+  );
+  const [material, setMaterial] = useState<string>(MATERIALS[0]);
+  const [quantity, setQuantity] = useState<number>(0);
+  const [complexity, setComplexity] = useState<ComplexityValue>("normal");
 
   const termsOk = allTermsAccepted(BUYER_ORDER_TERMS, accepted);
 
@@ -43,9 +53,9 @@ export function RfqForm() {
       await createRfq.mutateAsync({
         title: String(form.get("title") ?? ""),
         description: String(form.get("description") ?? ""),
-        capability: String(form.get("capability")) as CapabilityValue,
-        material: String(form.get("material") ?? ""),
-        quantity: Number(form.get("quantity") ?? 0),
+        capability,
+        material,
+        quantity,
         deliveryCity: String(form.get("deliveryCity") ?? ""),
         deadline: String(form.get("deadline") ?? ""),
         files,
@@ -90,7 +100,15 @@ export function RfqForm() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="capability">نوع خدمت تولیدی</Label>
-              <Select id="capability" name="capability" required>
+              <Select
+                id="capability"
+                name="capability"
+                required
+                value={capability}
+                onChange={(e) =>
+                  setCapability(e.target.value as CapabilityValue)
+                }
+              >
                 {CAPABILITIES.map((c) => (
                   <option key={c.value} value={c.value}>
                     {c.label}
@@ -100,7 +118,13 @@ export function RfqForm() {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="material">متریال</Label>
-              <Select id="material" name="material" required>
+              <Select
+                id="material"
+                name="material"
+                required
+                value={material}
+                onChange={(e) => setMaterial(e.target.value)}
+              >
                 {MATERIALS.map((m) => (
                   <option key={m} value={m}>
                     {m}
@@ -117,6 +141,8 @@ export function RfqForm() {
                 min={1}
                 required
                 placeholder="500"
+                value={quantity || ""}
+                onChange={(e) => setQuantity(Number(e.target.value))}
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -134,6 +160,14 @@ export function RfqForm() {
               <Input id="deadline" name="deadline" type="date" required />
             </div>
           </div>
+
+          <PriceEstimator
+            capability={capability}
+            material={material}
+            quantity={quantity}
+            complexity={complexity}
+            onComplexityChange={setComplexity}
+          />
 
           <div className="flex flex-col gap-2">
             <Label>فایل‌های فنی (نقشه، CAD، PDF)</Label>
