@@ -9,6 +9,13 @@ import type { RfqFile } from "../types";
 const ACCEPTED = ".pdf,.step,.stp,.stl,.dwg,.dxf,.png,.jpg,.jpeg";
 const MAX_SIZE_MB = 50;
 
+const FILE_KIND_LABEL: Record<string, string> = {
+  pdf: "سند PDF",
+  cad: "مدل سه‌بعدی CAD",
+  drawing: "نقشه‌ی فنی",
+  image: "تصویر",
+};
+
 function fileKind(name: string): string {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf") return "pdf";
@@ -28,7 +35,18 @@ export function RfqFileUpload({
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function addFiles(list: FileList | null) {
+  /** پیش‌نمایش تصویر را به‌صورت data URL می‌خواند (فقط برای فایل‌های تصویری) */
+  function readPreview(file: File): Promise<string | undefined> {
+    if (!file.type.startsWith("image/")) return Promise.resolve(undefined);
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(undefined);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function addFiles(list: FileList | null) {
     if (!list) return;
     setError(null);
     const next: RfqFile[] = [...files];
@@ -38,7 +56,13 @@ export function RfqFileUpload({
         continue;
       }
       if (!next.some((f) => f.name === file.name)) {
-        next.push({ name: file.name, size: file.size, kind: fileKind(file.name) });
+        const previewUrl = await readPreview(file);
+        next.push({
+          name: file.name,
+          size: file.size,
+          kind: fileKind(file.name),
+          previewUrl,
+        });
       }
     }
     onChange(next);
@@ -90,27 +114,43 @@ export function RfqFileUpload({
           {files.map((file) => (
             <li
               key={file.name}
-              className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+              className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
             >
-              <span className="inline-flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span dir="ltr">{file.name}</span>
+              <span className="inline-flex min-w-0 items-center gap-2.5">
+                {file.previewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={file.previewUrl}
+                    alt={file.name}
+                    className="h-10 w-10 shrink-0 rounded-md border object-cover"
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </span>
+                )}
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate" dir="ltr">
+                    {file.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {FILE_KIND_LABEL[file.kind] ?? "فایل"} ·{" "}
+                    {faNumber(Math.round(file.size / 1024))} KB
+                  </span>
+                </span>
               </span>
-              <span className="inline-flex items-center gap-2 text-muted-foreground">
-                {faNumber(Math.round(file.size / 1024))} KB
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() =>
-                    onChange(files.filter((f) => f.name !== file.name))
-                  }
-                  aria-label={`حذف ${file.name}`}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={() =>
+                  onChange(files.filter((f) => f.name !== file.name))
+                }
+                aria-label={`حذف ${file.name}`}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
             </li>
           ))}
         </ul>

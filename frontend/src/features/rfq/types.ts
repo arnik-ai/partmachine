@@ -13,6 +13,8 @@ export interface RfqFile {
   size: number;
   /** pdf | cad | drawing | image */
   kind: string;
+  /** پیش‌نمایش تصویر (data URL) — فقط برای فایل‌های تصویری در حالت دمو */
+  previewUrl?: string;
 }
 
 export interface Rfq {
