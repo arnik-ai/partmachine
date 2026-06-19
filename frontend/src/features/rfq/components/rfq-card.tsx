@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CalendarDays, FileText, MapPin, MessageSquareQuote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +20,8 @@ const STATUS_VARIANT: Record<
 
 export function RfqCard({ rfq }: { rfq: Rfq }) {
   return (
-    <Card>
+    <Link href={`/rfqs/${rfq.id}`} className="block">
+      <Card className="transition-shadow hover:shadow-md">
       <CardContent className="flex flex-col gap-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-semibold">{rfq.title}</h3>
@@ -57,6 +59,7 @@ export function RfqCard({ rfq }: { rfq: Rfq }) {
           </span>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </Link>
   );
 }
