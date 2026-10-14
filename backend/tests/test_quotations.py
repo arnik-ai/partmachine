@@ -7,7 +7,7 @@ import httpx
 from sqlalchemy import text
 
 from app.db.session import engine
-from tests.helpers import API, create_rfq, register, submit_quote
+from tests.helpers import API, create_rfq, register, set_quotes_due, submit_quote
 
 
 async def test_owner_sees_all_quotes_sorted_by_price(
@@ -136,8 +136,7 @@ async def test_quotes_after_deadline_are_rejected(
     buyer = await register(client_factory())
     supplier = await register(client_factory(), role="supplier")
     rfq = await create_rfq(buyer)
-    async with engine.begin() as conn:
-        await conn.execute(text("UPDATE rfqs SET deadline = current_date - 1"))
+    await set_quotes_due(rfq["id"], -1)
     response = await submit_quote(supplier, rfq["id"])
     assert response.status_code == 409
     assert response.json()["code"] == "rfq_expired"

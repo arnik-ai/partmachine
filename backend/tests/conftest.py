@@ -7,6 +7,8 @@ SQLite رفتار PostgreSQL را پنهان می‌کند (گزارش فاز ۰
 
 import asyncio
 import os
+import shutil
+import tempfile
 from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 
@@ -24,6 +26,8 @@ os.environ["ENVIRONMENT"] = "test"
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["REDIS_URL"] = TEST_REDIS_URL
 os.environ["CORS_ORIGINS"] = "http://localhost:3100"
+# فایل‌های تست در یک پوشه‌ی موقت جدا، نه در var/storage توسعه
+os.environ["STORAGE_LOCAL_DIR"] = tempfile.mkdtemp(prefix="pm-test-storage-")
 
 import asyncpg  # noqa: E402
 import httpx  # noqa: E402
@@ -37,7 +41,10 @@ from app.db.session import engine  # noqa: E402
 from app.main import app  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
-TABLES = "audit_events, refresh_tokens, quotations, rfqs, suppliers, users, organizations"
+TABLES = (
+    "audit_events, agreement_acceptances, files, verification_requests, organization_invites, "
+    "refresh_tokens, quotations, rfqs, suppliers, users, organizations"
+)
 
 
 def alembic_config(database_url: str) -> Config:
@@ -79,6 +86,15 @@ async def database() -> AsyncIterator[None]:
     yield
     await engine.dispose()
     await close_redis()
+    shutil.rmtree(os.environ["STORAGE_LOCAL_DIR"], ignore_errors=True)
+
+
+def _empty_storage() -> None:
+    for child in Path(os.environ["STORAGE_LOCAL_DIR"]).iterdir():
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
 
 
 @pytest.fixture(autouse=True)
@@ -86,6 +102,7 @@ async def clean_state(database: None) -> None:
     async with engine.begin() as conn:
         await conn.execute(text(f"TRUNCATE {TABLES} RESTART IDENTITY CASCADE"))
     await get_redis().flushdb()
+    await asyncio.to_thread(_empty_storage)
 
 
 @pytest.fixture

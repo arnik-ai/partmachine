@@ -52,6 +52,8 @@ async def test_invalid_rfq_is_rejected_with_persian_messages_and_not_saved(
 
 
 async def test_preview_data_urls_are_not_stored(client: httpx.AsyncClient) -> None:
+    """قالب قدیمی فاز ۱ (متادیتای فایل همراه پیش‌نمایش data URL) نادیده گرفته و ذخیره نمی‌شود؛
+    پیوست واقعی فقط با بارگذاری فایل و fileIds است (test_files)."""
     buyer = await register(client)
     rfq = await create_rfq(
         buyer,
@@ -64,7 +66,7 @@ async def test_preview_data_urls_are_not_stored(client: httpx.AsyncClient) -> No
             }
         ],
     )
-    assert rfq["files"] == [{"name": "photo.png", "size": 2048, "kind": "image"}]
+    assert rfq["files"] == [] and rfq["fileCount"] == 0
     async with engine.connect() as conn:
         stored = await conn.scalar(text("SELECT files::text FROM rfqs"))
     assert "data:image" not in stored

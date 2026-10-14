@@ -14,7 +14,7 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.db.session import engine
 from app.modules.identity import service as identity_service
-from tests.helpers import API, CSRF, PASSWORD, register
+from tests.helpers import API, CSRF, PASSWORD, register, signup_agreements
 
 
 async def test_register_returns_session_and_httponly_cookie(client: httpx.AsyncClient) -> None:
@@ -26,6 +26,7 @@ async def test_register_returns_session_and_httponly_cookie(client: httpx.AsyncC
             "fullName": "مریم احمدی",
             "role": "buyer",
             "companyName": "صنایع نمونه",
+            "acceptedAgreements": signup_agreements("buyer"),
         },
     )
     assert response.status_code == 201
@@ -59,9 +60,13 @@ async def test_supplier_must_name_company_and_gets_profile(client: httpx.AsyncCl
         "message": "نام شرکت یا کارگاه برای قطعه‌سازها الزامی است.",
     } in missing.json()["errors"]
 
-    await register(client, role="supplier", company="کارگاه تراشکاری ستاره")
+    supplier = await register(client, role="supplier", company="کارگاه تراشکاری ستاره")
+    # پروفایل پایه بلافاصله ساخته می‌شود؛ تا تکمیل (شهر و خدمت) در فهرست عمومی نیست
+    me = (await client.get(f"{API}/suppliers/me", headers=supplier.auth)).json()
+    assert me["companyName"] == "کارگاه تراشکاری ستاره"
+    assert me["listed"] is False and me["canEdit"] is True
     found = await client.get(f"{API}/suppliers", params={"q": "ستاره"})
-    assert found.json()["total"] == 1
+    assert found.json()["total"] == 0
 
 
 async def test_validation_errors_are_persian_and_per_field(client: httpx.AsyncClient) -> None:
@@ -87,6 +92,7 @@ async def test_email_is_case_insensitive(client: httpx.AsyncClient) -> None:
             "password": PASSWORD,
             "fullName": "تست",
             "role": "buyer",
+            "acceptedAgreements": signup_agreements("buyer"),
         },
     )
     assert duplicate.status_code == 409

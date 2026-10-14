@@ -1,5 +1,7 @@
 """پیکربندی ناامن در staging/production اجازه‌ی شروع نمی‌دهد (F10 / AUTH9 گزارش فاز ۰)."""
 
+import os
+
 import httpx
 import pytest
 
@@ -13,6 +15,8 @@ SAFE_PRODUCTION = {
     "redis_url": "redis://cache.internal:6379/0",
     "cors_origins": "https://app.partmachine.ir",
     "allowed_hosts": "api.partmachine.ir",
+    # مطلق در ویندوز و لینوکس
+    "storage_local_dir": os.path.abspath("/srv/partmachine/files"),
 }
 
 
@@ -29,6 +33,8 @@ def test_safe_production_settings_have_no_problems() -> None:
         ({"allowed_hosts": "*"}, "ALLOWED_HOSTS"),
         ({"cookie_secure": False}, "COOKIE_SECURE"),
         ({"database_url": "sqlite+aiosqlite:///./partmachine.db"}, "DATABASE_URL"),
+        ({"storage_local_dir": "var/storage"}, "STORAGE_LOCAL_DIR"),
+        ({"otp_sender": "console"}, "OTP_SENDER"),
     ],
 )
 def test_unsafe_production_settings_are_reported(
@@ -51,6 +57,12 @@ def test_production_requires_explicit_urls_and_secret(monkeypatch: pytest.Monkey
 
 def test_development_defaults_are_accepted() -> None:
     assert Settings(environment="development").problems() == []
+
+
+def test_one_time_codes_stay_off_in_production_until_a_provider_is_chosen() -> None:
+    # P8: کد در لاگ فقط برای توسعه؛ سرویس واقعی پیامک/ایمیل فقط پس از تأیید مالک
+    assert Settings(**SAFE_PRODUCTION).otp_sender_name == "disabled"  # type: ignore[arg-type]
+    assert Settings(environment="development").otp_sender_name == "console"
 
 
 def test_app_refuses_to_start_with_unsafe_settings(monkeypatch: pytest.MonkeyPatch) -> None:
