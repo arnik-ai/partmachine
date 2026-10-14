@@ -7,6 +7,7 @@ import { Factory, LogOut, UserRound } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { logout } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { DEMO_MODE } from "@/lib/config";
 import { roleLabel } from "@/lib/constants";
 import { useHydrated } from "@/lib/use-hydrated";
@@ -82,6 +83,8 @@ export function Header() {
                   {roleLabel(user.role)}
                 </span>
               </Link>
+              {/* نسخه‌ی نمایشی سرور ندارد و اعلانی هم ساخته نمی‌شود */}
+              {!DEMO_MODE && <NotificationBell />}
               <Link
                 href="/account"
                 aria-label="حساب کاربری"

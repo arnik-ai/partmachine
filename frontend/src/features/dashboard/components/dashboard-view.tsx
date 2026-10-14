@@ -29,27 +29,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { StarRating, scoreToStars } from "@/components/ui/star-rating";
 import { ProductGallery } from "@/features/suppliers/components/product-gallery";
 import { useMySupplier } from "@/features/suppliers/hooks";
 import { useMyVerification } from "@/features/verification/api";
 import { useAuthStore } from "@/features/auth/store";
 import { DEMO_MODE } from "@/lib/config";
 import { roleLabel, type RoleValue } from "@/lib/constants";
-import { cn, faNumber } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useHydrated } from "@/lib/use-hydrated";
+import { LiveStats, RecentNotifications } from "./live-stats";
+import { StatCard, type StatCardProps } from "./stat-card";
 
-interface StatItem {
-  label: string;
-  value: number;
-  icon: React.ComponentType<{ className?: string }>;
-  /** اگر true، مقدار ۰–۱۰۰ به‌صورت ستاره نمایش داده می‌شود */
-  asStars?: boolean;
-  trend?: string;
-}
-
-/** آمار نمایشی هر نقش — در افزایش ۲ از API خوانده می‌شود */
-const ROLE_STATS: Record<string, StatItem[]> = {
+/** آمار نمایشی هر نقش — فقط نسخه‌ی نمایشی؛ نسخه‌ی واقعی از API می‌خواند (LiveStats) */
+const ROLE_STATS: Record<string, StatCardProps[]> = {
   buyer: [
     { label: "RFQ فعال", value: 2, icon: ClipboardList, trend: "+۱ این هفته" },
     {
@@ -221,7 +213,7 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
   ],
 };
 
-/** فعالیت‌های اخیر نمایشی — در افزایش ۲ از API خوانده می‌شود */
+/** فعالیت‌های اخیر نمایشی — فقط نسخه‌ی نمایشی؛ نسخه‌ی واقعی آخرین اعلان‌ها را نشان می‌دهد */
 const RECENT_ACTIVITY: Record<
   string,
   {
@@ -368,49 +360,20 @@ export function DashboardView() {
 
       {role === "supplier" && !DEMO_MODE && <SupplierProfileReminder />}
 
-      {/* کارت‌های آمار — داده‌ی نمونه؛ فقط در نسخه‌ی نمایشی */}
-      {DEMO_MODE && (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card
-            key={stat.label}
-            className="group relative overflow-hidden rounded-2xl border-border/70 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10"
-          >
-            {/* نوار طلایی بالای کارت */}
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-gold via-gold/60 to-transparent opacity-70 transition-opacity group-hover:opacity-100" />
-            <CardContent className="flex flex-col gap-4 p-5">
-              <div className="flex items-center justify-between">
-                <div className="rounded-xl bg-primary/[0.08] p-2.5 text-primary ring-1 ring-primary/10 transition-transform duration-300 group-hover:scale-110">
-                  <stat.icon className="h-5 w-5" />
-                </div>
-                {stat.trend && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold-soft px-2 py-0.5 text-xs font-medium text-gold">
-                    <TrendingUp className="h-3 w-3" />
-                    {stat.trend}
-                  </span>
-                )}
-              </div>
-              <div>
-                {stat.asStars ? (
-                  <StarRating value={scoreToStars(stat.value)} />
-                ) : (
-                  <div className="text-3xl font-bold tracking-tight">
-                    {faNumber(stat.value)}
-                  </div>
-                )}
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {stat.label}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* کارت‌های آمار: نسخه‌ی واقعی از API؛ نسخه‌ی نمایشی داده‌ی نمونه */}
+      {DEMO_MODE ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat) => (
+            <StatCard key={stat.label} {...stat} />
+          ))}
+        </div>
+      ) : (
+        <LiveStats />
       )}
 
       <div className="grid gap-6 lg:grid-cols-5">
         {/* دسترسی سریع */}
-        <Card className={cn("rounded-2xl", DEMO_MODE ? "lg:col-span-3" : "lg:col-span-5")}>
+        <Card className="rounded-2xl lg:col-span-3">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span className="h-5 w-1 rounded-full bg-gold" />
@@ -442,7 +405,8 @@ export function DashboardView() {
           </CardContent>
         </Card>
 
-        {/* فعالیت‌های اخیر — داده‌ی نمونه؛ فقط در نسخه‌ی نمایشی */}
+        {/* فعالیت‌های اخیر: نسخه‌ی واقعی آخرین اعلان‌ها؛ نسخه‌ی نمایشی داده‌ی نمونه */}
+        {!DEMO_MODE && <RecentNotifications className="lg:col-span-2" />}
         {DEMO_MODE && (
         <Card className="rounded-2xl lg:col-span-2">
           <CardHeader>

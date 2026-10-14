@@ -28,7 +28,13 @@ import type {
   Organization,
 } from "@/features/organization/types";
 import type { Contract, UpdateContractInput } from "@/features/contracts/types";
+import type { Dashboard } from "@/features/dashboard/types";
 import type { Inspection, InspectionResultInput, QcLabList } from "@/features/inspections/types";
+import type {
+  AppNotification,
+  NotificationPage,
+  UnreadCount,
+} from "@/features/notifications/types";
 import type { OrderDetail, OrderPage } from "@/features/orders/types";
 import type { Payments, ReportPaymentInput } from "@/features/payments/types";
 import type {
@@ -82,6 +88,10 @@ export type ResponseContract = [
   Check<Assignable<Schemas["PaymentsOut"], Payments>>,
   Check<Assignable<Schemas["InspectionOut"], Inspection>>,
   Check<Assignable<Schemas["QcLabList"], QcLabList>>,
+  Check<Assignable<Schemas["NotificationOut"], AppNotification>>,
+  Check<Assignable<Schemas["NotificationPage"], NotificationPage>>,
+  Check<Assignable<Schemas["UnreadCountOut"], UnreadCount>>,
+  Check<Assignable<Schemas["DashboardOut"], Dashboard>>,
 ];
 
 /** ورودی‌هایی که فرانت می‌فرستد باید برای سرور معتبر باشند */
