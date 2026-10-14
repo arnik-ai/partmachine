@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import {
   ArrowUpLeft,
   Bell,
@@ -14,6 +13,7 @@ import {
   PackageSearch,
   Plus,
   Search,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   TrendingUp,
@@ -30,8 +30,10 @@ import {
 import { StarRating, scoreToStars } from "@/components/ui/star-rating";
 import { ProductGallery } from "@/features/suppliers/components/product-gallery";
 import { useAuthStore } from "@/features/auth/store";
+import { DEMO_MODE } from "@/lib/config";
 import { roleLabel, type RoleValue } from "@/lib/constants";
 import { cn, faNumber } from "@/lib/utils";
+import { useHydrated } from "@/lib/use-hydrated";
 
 interface StatItem {
   label: string;
@@ -100,6 +102,8 @@ interface QuickAction {
   label: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
+  /** بخش‌هایی که هنوز به سرور وصل نشده‌اند فقط در نسخه‌ی نمایشی دیده می‌شوند */
+  demoOnly?: boolean;
 }
 
 const QUICK_ACTIONS: Record<string, QuickAction[]> = {
@@ -119,7 +123,7 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
     {
       href: "/rfqs",
       label: "درخواست‌های من",
-      description: "پیگیری وضعیت و مقایسه‌ی استعلام‌ها",
+      description: "پیگیری وضعیت درخواست‌ها و پیشنهادهای دریافتی",
       icon: ClipboardList,
     },
     {
@@ -127,6 +131,7 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
       label: "رهگیری سفارش‌ها",
       description: "مرحله‌ی فعلی هر سفارش: تولید، QC، ارسال...",
       icon: PackageSearch,
+      demoOnly: true,
     },
   ],
   supplier: [
@@ -135,12 +140,14 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
       label: "RFQهای باز",
       description: "درخواست‌های منطبق با توانمندی شما",
       icon: FileSearch,
+      demoOnly: true,
     },
     {
       href: "/orders",
       label: "سفارش‌های در دست اجرا",
       description: "وضعیت تولید و تسویه‌ی امانی",
       icon: PackageSearch,
+      demoOnly: true,
     },
     {
       href: "/suppliers",
@@ -169,6 +176,13 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
       label: "درخواست‌های بازرسی",
       description: "بازرسی ابعادی، متریال و جوش",
       icon: ClipboardList,
+      demoOnly: true,
+    },
+    {
+      href: "/suppliers",
+      label: "مشاهده‌ی قطعه‌سازان",
+      description: "فهرست قطعه‌سازان و توانمندی‌ها",
+      icon: Search,
     },
   ],
 };
@@ -244,10 +258,10 @@ const RECENT_ACTIVITY: Record<
 
 export function DashboardView() {
   const { user, isDemo } = useAuthStore();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // در نسخه‌ی نمایشی کاربر از localStorage می‌آید؛ قبل از hydration چیزی رندر نمی‌شود
+  const hydrated = useHydrated();
 
-  if (!mounted) return null;
+  if (!hydrated) return null;
 
   if (!user) {
     return (
@@ -266,8 +280,13 @@ export function DashboardView() {
 
   const role: RoleValue = user.role;
   const stats = ROLE_STATS[role] ?? ROLE_STATS.buyer;
-  const actions = QUICK_ACTIONS[role] ?? QUICK_ACTIONS.buyer;
+  const actions = (QUICK_ACTIONS[role] ?? QUICK_ACTIONS.buyer).filter(
+    (action) => DEMO_MODE || !action.demoOnly,
+  );
   const activity = RECENT_ACTIVITY[role] ?? RECENT_ACTIVITY.buyer;
+  // ثبت‌نام مأمور خرید و آزمایشگاه آزاد است ولی تا تأیید پلتفرم «تأییدنشده» نمایش داده می‌شود (D4)
+  const unverified =
+    !isDemo && user.verified === false && (role === "agent" || role === "qc");
 
   return (
     <div className="flex flex-col gap-6">
@@ -278,11 +297,25 @@ export function DashboardView() {
             <h1 className="text-2xl font-bold">سلام، {user.fullName} 👋</h1>
             <p className="text-sm text-primary-foreground/80">
               {roleLabel(role)}
-              {user.companyName ? ` — ${user.companyName}` : ""}
+              {/* بدون نام شرکت، نام سازمان همان نام کاربر است؛ تکرارش نمی‌کنیم */}
+              {user.companyName && user.companyName !== user.fullName
+                ? ` — ${user.companyName}`
+                : ""}
             </p>
+            {unverified && (
+              <p className="text-xs text-primary-foreground/75">
+                حساب شما هنوز توسط پارت‌ماشین تأیید نشده است؛ فرایند تأیید به‌زودی فعال می‌شود.
+              </p>
+            )}
             <div className="mt-1 h-1 w-16 rounded-full bg-gold" />
           </div>
           <div className="flex flex-col items-end gap-2">
+            {unverified && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/50 bg-gold/15 px-3 py-1 text-xs font-medium text-gold-soft">
+                <ShieldAlert className="h-3.5 w-3.5" />
+                حساب تأییدنشده
+              </span>
+            )}
             {isDemo && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/50 bg-gold/15 px-3 py-1 text-xs font-medium text-gold-soft">
                 <Sparkles className="h-3.5 w-3.5" />
@@ -297,7 +330,8 @@ export function DashboardView() {
         <div className="absolute -bottom-24 left-1/3 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
       </div>
 
-      {/* کارت‌های آمار */}
+      {/* کارت‌های آمار — داده‌ی نمونه؛ فقط در نسخه‌ی نمایشی */}
+      {DEMO_MODE && (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Card
@@ -334,10 +368,11 @@ export function DashboardView() {
           </Card>
         ))}
       </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-5">
         {/* دسترسی سریع */}
-        <Card className="rounded-2xl lg:col-span-3">
+        <Card className={cn("rounded-2xl", DEMO_MODE ? "lg:col-span-3" : "lg:col-span-5")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span className="h-5 w-1 rounded-full bg-gold" />
@@ -369,7 +404,8 @@ export function DashboardView() {
           </CardContent>
         </Card>
 
-        {/* فعالیت‌های اخیر */}
+        {/* فعالیت‌های اخیر — داده‌ی نمونه؛ فقط در نسخه‌ی نمایشی */}
+        {DEMO_MODE && (
         <Card className="rounded-2xl lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -400,6 +436,7 @@ export function DashboardView() {
             ))}
           </CardContent>
         </Card>
+        )}
       </div>
 
       {/* گالری محصولات — فقط برای قطعه‌ساز، مانند دیوار */}
@@ -417,7 +454,13 @@ export function DashboardView() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ProductGallery />
+            {DEMO_MODE ? (
+              <ProductGallery />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                بارگذاری عکس محصولات به‌زودی فعال می‌شود.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

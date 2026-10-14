@@ -15,8 +15,10 @@ export interface Quotation {
   /** اعتبار پیشنهاد تا این تاریخ */
   validUntil: string;
   /** ضمانت/توضیحات قطعه‌ساز */
-  note?: string;
+  note?: string | null;
   submittedAt: string;
+  /** آیا این پیشنهاد برنده شده است (از سرور) */
+  isAwarded?: boolean;
 }
 
 /** معیارهای مقایسه — برای علامت‌گذاری بهترین مقدار هر ستون */

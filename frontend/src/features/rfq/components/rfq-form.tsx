@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -14,6 +15,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ApiError, errorMessage } from "@/lib/api-client";
+import { DEMO_MODE } from "@/lib/config";
+import { useHydrated } from "@/lib/use-hydrated";
 import { CAPABILITIES, CITIES, MATERIALS } from "@/lib/constants";
 import type { CapabilityValue } from "@/lib/constants";
 import { BUYER_ORDER_TERMS } from "@/features/agreements/terms";
@@ -27,12 +31,21 @@ import { useCreateRfq } from "../hooks";
 import type { RfqFile } from "../types";
 import { RfqFileUpload } from "./file-upload";
 
+/** تاریخ امروز به وقت محلی مرورگر، به قالب YYYY-MM-DD */
+function localToday(): string {
+  return new Date().toLocaleDateString("en-CA");
+}
+
 export function RfqForm() {
   const router = useRouter();
   const createRfq = useCreateRfq();
   const [files, setFiles] = useState<RfqFile[]>([]);
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // کمینه‌ی تاریخ مهلت = امروز به وقت مرورگر؛ بعد از hydration محاسبه می‌شود تا با HTML سرور یکی بماند
+  const hydrated = useHydrated();
+  const today = hydrated ? localToday() : undefined;
 
   // فیلدهای مؤثر بر برآورد قیمت — کنترل‌شده تا برآورد زنده به‌روز شود
   const [capability, setCapability] = useState<CapabilityValue>(
@@ -47,10 +60,11 @@ export function RfqForm() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setFieldErrors({});
 
     const form = new FormData(event.currentTarget);
     try {
-      await createRfq.mutateAsync({
+      const rfq = await createRfq.mutateAsync({
         title: String(form.get("title") ?? ""),
         description: String(form.get("description") ?? ""),
         capability,
@@ -60,9 +74,11 @@ export function RfqForm() {
         deadline: String(form.get("deadline") ?? ""),
         files,
       });
-      router.push("/rfqs");
+      // موفقیت فقط پس از تأیید سرور نمایش داده می‌شود
+      router.push(DEMO_MODE ? "/rfqs" : `/rfqs/${rfq.id}?created=1`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "خطا در ثبت درخواست");
+      setError(errorMessage(err, "ثبت درخواست انجام نشد. لطفاً دوباره تلاش کنید."));
+      if (err instanceof ApiError) setFieldErrors(err.fieldErrors);
     }
   }
 
@@ -85,6 +101,7 @@ export function RfqForm() {
               required
               placeholder="مثلاً: ساخت ۵۰۰ عدد فلنج استیل طبق نقشه"
             />
+            <FieldError message={fieldErrors.title} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -95,6 +112,7 @@ export function RfqForm() {
               required
               placeholder="تلرانس‌ها، استاندارد، پرداخت سطح، بسته‌بندی و سایر الزامات..."
             />
+            <FieldError message={fieldErrors.description} />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -144,6 +162,7 @@ export function RfqForm() {
                 value={quantity || ""}
                 onChange={(e) => setQuantity(Number(e.target.value))}
               />
+              <FieldError message={fieldErrors.quantity} />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="deliveryCity">محل تحویل</Label>
@@ -157,7 +176,8 @@ export function RfqForm() {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="deadline">مهلت تحویل</Label>
-              <Input id="deadline" name="deadline" type="date" required />
+              <Input id="deadline" name="deadline" type="date" required min={today} />
+              <FieldError message={fieldErrors.deadline} />
             </div>
           </div>
 
@@ -172,6 +192,9 @@ export function RfqForm() {
           <div className="flex flex-col gap-2">
             <Label>فایل‌های فنی (نقشه، CAD، PDF)</Label>
             <RfqFileUpload files={files} onChange={setFiles} />
+            <p className="text-xs text-muted-foreground">
+              فعلاً فقط نام و مشخصات فایل‌ها ثبت می‌شود؛ ارسال خود فایل‌ها به‌زودی فعال می‌شود.
+            </p>
           </div>
 
           <TermsChecklist
@@ -181,7 +204,11 @@ export function RfqForm() {
             onChange={setAccepted}
           />
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
 
           <div className="flex justify-end gap-3">
             <Button

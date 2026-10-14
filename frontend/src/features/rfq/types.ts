@@ -8,12 +8,13 @@ export type RfqStatus =
   | "closed"
   | "cancelled";
 
+export type RfqFileKind = "pdf" | "cad" | "drawing" | "image" | "other";
+
 export interface RfqFile {
   name: string;
   size: number;
-  /** pdf | cad | drawing | image */
-  kind: string;
-  /** پیش‌نمایش تصویر (data URL) — فقط برای فایل‌های تصویری در حالت دمو */
+  kind: RfqFileKind;
+  /** پیش‌نمایش تصویر (data URL) — فقط در مرورگر؛ هرگز به سرور ارسال نمی‌شود */
   previewUrl?: string;
 }
 
@@ -28,8 +29,20 @@ export interface Rfq {
   deadline: string; // ISO date
   status: RfqStatus;
   files: RfqFile[];
-  quotationsCount: number;
+  /** تعداد پیشنهادها فقط برای صاحب درخواست؛ برای دیگران null */
+  quotationsCount: number | null;
   createdAt: string;
+  /** آیا درخواست متعلق به سازمان کاربر جاری است */
+  isOwner?: boolean;
+  awardedQuotationId?: string | null;
+}
+
+/** پاسخ صفحه‌بندی‌شده‌ی سرور */
+export interface RfqPage {
+  items: Rfq[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface CreateRfqInput {

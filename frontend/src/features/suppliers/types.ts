@@ -9,7 +9,7 @@ export interface SupplierMachine {
 export interface SupplierCertification {
   title: string;
   issuer: string;
-  validUntil?: string;
+  validUntil?: string | null;
 }
 
 /** خروجی موتور امتیاز اعتماد — explainable */
@@ -32,15 +32,15 @@ export interface Supplier {
   companyName: string;
   description: string;
   city: string;
-  address?: string;
-  phone?: string;
-  website?: string;
-  foundedYear?: number;
-  employeeCount?: number;
+  address?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  foundedYear?: number | null;
+  employeeCount?: number | null;
   capabilities: CapabilityValue[];
   machines: SupplierMachine[];
   certifications: SupplierCertification[];
-  productionCapacityPerMonth?: number;
+  productionCapacityPerMonth?: number | null;
   leadTimeDays: number;
   completedJobs: number;
   onTimeDeliveryRate: number; // 0-1
@@ -55,4 +55,14 @@ export interface SupplierFilters {
   q?: string;
   capability?: string;
   city?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/** پاسخ صفحه‌بندی‌شده‌ی سرور */
+export interface SupplierPage {
+  items: Supplier[];
+  total: number;
+  limit: number;
+  offset: number;
 }

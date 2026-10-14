@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, faNumber } from "@/lib/utils";
-import type { RfqFile } from "../types";
+import type { RfqFile, RfqFileKind } from "../types";
 
 const ACCEPTED = ".pdf,.step,.stp,.stl,.dwg,.dxf,.png,.jpg,.jpeg";
 const MAX_SIZE_MB = 50;
@@ -16,7 +16,7 @@ const FILE_KIND_LABEL: Record<string, string> = {
   image: "تصویر",
 };
 
-function fileKind(name: string): string {
+function fileKind(name: string): RfqFileKind {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf") return "pdf";
   if (["step", "stp", "stl"].includes(ext)) return "cad";

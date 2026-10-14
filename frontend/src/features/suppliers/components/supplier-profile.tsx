@@ -19,8 +19,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StarRating, scoreToStars } from "@/components/ui/star-rating";
+import { ApiError } from "@/lib/api-client";
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { capabilityLabel } from "@/lib/constants";
@@ -29,7 +31,7 @@ import { useSupplier } from "../hooks";
 import { TrustScoreBreakdown } from "./trust-score";
 
 export function SupplierProfile({ id }: { id: string }) {
-  const { data: supplier, isLoading } = useSupplier(id);
+  const { data: supplier, isLoading, isError, error, refetch } = useSupplier(id);
 
   if (isLoading) {
     return (
@@ -38,6 +40,10 @@ export function SupplierProfile({ id }: { id: string }) {
         <Skeleton className="h-64" />
       </div>
     );
+  }
+
+  if (isError && !(error instanceof ApiError && error.status === 404)) {
+    return <ErrorState error={error} onRetry={() => refetch()} />;
   }
 
   if (!supplier) {

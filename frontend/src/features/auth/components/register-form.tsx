@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -14,20 +15,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ApiError, errorMessage } from "@/lib/api-client";
+import { DEMO_MODE } from "@/lib/config";
 import { ROLES } from "@/lib/constants";
 import { signupTermsForRole } from "@/features/agreements/terms";
 import {
   TermsChecklist,
   allTermsAccepted,
 } from "@/features/agreements/components/terms-checklist";
-import { buildDemoSession, isBackendDown, register } from "../api";
-import { useAuthStore } from "../store";
+import { register, startDemoSession } from "../api";
 import type { RegisterInput } from "../types";
 
 export function RegisterForm() {
   const router = useRouter();
-  const setSession = useAuthStore((s) => s.setSession);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<RegisterInput["role"]>("buyer");
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
@@ -39,29 +41,30 @@ export function RegisterForm() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setLoading(true);
+    setFieldErrors({});
 
     const form = new FormData(event.currentTarget);
     const input: RegisterInput = {
-      email: String(form.get("email") ?? ""),
+      email: String(form.get("email") ?? "").trim(),
       password: String(form.get("password") ?? ""),
-      fullName: String(form.get("fullName") ?? ""),
+      fullName: String(form.get("fullName") ?? "").trim(),
       role,
-      companyName: String(form.get("companyName") ?? "") || undefined,
+      companyName: String(form.get("companyName") ?? "").trim() || undefined,
     };
 
+    if (DEMO_MODE) {
+      startDemoSession(input);
+      router.push("/dashboard");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const { user, tokens } = await register(input);
-      setSession(user, tokens);
+      await register(input);
       router.push("/dashboard");
     } catch (err) {
-      if (isBackendDown(err)) {
-        const demo = buildDemoSession(input);
-        setSession(demo.user, demo.tokens, true);
-        router.push("/dashboard");
-      } else {
-        setError(err instanceof Error ? err.message : "خطا در ثبت‌نام");
-      }
+      setError(errorMessage(err));
+      if (err instanceof ApiError) setFieldErrors(err.fieldErrors);
     } finally {
       setLoading(false);
     }
@@ -93,17 +96,25 @@ export function RegisterForm() {
                 </option>
               ))}
             </Select>
+            <FieldError message={fieldErrors.role} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="fullName">نام و نام خانوادگی</Label>
-            <Input id="fullName" name="fullName" required />
+            <Input id="fullName" name="fullName" required autoComplete="name" />
+            <FieldError message={fieldErrors.fullName} />
           </div>
           {needsCompany && (
             <div className="flex flex-col gap-2">
               <Label htmlFor="companyName">
                 {role === "qc" ? "نام آزمایشگاه" : "نام شرکت / کارگاه"}
               </Label>
-              <Input id="companyName" name="companyName" required />
+              <Input
+                id="companyName"
+                name="companyName"
+                required
+                autoComplete="organization"
+              />
+              <FieldError message={fieldErrors.companyName} />
             </div>
           )}
           <div className="flex flex-col gap-2">
@@ -114,8 +125,10 @@ export function RegisterForm() {
               type="email"
               dir="ltr"
               required
+              autoComplete="email"
               placeholder="you@company.com"
             />
+            <FieldError message={fieldErrors.email} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">رمز عبور</Label>
@@ -126,7 +139,10 @@ export function RegisterForm() {
               dir="ltr"
               required
               minLength={8}
+              autoComplete="new-password"
             />
+            <p className="text-xs text-muted-foreground">حداقل ۸ کاراکتر</p>
+            <FieldError message={fieldErrors.password} />
           </div>
           <TermsChecklist
             title={
@@ -142,7 +158,11 @@ export function RegisterForm() {
             accepted={accepted}
             onChange={setAccepted}
           />
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
           <Button
             type="submit"
             disabled={loading || !termsOk}

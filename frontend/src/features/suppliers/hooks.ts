@@ -1,19 +1,21 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getSupplier, listSuppliers } from "./api";
 import type { SupplierFilters } from "./types";
 
 export function useSuppliers(filters: SupplierFilters = {}) {
   return useQuery({
-    queryKey: ["suppliers", filters],
+    queryKey: ["suppliers", "list", filters],
     queryFn: () => listSuppliers(filters),
+    // هنگام رفتن به صفحه‌ی بعد، فهرست قبلی تا رسیدن داده‌ی جدید نمایش داده می‌شود
+    placeholderData: keepPreviousData,
   });
 }
 
 export function useSupplier(id: string) {
   return useQuery({
-    queryKey: ["suppliers", id],
+    queryKey: ["suppliers", "detail", id],
     queryFn: () => getSupplier(id),
     enabled: Boolean(id),
   });

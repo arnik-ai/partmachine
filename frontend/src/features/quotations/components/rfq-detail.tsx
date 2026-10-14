@@ -1,37 +1,56 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, FileText, MapPin, CalendarDays } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  FileText,
+  MapPin,
+} from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ApiError } from "@/lib/api-client";
+import { DEMO_MODE } from "@/lib/config";
 import { capabilityLabel } from "@/lib/constants";
 import { faDate, faNumber } from "@/lib/utils";
-import { listMyRfqs } from "@/features/rfq/api";
-import type { Rfq } from "@/features/rfq/types";
-import { useEffect, useState } from "react";
+import { useRfq } from "@/features/rfq/hooks";
+import { RFQ_STATUS_LABELS } from "@/features/rfq/types";
 import { quotationsForRfq } from "../mock";
 import { QuotationCompare } from "./quotation-compare";
 
 export function RfqDetail({ rfqId }: { rfqId: string }) {
-  const [rfq, setRfq] = useState<Rfq | null>(null);
-  const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const justCreated = searchParams.get("created") === "1";
+  const { data: rfq, isLoading, isError, error, refetch } = useRfq(rfqId);
 
-  useEffect(() => {
-    listMyRfqs().then((list) => {
-      setRfq(list.find((r) => r.id === rfqId) ?? null);
-      setLoading(false);
-    });
-  }, [rfqId]);
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-40" />
+      </div>
+    );
+  }
 
-  const quotes = quotationsForRfq(rfqId);
-
-  if (loading) {
-    return <p className="py-12 text-center text-white/65">در حال بارگذاری...</p>;
+  if (isError && !(error instanceof ApiError && error.status === 404)) {
+    return <ErrorState error={error} onRetry={() => refetch()} />;
   }
 
   if (!rfq) {
-    return <p className="py-12 text-center text-white/65">درخواست پیدا نشد.</p>;
+    return (
+      <div className="flex flex-col items-center gap-3 py-12 text-center text-white/65">
+        <p>درخواست موردنظر پیدا نشد یا اجازه‌ی دیدن آن را ندارید.</p>
+        <Link href="/rfqs" className={buttonVariants({ variant: "outline" })}>
+          بازگشت به درخواست‌ها
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -45,10 +64,23 @@ export function RfqDetail({ rfqId }: { rfqId: string }) {
         بازگشت به درخواست‌ها
       </Link>
 
+      {justCreated && (
+        <div
+          role="status"
+          className="flex items-center gap-2 rounded-lg border border-success/40 bg-card p-4 text-sm text-card-foreground"
+        >
+          <CheckCircle2 className="h-5 w-5 text-success" aria-hidden />
+          درخواست شما ثبت شد و برای قطعه‌سازان منتشر شد.
+        </div>
+      )}
+
       {/* خلاصه‌ی RFQ */}
       <Card className="rounded-2xl">
         <CardContent className="flex flex-col gap-3 p-5">
-          <h1 className="text-xl font-bold">{rfq.title}</h1>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h1 className="text-xl font-bold">{rfq.title}</h1>
+            <Badge variant="secondary">{RFQ_STATUS_LABELS[rfq.status]}</Badge>
+          </div>
           <p className="text-sm text-muted-foreground">{rfq.description}</p>
           <div className="flex flex-wrap gap-2">
             <Badge variant="secondary">{capabilityLabel(rfq.capability)}</Badge>
@@ -64,28 +96,60 @@ export function RfqDetail({ rfqId }: { rfqId: string }) {
               <CalendarDays className="h-3.5 w-3.5" />
               مهلت: {faDate(rfq.deadline)}
             </span>
-            <span className="inline-flex items-center gap-1">
-              <FileText className="h-3.5 w-3.5" />
-              {faNumber(rfq.files.length)} فایل پیوست
-            </span>
+            {rfq.files.length > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <FileText className="h-3.5 w-3.5" />
+                {faNumber(rfq.files.length)} فایل پیوست
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* مقایسه‌ی استعلام‌ها */}
-      <div className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold">
-          مقایسه‌ی استعلام‌های دریافتی ({faNumber(quotes.length)})
-        </h2>
-        <QuotationCompare
-          rfqId={rfqId}
-          rfqTitle={rfq.title}
-          quotes={quotes}
-          capability={rfq.capability}
-          material={rfq.material}
-          quantity={rfq.quantity}
-        />
-      </div>
+      {DEMO_MODE ? (
+        <DemoQuotations rfqId={rfqId} rfq={rfq} />
+      ) : (
+        <Card>
+          <CardContent className="flex items-start gap-3 p-5 text-sm">
+            <Clock className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+            {rfq.isOwner ? (
+              <p>
+                تاکنون {faNumber(rfq.quotationsCount ?? 0)} پیشنهاد قیمت برای این درخواست
+                دریافت شده است. مقایسه‌ی پیشنهادها و انتخاب برنده به‌زودی در همین صفحه
+                فعال می‌شود.
+              </p>
+            ) : (
+              <p>ثبت پیشنهاد قیمت برای این درخواست به‌زودی از همین صفحه فعال می‌شود.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/** فقط نسخه‌ی نمایشی: مقایسه با داده‌ی نمونه */
+function DemoQuotations({
+  rfqId,
+  rfq,
+}: {
+  rfqId: string;
+  rfq: NonNullable<ReturnType<typeof useRfq>["data"]>;
+}) {
+  const quotes = quotationsForRfq(rfqId);
+  return (
+    <div className="flex flex-col gap-3">
+      <h2 className="text-lg font-bold">
+        مقایسه‌ی استعلام‌های دریافتی ({faNumber(quotes.length)})
+      </h2>
+      <QuotationCompare
+        rfqId={rfqId}
+        rfqTitle={rfq.title}
+        quotes={quotes}
+        capability={rfq.capability}
+        material={rfq.material}
+        quantity={rfq.quantity}
+      />
     </div>
   );
 }

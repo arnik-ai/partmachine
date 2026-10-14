@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,43 +14,40 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { buildDemoSession, isBackendDown, login } from "../api";
-import { useAuthStore } from "../store";
+import { ApiError, errorMessage } from "@/lib/api-client";
+import { DEMO_MODE } from "@/lib/config";
+import { login, startDemoSession } from "../api";
+import { safeNextPath } from "../next-path";
 
 export function LoginForm() {
   const router = useRouter();
-  const setSession = useAuthStore((s) => s.setSession);
   const [error, setError] = useState<string | null>(null);
-  const [demoNotice, setDemoNotice] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setLoading(true);
+    setFieldErrors({});
 
     const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "");
+    const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
 
-    try {
-      const { user, tokens } = await login({ email, password });
-      setSession(user, tokens);
+    if (DEMO_MODE) {
+      // نسخه‌ی نمایشی: بدون سرور، فقط برای دیدن محیط
+      startDemoSession({ email, fullName: "کاربر دمو", role: "buyer" });
       router.push("/dashboard");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await login({ email, password });
+      router.push(safeNextPath(window.location.search));
     } catch (err) {
-      if (isBackendDown(err)) {
-        // بک‌اند هنوز بالا نیست — ورود با سشن دمو
-        setDemoNotice(true);
-        const demo = buildDemoSession({
-          email,
-          fullName: "کاربر دمو",
-          role: "buyer",
-        });
-        setSession(demo.user, demo.tokens, true);
-        router.push("/dashboard");
-      } else {
-        setError(err instanceof Error ? err.message : "خطا در ورود");
-      }
+      setError(errorMessage(err));
+      if (err instanceof ApiError) setFieldErrors(err.fieldErrors);
     } finally {
       setLoading(false);
     }
@@ -71,17 +69,31 @@ export function LoginForm() {
               type="email"
               dir="ltr"
               required
+              autoComplete="email"
               placeholder="you@company.com"
             />
+            <FieldError message={fieldErrors.email} />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">رمز عبور</Label>
-            <Input id="password" name="password" type="password" dir="ltr" required />
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              dir="ltr"
+              required
+              autoComplete="current-password"
+            />
+            <FieldError message={fieldErrors.password} />
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          {demoNotice && (
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          {DEMO_MODE && (
             <p className="text-sm text-warning">
-              بک‌اند در دسترس نیست — ورود در حالت دمو انجام شد.
+              این نسخه‌ی نمایشی است؛ هر ایمیل و رمزی پذیرفته می‌شود و چیزی ذخیره نمی‌شود.
             </p>
           )}
           <Button type="submit" disabled={loading}>

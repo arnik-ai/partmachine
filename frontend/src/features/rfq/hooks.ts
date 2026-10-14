@@ -1,12 +1,26 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createRfq, listMyRfqs } from "./api";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { createRfq, getRfq, listMyRfqs } from "./api";
 
-export function useMyRfqs() {
+export function useMyRfqs(page = 0) {
   return useQuery({
-    queryKey: ["rfqs", "mine"],
-    queryFn: listMyRfqs,
+    queryKey: ["rfqs", "mine", page],
+    queryFn: () => listMyRfqs(page),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useRfq(id: string) {
+  return useQuery({
+    queryKey: ["rfqs", "detail", id],
+    queryFn: () => getRfq(id),
+    enabled: Boolean(id),
   });
 }
 

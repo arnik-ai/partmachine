@@ -5,12 +5,9 @@ export interface User {
   email: string;
   fullName: string;
   role: RoleValue;
-  companyName?: string;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
+  organizationId?: string;
+  companyName?: string | null;
+  verified?: boolean;
 }
 
 export interface LoginInput {
@@ -26,7 +23,10 @@ export interface RegisterInput {
   companyName?: string;
 }
 
-export interface AuthResponse {
+/** پاسخ ورود/ثبت‌نام/تازه‌سازی. refresh token در کوکی HttpOnly است و به JS نمی‌رسد. */
+export interface AuthSession {
   user: User;
-  tokens: AuthTokens;
+  accessToken: string;
+  /** مدت اعتبار توکن دسترسی به ثانیه */
+  expiresIn: number;
 }

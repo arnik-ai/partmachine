@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -17,7 +16,8 @@ import {
   SUPPLIER_TERMS,
 } from "@/features/agreements/terms";
 import { MOCK_ORDERS } from "@/features/orders/mock";
-import { cn, faDate, faNumber, faToman } from "@/lib/utils";
+import { faDate, faNumber, faToman } from "@/lib/utils";
+import { useHydrated } from "@/lib/use-hydrated";
 import { useSignatureStore } from "../signature-store";
 
 /** بند قرارداد با شماره‌ی ماده */
@@ -76,8 +76,8 @@ export function ContractDocument({ orderId }: { orderId: string }) {
   const order = MOCK_ORDERS.find((o) => o.id === orderId);
   const { user } = useAuthStore();
   const { signatures, sign } = useSignatureStore();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // امضاها در localStorage (فقط نسخه‌ی نمایشی) هستند؛ قبل از hydration نمایش داده نمی‌شوند
+  const mounted = useHydrated();
 
   if (!order) {
     return (
