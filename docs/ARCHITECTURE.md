@@ -1,6 +1,6 @@
 # گزارش معماری — PartMachine
 
-> نسخه ۱.۲ — به‌روزرسانی: ۲۰۲۶/۱۰/۱۴ (پایان فاز ۲) — این سند **طراحی هدف** است؛ آنچه واقعاً پیاده شده در بخش ۴ و [SECURITY_MODEL.md](SECURITY_MODEL.md) آمده است.
+> نسخه ۱.۳ — به‌روزرسانی: ۲۰۲۶/۱۰/۱۴ (پایان فاز ۳) — این سند **طراحی هدف** است؛ آنچه واقعاً پیاده شده در بخش ۴ و [SECURITY_MODEL.md](SECURITY_MODEL.md) آمده است.
 
 ## ۱. نمای کلی
 
@@ -57,19 +57,24 @@ PartMachine یک بازار صنعتی B2B است که پنج نقش اصلی د
 /rfqs/new          → ثبت RFQ (متریال، تعداد، مهلت؛ فعلاً فقط متادیتای فایل‌ها)
 /rfqs/[id]         → جزئیات RFQ (مالک: کامل؛ قطعه‌ساز: خلاصه)
 /dashboard         → داشبورد نقش‌محور
-/orders            → سفارش‌ها و قرارداد (فعلاً فقط در نسخه‌ی نمایشی؛ در تولید «به‌زودی»)
+/orders            → سفارش‌های من (کارفرما، قطعه‌ساز و آزمایشگاه انتخاب‌شده)
+/orders/[id]       → سفارش: کار بعدی، کنترل کیفیت، پرداخت‌ها، امتیاز، خط زمان و تاریخچه
+/orders/[id]/contract → قرارداد نسخه‌دار، امضا و نسخه‌ی چاپی
+/notifications     → اعلان‌های داخل سایت
+/admin/disputes    → صف اختلاف‌ها (فقط ادمین)
 ```
 
-## ۴. بک‌اند (پیاده‌شده در فاز ۱ و ۲)
+## ۴. بک‌اند (پیاده‌شده در فاز ۱ تا ۳)
 
 - FastAPI + Python 3.13، SQLAlchemy 2.x async + asyncpg، Pydantic v2، Alembic، Redis.
-- **مونولیت ماژولار:** `app/modules/{identity, organizations, agreements, files, suppliers, verification, rfqs, quotations, pricing, audit, admin}`، هر ماژول با `models`، `schemas`، `router` و `service` (و `policies`/`lifecycle` برای قواعد دسترسی و وضعیت). زیرساخت مشترک در `app/core` (تنظیمات، خطاها، لاگ، middleware، محدودیت نرخ، امنیت، ذخیره‌ی فایل و ارسال کد).
+- **مونولیت ماژولار:** `app/modules/{identity, organizations, agreements, files, suppliers, verification, rfqs, quotations, pricing, audit, admin, orders, contracts, payments, inspections, disputes, ratings, notifications, dashboard}`، هر ماژول با `models`، `schemas`، `router` و `service` (و `policies`/`lifecycle` برای قواعد دسترسی و وضعیت). زیرساخت مشترک در `app/core` (تنظیمات، خطاها، لاگ، middleware، محدودیت نرخ، امنیت، ذخیره‌ی فایل و ارسال کد).
 - **فایل‌ها:** رابط `Storage` با پیاده‌سازی دیسک محلی (P6)؛ نسخه‌ی S3-سازگار با انتخاب سرویس در فاز ۴ اضافه می‌شود. بارگذاری مستقیم از API با بررسی محتوای واقعی؛ دانلود با لینک امضاشده‌ی کوتاه‌عمر.
 - **ارسال کد:** رابط `CodeSender` (`console` در توسعه، `disabled` در تولید تا انتخاب سرویس پیامک/ایمیل؛ P8).
 - **داده:** فقط PostgreSQL؛ schema با Alembic (`create_all` حذف شده). بدون relationship ضمنی در ORM (کوئری صریح). قیود یکپارچگی در خود پایگاه داده.
 - **امنیت:** Argon2id، نشست کوکی‌دار با چرخش و تشخیص سرقت، CSRF برای endpointهای کوکی‌محور، محدودیت نرخ در Redis، audit برای رویدادهای مهم، و اعتبارسنجی پیکربندی هنگام شروع. جزئیات در [SECURITY_MODEL.md](SECURITY_MODEL.md).
 - **عملیات:** لاگ JSON با request-id، `/health` (liveness) و `/ready` (DB و Redis)، TrustedHost، سقف حجم درخواست، و `statement_timeout` روی اتصال‌ها. `/metrics` و Sentry در فاز ۴.
-- **هنوز پیاده نشده:** سفارش، قرارداد، پرداخت و escrow (فاز ۳)، ذخیره‌ی S3 و اسکن ویروس (فاز ۴)، موتورهای AI (فاز ۵). موتور Trust Score، برآورد قیمت و «امتیاز ترکیبی» پیشنهادها فرمول‌های قطعی و شفاف‌اند، نه هوش مصنوعی.
+- **سفارش (فاز ۳):** چرخه‌ی وضعیت در `orders/lifecycle.py`؛ قرارداد نسخه‌دار با امضای مدیر دو طرف؛ پیگیری پرداخت بدون جابه‌جایی پول؛ کنترل کیفیت اختیاری؛ اختلاف با تصمیم ادمین؛ اعلان داخل سایت که در همان تراکنش رویداد ثبت می‌شود؛ سابقه‌ی واقعی قطعه‌ساز که از داده‌ی اصلی دوباره ساخته می‌شود (`suppliers/track_record.py`). جزئیات در [PHASE3_REPORT.md](PHASE3_REPORT.md).
+- **هنوز پیاده نشده:** جابه‌جایی واقعی پول (درگاه و escrow؛ فقط پس از تصمیم حقوقی و مالی)، ارسال ایمیل و پیامک، worker پس‌زمینه، ذخیره‌ی S3 و اسکن ویروس (فاز ۴)، موتورهای AI (فاز ۵). موتور Trust Score، برآورد قیمت و «امتیاز ترکیبی» پیشنهادها فرمول‌های قطعی و شفاف‌اند، نه هوش مصنوعی.
 
 ## ۵. طرح دیتابیس (ERD خلاصه)
 
@@ -101,7 +106,7 @@ erDiagram
     users ||--o{ audit_logs : acted
 ```
 
-> این ERD طرح هدف است. جداول پیاده‌شده تا پایان فاز ۲: `organizations`، `organization_invites`، `users`، `refresh_tokens`، `agreement_acceptances`، `suppliers` (توانمندی‌ها، ماشین‌آلات و گواهی‌ها فعلاً JSONB)، `verification_requests`، `files`، `rfqs`، `quotations` و `audit_events`. ستون قدیمی `rfqs.files` (متادیتای JSONB فاز ۱) دیگر استفاده نمی‌شود و حذفش migration مخرب است که تأیید مالک را لازم دارد. شناسه‌ها فعلاً UUIDv4 هستند.
+> این ERD طرح هدف است. جداول پیاده‌شده تا پایان فاز ۳: `organizations`، `organization_invites`، `users`، `refresh_tokens`، `agreement_acceptances`، `suppliers` (توانمندی‌ها، ماشین‌آلات و گواهی‌ها فعلاً JSONB؛ به‌علاوه‌ی شمارش‌های سابقه)، `verification_requests`، `files`، `rfqs`، `quotations`، `audit_events`، و از فاز ۳: `orders`، `order_events`، `contracts`، `contract_versions`، `contract_signatures`، `order_payments`، `order_inspections`، `order_disputes`، `order_ratings` و `notifications`. در طرح هدف `wallets`، `escrow_*` و `transactions` آمده‌اند؛ این‌ها **ساخته نشده‌اند**، چون پول از پلتفرم عبور نمی‌کند (O6). ستون قدیمی `rfqs.files` (متادیتای JSONB فاز ۱) دیگر استفاده نمی‌شود و حذفش migration مخرب است که تأیید مالک را لازم دارد. شناسه‌ها فعلاً UUIDv4 هستند.
 
 ### نکات مقیاس‌پذیری
 
@@ -121,6 +126,15 @@ erDiagram
 
 اجرای کارهای سنگین AI به‌صورت async از طریق صف Redis.
 
-## ۷. Escrow
+## ۷. سفارش و پرداخت (پیاده‌شده در فاز ۳)
 
-ماشین حالت: `FUNDED → LOCKED → IN_PRODUCTION → QC_PASSED → BUYER_CONFIRMED → RELEASED` با شاخه‌های `REFUNDED` و `DISPUTED`. آزادسازی جزئی و مرحله‌ای از طریق `escrow_milestones`. درگاه پرداخت پشت اینترفیس `PaymentGateway` (پیاده‌سازی آینده: زرین‌پال و…).
+چرخه‌ی سفارش:
+
+```
+در انتظار قرارداد → (امضای دو طرف) → در انتظار پیش‌پرداخت → در حال تولید
+در حال تولید → [بازرسی کیفیت، اگر کارفرما آزمایشگاه انتخاب کرده: رد ⇒ تولید، قبول ⇒ ارسال مجاز]
+→ ارسال‌شده → تحویل‌شده → (تأیید همه‌ی اقساط) → تکمیل‌شده
+پیش از امضا: لغو با دلیل. پس از امضا: لغو با توافق دو طرف، یا «اعلام مشکل» → اختلاف → تصمیم ادمین (ادامه / تکمیل / لغو)
+```
+
+پرداخت فقط **ثبت و پیگیری** است (O6): کارفرما پرداختِ بیرون از پلتفرم را اعلام می‌کند و قطعه‌ساز دریافت را تأیید می‌کند. طرح قبلی escrow (کیف پول امانی، آزادسازی مرحله‌ای، `PaymentGateway`) کنار گذاشته شد. هر نوع نگهداری یا جابه‌جایی پول فقط پس از تصمیم کسب‌وکاری و بررسی حقوقی و مالی دوباره طراحی می‌شود.
