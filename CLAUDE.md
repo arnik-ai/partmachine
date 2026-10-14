@@ -359,7 +359,8 @@ At the end, present the exact proposed Phase 1 changes, risks, test commands and
 | 0 — Read-only assessment | **done 2026-10-13** | `docs/PHASE0_ASSESSMENT.md` (findings F01–F38, Phase 1 proposal §9, decisions D1–D9) |
 | 1 — Stabilization | **done — approved by the owner 2026-10-14**. Committed locally on branch `phase-1-stabilization` (five commits after baseline `0ed70a2`); **not pushed**. D8 ("no database with real data exists") confirmed by the owner 2026-10-14. Still open: push approval | `docs/PHASE1_REPORT.md` (acceptance §2, recorded results §3, decisions §9) |
 | 2 — Real MVP | **done — approved by the owner 2026-10-14** (steps 2a–2f; migrations up to `0006`). Committed locally on branch `phase-2-mvp` (branched from `phase-1-stabilization`); **not pushed**. Real SMS/email provider for one-time codes deliberately not connected (P8). Still open: push approval, provider choice, legal review of terms/NDA | `docs/PHASE2_PLAN.md` (scope, decisions P1–P10), `docs/PHASE2_REPORT.md` (results, owner decisions §9, limits, next steps) |
-| 3–5 | not started | — |
+| 3 — Orders and commercial workflows | **in progress** — plan approved by the owner 2026-10-14 with defaults O1–O13 (no money moves through the platform in this phase); work on local branch `phase-3-orders` (uncommitted until approved) | `docs/PHASE3_PLAN.md` |
+| 4–5 | not started | — |
 
 ### Environment notes (verified 2026-10-14)
 
