@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { CheckCircle2, Clock, PartyPopper, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { ErrorState } from "@/components/ui/error-state";
@@ -96,7 +97,14 @@ export function SupplierQuotePanel({ rfq }: { rfq: Rfq }) {
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle>پیشنهاد قیمت شما</CardTitle>
-        <OutcomeBadge rfq={rfq} quote={mine} />
+        <span className="flex flex-wrap items-center gap-2">
+          <OutcomeBadge rfq={rfq} quote={mine} />
+          {rfq.orderId && mine.isAwarded && (
+            <Link href={`/orders/${rfq.orderId}`} className={buttonVariants({ size: "sm" })}>
+              مشاهده‌ی سفارش
+            </Link>
+          )}
+        </span>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {saved && !editing && (

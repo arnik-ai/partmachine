@@ -59,6 +59,8 @@ export interface MyQuotation extends Quotation {
     deadline: string;
   };
   outcome: QuotationOutcome;
+  /** پیشنهاد برنده سفارش دارد */
+  orderId?: string | null;
 }
 
 export interface MyQuotationPage {

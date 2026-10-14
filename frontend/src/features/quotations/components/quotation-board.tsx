@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CheckCircle2, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { ErrorState } from "@/components/ui/error-state";
@@ -103,13 +104,20 @@ export function QuotationBoard({ rfq }: { rfq: Rfq }) {
         {SCORE_FORMULA_TEXT}. تصمیم نهایی با شماست.
       </p>
 
-      {justAwarded && rfq.status === "awarded" && (
+      {rfq.status === "awarded" && rfq.orderId && (
         <div
           role="status"
-          className="flex items-center gap-2 rounded-lg border border-success/40 bg-card p-4 text-sm text-card-foreground"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-success/40 bg-card p-4 text-sm text-card-foreground"
         >
-          <CheckCircle2 className="h-5 w-5 text-success" aria-hidden />
-          برنده انتخاب شد. ثبت سفارش و قرارداد در مرحله‌ی بعدی پلتفرم فعال می‌شود.
+          <span className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-success" aria-hidden />
+            {justAwarded
+              ? "برنده انتخاب شد و سفارش ساخته شد."
+              : "برنده‌ی این درخواست انتخاب شده و سفارش آن ساخته شده است."}
+          </span>
+          <Link href={`/orders/${rfq.orderId}`} className={buttonVariants({ size: "sm" })}>
+            مشاهده‌ی سفارش
+          </Link>
         </div>
       )}
 

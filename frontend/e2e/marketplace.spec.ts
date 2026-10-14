@@ -1,29 +1,19 @@
-import { expect, test, type Page } from "@playwright/test";
-import { PASSWORD, acceptTerms, inDays, register, stamp, uniqueEmail } from "./helpers";
+import { expect, test } from "@playwright/test";
+import {
+  PASSWORD,
+  acceptTerms,
+  createRfq,
+  inDays,
+  quote,
+  register,
+  stamp,
+  uniqueEmail,
+} from "./helpers";
 
 /**
  * چرخه‌ی اصلی بازار با مرورگر واقعی: ثبت RFQ ← فید قطعه‌سازها ← پیشنهاد (تومان) ←
  * ویرایش ← مقایسه و انتخاب برنده ← دیدن نتیجه؛ و لغو درخواست.
  */
-
-async function createRfq(page: Page, title: string): Promise<string> {
-  await page.goto("/rfqs/new");
-  await page.getByLabel("عنوان درخواست").fill(title);
-  await page.getByLabel("شرح فنی").fill("بوش برنجی طبق نقشه، تلرانس ۰٫۰۵ میلی‌متر");
-  await page.getByLabel("تعداد").fill("200");
-  await page.getByLabel("مهلت تحویل").fill(inDays(30));
-  await acceptTerms(page);
-  await page.getByRole("button", { name: "انتشار درخواست" }).click();
-  await expect(page.getByText("درخواست شما ثبت شد")).toBeVisible();
-  return page.url().split("?")[0];
-}
-
-async function quote(page: Page, toman: string, days: string): Promise<void> {
-  await page.getByLabel("قیمت کل (تومان)").fill(toman);
-  await page.getByLabel("زمان تحویل (روز)").fill(days);
-  await page.getByRole("button", { name: "ثبت پیشنهاد" }).click();
-  await expect(page.getByText("پیشنهاد شما ثبت شد.")).toBeVisible();
-}
 
 test("buyer posts an RFQ, suppliers quote and the buyer picks a winner", async ({ browser }) => {
   const title = `آزمون سرتاسری ${stamp}`;
@@ -65,7 +55,11 @@ test("buyer posts an RFQ, suppliers quote and the buyer picks a winner", async (
   await expect(dialog).toContainText("قابل تغییر نیست");
   await dialog.getByRole("button", { name: "بله، برنده را انتخاب کن" }).click();
   await expect(buyer.getByText("برنده‌ی انتخاب‌شده ✓")).toBeVisible();
-  await expect(buyer.getByText("برنده انتخاب شد. ثبت سفارش")).toBeVisible();
+  await expect(buyer.getByText("برنده انتخاب شد و سفارش ساخته شد.")).toBeVisible();
+  await buyer.getByRole("link", { name: "مشاهده‌ی سفارش" }).click();
+  await buyer.waitForURL("**/orders/**");
+  await expect(buyer.getByRole("heading", { name: title })).toBeVisible();
+  await expect(buyer.getByText("در انتظار قرارداد").first()).toBeVisible();
 
   // هر قطعه‌ساز نتیجه‌ی خودش را می‌بیند
   await first.goto("/quotations");

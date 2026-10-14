@@ -48,6 +48,8 @@ export interface Rfq {
   /** فقط در نمای قطعه‌ساز */
   ndaAccepted?: boolean | null;
   myQuotation?: { id: string; status: "active" | "withdrawn" } | null;
+  /** سفارش ساخته‌شده پس از انتخاب برنده؛ فقط برای کارفرما و قطعه‌ساز برنده */
+  orderId?: string | null;
 }
 
 /** پاسخ صفحه‌بندی‌شده‌ی سرور */

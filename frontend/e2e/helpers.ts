@@ -54,3 +54,22 @@ export async function login(browser: Browser, email: string, password: string): 
   await page.waitForURL("**/dashboard");
   return page;
 }
+
+export async function createRfq(page: Page, title: string): Promise<string> {
+  await page.goto("/rfqs/new");
+  await page.getByLabel("عنوان درخواست").fill(title);
+  await page.getByLabel("شرح فنی").fill("بوش برنجی طبق نقشه، تلرانس ۰٫۰۵ میلی‌متر");
+  await page.getByLabel("تعداد").fill("200");
+  await page.getByLabel("مهلت تحویل").fill(inDays(30));
+  await acceptTerms(page);
+  await page.getByRole("button", { name: "انتشار درخواست" }).click();
+  await expect(page.getByText("درخواست شما ثبت شد")).toBeVisible();
+  return page.url().split("?")[0];
+}
+
+export async function quote(page: Page, toman: string, days: string): Promise<void> {
+  await page.getByLabel("قیمت کل (تومان)").fill(toman);
+  await page.getByLabel("زمان تحویل (روز)").fill(days);
+  await page.getByRole("button", { name: "ثبت پیشنهاد" }).click();
+  await expect(page.getByText("پیشنهاد شما ثبت شد.")).toBeVisible();
+}

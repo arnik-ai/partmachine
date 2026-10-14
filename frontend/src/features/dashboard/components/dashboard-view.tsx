@@ -141,9 +141,8 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
     {
       href: "/orders",
       label: "رهگیری سفارش‌ها",
-      description: "مرحله‌ی فعلی هر سفارش: تولید، QC، ارسال...",
+      description: "مرحله‌ی فعلی هر سفارش: قرارداد، تولید، ارسال و تحویل",
       icon: PackageSearch,
-      demoOnly: true,
     },
   ],
   supplier: [
@@ -162,9 +161,8 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
     {
       href: "/orders",
       label: "سفارش‌های در دست اجرا",
-      description: "وضعیت تولید و تسویه‌ی امانی",
+      description: "قرارداد، ارسال و تحویل سفارش‌هایی که برنده شده‌اید",
       icon: PackageSearch,
-      demoOnly: true,
     },
     {
       href: "/profile",

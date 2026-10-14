@@ -86,8 +86,9 @@ export function MyQuotations() {
 
 function MyQuotationCard({ item }: { item: MyQuotation }) {
   const editable = item.outcome === "pending" && item.rfq.status === "published";
+  const href = item.orderId ? `/orders/${item.orderId}` : `/rfqs/${item.rfq.id}`;
   return (
-    <Link href={`/rfqs/${item.rfq.id}`} className="block">
+    <Link href={href} className="block">
       <Card className="transition-shadow hover:shadow-md">
         <CardContent className="flex flex-col gap-3 p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -100,9 +101,11 @@ function MyQuotationCard({ item }: { item: MyQuotation }) {
             <Badge variant="outline">{faNumber(item.leadTimeDays)} روز تحویل</Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            {editable
-              ? `تا ${faDate(item.rfq.quotesDue)} می‌توانید پیشنهادتان را ویرایش کنید.`
-              : `آخرین تغییر: ${faDate(item.updatedAt ?? item.submittedAt)}`}
+            {item.orderId
+              ? "سفارش این کار ساخته شده است؛ برای دیدن مراحل سفارش کلیک کنید."
+              : editable
+                ? `تا ${faDate(item.rfq.quotesDue)} می‌توانید پیشنهادتان را ویرایش کنید.`
+                : `آخرین تغییر: ${faDate(item.updatedAt ?? item.submittedAt)}`}
           </p>
         </CardContent>
       </Card>

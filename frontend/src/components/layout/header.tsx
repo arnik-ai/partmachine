@@ -22,8 +22,7 @@ const NAV_LINKS: readonly NavLink[] = [
   { href: "/suppliers", label: "قطعه‌سازان" },
   { href: "/rfqs", label: "درخواست‌های من", roles: ["buyer", "agent"] },
   { href: "/organization", label: "سازمان من", roles: ["buyer", "supplier", "agent", "qc"] },
-  // سفارش‌ها هنوز به سرور وصل نشده‌اند (فاز ۳)؛ فقط در نسخه‌ی نمایشی دیده می‌شوند
-  { href: "/orders", label: "سفارش‌ها", demoOnly: true },
+  { href: "/orders", label: "سفارش‌ها", roles: ["buyer", "agent", "supplier", "admin"] },
 ];
 
 function linksFor(role: string | undefined): NavLink[] {
