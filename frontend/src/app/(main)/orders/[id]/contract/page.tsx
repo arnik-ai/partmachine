@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/ui/coming-soon";
 import { RequireAuth } from "@/features/auth/components/require-auth";
 import { ContractDocument } from "@/features/contracts/components/contract-document";
+import { ContractView } from "@/features/contracts/components/contract-view";
 import { MOCK_ORDERS } from "@/features/orders/mock";
 import { DEMO_MODE } from "@/lib/config";
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 // نسخه‌ی نمایشی (خروجی استاتیک): صفحه‌ی قرارداد سفارش‌های نمونه از پیش ساخته می‌شود.
-// در نسخه‌ی سروری این بخش هنوز فعال نیست و چیزی از پیش ساخته نمی‌شود.
+// در نسخه‌ی سروری چیزی از پیش ساخته نمی‌شود و هر صفحه هنگام درخواست رندر می‌شود.
 export function generateStaticParams() {
   return DEMO_MODE ? MOCK_ORDERS.map((o) => ({ id: o.id })) : [];
 }
@@ -24,14 +24,7 @@ export default async function ContractPage({
   const { id } = await params;
   return (
     <RequireAuth>
-      {DEMO_MODE ? (
-        <ContractDocument orderId={id} />
-      ) : (
-        <ComingSoon
-          title="قرارداد آنلاین به‌زودی"
-          description="تنظیم و پذیرش قرارداد پس از تأیید حقوقی متن و فرآیند امضا فعال می‌شود."
-        />
-      )}
+      {DEMO_MODE ? <ContractDocument orderId={id} /> : <ContractView orderId={id} />}
     </RequireAuth>
   );
 }

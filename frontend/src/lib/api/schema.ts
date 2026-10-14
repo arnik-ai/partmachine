@@ -757,6 +757,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orders/{order_id}/contract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Contract */
+        get: operations["get_contract_api_v1_orders__order_id__contract_get"];
+        /**
+         * Update Contract
+         * @description نسخه‌ی تازه با پارامترهای جدید؛ امضاهای نسخه‌ی قبلی دیگر معتبر نیستند (O5).
+         */
+        put: operations["update_contract_api_v1_orders__order_id__contract_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}/contract/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign Contract */
+        post: operations["sign_contract_api_v1_orders__order_id__contract_sign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}/contract/change-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request Change */
+        post: operations["request_change_api_v1_orders__order_id__contract_change_request_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pricing/estimate": {
         parameters: {
             query?: never;
@@ -1230,6 +1285,11 @@ export interface components {
             /** Newpassword */
             newPassword: string;
         };
+        /** ChangeRequestInput */
+        ChangeRequestInput: {
+            /** Note */
+            note: string;
+        };
         /** ConfirmDeliveryInput */
         ConfirmDeliveryInput: {
             /**
@@ -1237,6 +1297,114 @@ export interface components {
              * @default
              */
             note: string;
+        };
+        /** ContractArticleOut */
+        ContractArticleOut: {
+            /** Number */
+            number: number;
+            /** Title */
+            title: string;
+            /** Paragraphs */
+            paragraphs: string[];
+        };
+        /** ContractOut */
+        ContractOut: {
+            /**
+             * Orderid
+             * Format: uuid
+             */
+            orderId: string;
+            /** Ordernumber */
+            orderNumber: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "partially_signed" | "signed";
+            /** Version */
+            version: number;
+            terms: components["schemas"]["ContractTermsOut"];
+            /** Articles */
+            articles: components["schemas"]["ContractArticleOut"][];
+            /** Contentsha256 */
+            contentSha256: string;
+            /** Templateversion */
+            templateVersion: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Signedat */
+            signedAt?: string | null;
+            /** Signatures */
+            signatures: components["schemas"]["ContractSignatureOut"][];
+            /** History */
+            history: components["schemas"]["ContractVersionSummary"][];
+            /**
+             * Myside
+             * @enum {string}
+             */
+            mySide: "buyer" | "supplier" | "admin";
+            /** Isopen */
+            isOpen: boolean;
+            /** Canedit */
+            canEdit: boolean;
+            /** Cansign */
+            canSign: boolean;
+            /** Canrequestchange */
+            canRequestChange: boolean;
+            /** Draftnotice */
+            draftNotice: string;
+        };
+        /** ContractSignatureOut */
+        ContractSignatureOut: {
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "buyer" | "supplier";
+            /** Signername */
+            signerName: string;
+            /** Organizationname */
+            organizationName: string;
+            /**
+             * Signedat
+             * Format: date-time
+             */
+            signedAt: string;
+        };
+        /** ContractTermsOut */
+        ContractTermsOut: {
+            /**
+             * Deliverydue
+             * Format: date
+             */
+            deliveryDue: string;
+            /** Prepaymentpercent */
+            prepaymentPercent: number;
+            /** Penaltyperdaybp */
+            penaltyPerDayBp: number;
+            /** Penaltycappercent */
+            penaltyCapPercent: number;
+        };
+        /** ContractVersionSummary */
+        ContractVersionSummary: {
+            /** Number */
+            number: number;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /** Createdbyname */
+            createdByName?: string | null;
+            /** Changenote */
+            changeNote: string;
+            /** Contentsha256 */
+            contentSha256: string;
+            /** Signatures */
+            signatures: components["schemas"]["ContractSignatureOut"][];
         };
         /** CostComponent */
         CostComponent: {
@@ -2207,6 +2375,16 @@ export interface components {
             /** Fileid */
             fileId?: string | null;
         };
+        /**
+         * SignContractInput
+         * @description نسخه‌ای که امضاکننده خوانده است؛ اگر در این فاصله عوض شده باشد امضا رد می‌شود.
+         */
+        SignContractInput: {
+            /** Version */
+            version: number;
+            /** Password */
+            password: string;
+        };
         /** SubmitVerificationInput */
         SubmitVerificationInput: {
             /** Fileids */
@@ -2388,6 +2566,25 @@ export interface components {
             quality: number;
             /** Components */
             components: components["schemas"]["TrustScoreComponent"][];
+        };
+        /** UpdateContractInput */
+        UpdateContractInput: {
+            /**
+             * Deliverydue
+             * Format: date
+             */
+            deliveryDue: string;
+            /** Prepaymentpercent */
+            prepaymentPercent: number;
+            /** Penaltyperdaybp */
+            penaltyPerDayBp: number;
+            /** Penaltycappercent */
+            penaltyCapPercent: number;
+            /**
+             * Changenote
+             * @default
+             */
+            changeNote: string;
         };
         /** UserOut */
         UserOut: {
@@ -6867,6 +7064,394 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderDetailOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_contract_api_v1_orders__order_id__contract_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    update_contract_api_v1_orders__order_id__contract_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateContractInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sign_contract_api_v1_orders__order_id__contract_sign_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignContractInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    request_change_api_v1_orders__order_id__contract_change_request_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeRequestInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractOut"];
                 };
             };
             /** @description Bad Request */

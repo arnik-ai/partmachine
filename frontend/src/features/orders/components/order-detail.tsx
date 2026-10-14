@@ -43,6 +43,9 @@ const EVENT_LABELS: Record<string, string> = {
   cancel: "لغو سفارش",
   ship: "ثبت ارسال",
   confirm_delivery: "تأیید تحویل",
+  contract_revised: "نسخه‌ی تازه‌ی قرارداد",
+  contract_signed: "امضای قرارداد",
+  contract_change_requested: "درخواست اصلاح قرارداد",
 };
 
 export function OrderDetailView({ orderId }: { orderId: string }) {
@@ -218,8 +221,19 @@ function NextStep({ order }: { order: OrderDetail }) {
       <span className="flex items-start gap-2">
         <FileText className="h-5 w-5 shrink-0 text-primary" aria-hidden />
         <span>
-          قدم بعدی تنظیم و امضای قرارداد توسط مدیر هر دو طرف است. این بخش به‌زودی فعال می‌شود.
+          قدم بعدی تنظیم و امضای قرارداد توسط مدیر هر دو طرف است.
+          {order.mySide === "buyer" ? " شرایط قرارداد (تاریخ تحویل، پرداخت و جریمه) را شما تنظیم می‌کنید." : ""}{" "}
           تا پیش از امضای قرارداد، هر طرف می‌تواند سفارش را با ذکر دلیل لغو کند.
+        </span>
+      </span>
+    );
+  } else if (order.status === "awaiting_prepayment") {
+    message = (
+      <span className="flex items-start gap-2">
+        <Hourglass className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <span>
+          قرارداد امضا شد. تولید پس از پرداخت و تأیید پیش‌پرداخت شروع می‌شود؛ ثبت پرداخت به‌زودی
+          از همین صفحه فعال می‌شود.
         </span>
       </span>
     );
@@ -264,8 +278,20 @@ function NextStep({ order }: { order: OrderDetail }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-4 text-sm">
         {message}
-        {order.nextActions.length > 0 && (
+        {(order.nextActions.length > 0 || order.status !== "cancelled") && (
           <div className="flex flex-wrap gap-2">
+            {order.status !== "cancelled" && (
+              <Link
+                href={`/orders/${order.id}/contract`}
+                className={buttonVariants({
+                  variant: order.status === "awaiting_contract" ? "default" : "outline",
+                })}
+              >
+                {order.status === "awaiting_contract" && order.mySide !== "admin"
+                  ? "مشاهده و امضای قرارداد"
+                  : "مشاهده‌ی قرارداد"}
+              </Link>
+            )}
             {can("ship") && <Button onClick={() => open("ship")}>ثبت ارسال</Button>}
             {can("confirm_delivery") && (
               <Button onClick={() => open("confirm_delivery")}>تأیید تحویل</Button>

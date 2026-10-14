@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createRfq, quote, register, stamp } from "./helpers";
+import { PASSWORD, createRfq, inDays, quote, register, stamp } from "./helpers";
 
 /** سفارش (گام 3a): ساخت خودکار پس از انتخاب برنده، دید مشترک دو طرف، لغو با دلیل پیش از قرارداد. */
 
@@ -45,4 +45,69 @@ test("the winning order is shared by both sides and can be cancelled before the 
   const outsider = await register(browser, "buyer", "کاربر بیگانه");
   await outsider.goto(orderUrl);
   await expect(outsider.getByText("سفارش موردنظر پیدا نشد")).toBeVisible();
+});
+
+test("both owners sign the contract, then the order is shipped and delivered", async ({
+  browser,
+}) => {
+  const title = `قرارداد آزمون ${stamp}`;
+  const company = `کارگاه قرارداد ${stamp}`;
+  const buyer = await register(browser, "buyer", "کارفرمای قرارداد");
+  const rfqUrl = await createRfq(buyer, title);
+  const supplier = await register(browser, "supplier", "قطعه‌ساز قرارداد", company);
+  await supplier.goto(rfqUrl);
+  await quote(supplier, "120000000", "12");
+
+  await buyer.goto(rfqUrl);
+  await buyer.getByRole("button", { name: `انتخاب ${company} به‌عنوان برنده` }).click();
+  await buyer
+    .getByRole("dialog", { name: "انتخاب برنده" })
+    .getByRole("button", { name: "بله، برنده را انتخاب کن" })
+    .click();
+  await buyer.getByRole("link", { name: "مشاهده‌ی سفارش" }).click();
+  await buyer.waitForURL("**/orders/**");
+  const orderUrl = buyer.url();
+
+  // کارفرما تاریخ تحویل را تغییر می‌دهد (نسخه‌ی ۲) و امضا می‌کند
+  await buyer.getByRole("link", { name: "مشاهده و امضای قرارداد" }).click();
+  await buyer.waitForURL("**/contract");
+  await expect(buyer.getByText("پیش‌نویس است")).toBeVisible();
+  await buyer.getByLabel("تاریخ تحویل").fill(inDays(25));
+  await buyer.getByLabel("توضیح تغییر (اختیاری؛ در تاریخچه ثبت می‌شود)").fill("هماهنگی با خط تولید");
+  await buyer.getByRole("button", { name: "ذخیره‌ی شرایط" }).click();
+  await expect(buyer.getByText("نسخه‌ی تازه‌ی قرارداد ذخیره شد.")).toBeVisible();
+  await expect(buyer.getByText("نسخه‌ی ۲").first()).toBeVisible();
+
+  await buyer.getByRole("button", { name: "امضای قرارداد" }).click();
+  const signDialog = buyer.getByRole("dialog", { name: "امضای قرارداد" });
+  await signDialog.getByLabel("متن این نسخه را خوانده‌ام و از طرف سازمانم می‌پذیرم.").check();
+  await signDialog.getByLabel("رمز عبور حساب شما").fill(PASSWORD);
+  await signDialog.getByRole("button", { name: "امضا می‌کنم" }).click();
+  await expect(buyer.getByText("امضای شما ثبت شد؛ منتظر امضای طرف مقابل هستیم.")).toBeVisible();
+
+  // قطعه‌ساز امضا می‌کند ⇒ قرارداد نافذ و سفارش در تولید
+  await supplier.goto(`${orderUrl}/contract`);
+  await supplier.getByRole("button", { name: "امضای قرارداد" }).click();
+  const supplierDialog = supplier.getByRole("dialog", { name: "امضای قرارداد" });
+  await supplierDialog.getByLabel("متن این نسخه را خوانده‌ام و از طرف سازمانم می‌پذیرم.").check();
+  await supplierDialog.getByLabel("رمز عبور حساب شما").fill(PASSWORD);
+  await supplierDialog.getByRole("button", { name: "امضا می‌کنم" }).click();
+  await expect(supplier.getByText("امضاشده و نافذ")).toBeVisible();
+
+  await supplier.goto(orderUrl);
+  await expect(supplier.getByText("در حال تولید").first()).toBeVisible();
+  await supplier.getByRole("button", { name: "ثبت ارسال" }).click();
+  const shipDialog = supplier.getByRole("dialog", { name: "ثبت ارسال" });
+  await shipDialog.getByLabel("اطلاعات ارسال (اختیاری)").fill("باربری نمونه، بارنامه ۵۵۵");
+  await shipDialog.getByRole("button", { name: "ثبت ارسال" }).click();
+  await expect(supplier.getByText("ارسال‌شده").first()).toBeVisible();
+
+  await buyer.goto(orderUrl);
+  await buyer.getByRole("button", { name: "تأیید تحویل" }).click();
+  await buyer
+    .getByRole("dialog", { name: "تأیید تحویل" })
+    .getByRole("button", { name: "بله، کالا را تحویل گرفتم" })
+    .click();
+  await expect(buyer.getByText("تحویل‌شده").first()).toBeVisible();
+  await expect(buyer.getByText("باربری نمونه، بارنامه ۵۵۵")).toBeVisible();
 });

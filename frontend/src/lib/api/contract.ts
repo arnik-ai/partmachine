@@ -27,6 +27,7 @@ import type {
   InviteInfo,
   Organization,
 } from "@/features/organization/types";
+import type { Contract, UpdateContractInput } from "@/features/contracts/types";
 import type { OrderDetail, OrderPage } from "@/features/orders/types";
 import type {
   MyQuotation,
@@ -75,6 +76,7 @@ export type ResponseContract = [
   Check<Assignable<Schemas["MessageOut"], { detail: string }>>,
   Check<Assignable<Schemas["OrderDetailOut"], OrderDetail>>,
   Check<Assignable<Schemas["OrderPage"], OrderPage>>,
+  Check<Assignable<Schemas["ContractOut"], Contract>>,
 ];
 
 /** ورودی‌هایی که فرانت می‌فرستد باید برای سرور معتبر باشند */
@@ -96,6 +98,9 @@ export type RequestContract = [
   Check<Assignable<{ reason: string }, Schemas["CancelOrderInput"]>>,
   Check<Assignable<{ note: string; fileId?: string | null }, Schemas["ShipOrderInput"]>>,
   Check<Assignable<{ note: string }, Schemas["ConfirmDeliveryInput"]>>,
+  Check<Assignable<UpdateContractInput, Schemas["UpdateContractInput"]>>,
+  Check<Assignable<{ version: number; password: string }, Schemas["SignContractInput"]>>,
+  Check<Assignable<{ note: string }, Schemas["ChangeRequestInput"]>>,
 ];
 
 /**
