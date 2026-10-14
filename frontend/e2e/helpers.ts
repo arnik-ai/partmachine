@@ -27,7 +27,7 @@ export async function acceptTerms(page: Page): Promise<void> {
 
 export async function register(
   browser: Browser,
-  role: "buyer" | "supplier",
+  role: "buyer" | "supplier" | "qc",
   fullName: string,
   company?: string,
   email: string = uniqueEmail(role),
@@ -36,7 +36,9 @@ export async function register(
   await page.goto("/register");
   await page.getByLabel("نقش شما").selectOption(role);
   await page.getByLabel("نام و نام خانوادگی").fill(fullName);
-  if (company) await page.getByLabel("نام شرکت / کارگاه").fill(company);
+  if (company) {
+    await page.getByLabel(role === "qc" ? "نام آزمایشگاه" : "نام شرکت / کارگاه").fill(company);
+  }
   await page.getByLabel("ایمیل").fill(email);
   await page.getByLabel("رمز عبور").fill(PASSWORD);
   await acceptTerms(page);
@@ -72,4 +74,28 @@ export async function quote(page: Page, toman: string, days: string): Promise<vo
   await page.getByLabel("زمان تحویل (روز)").fill(days);
   await page.getByRole("button", { name: "ثبت پیشنهاد" }).click();
   await expect(page.getByText("پیشنهاد شما ثبت شد.")).toBeVisible();
+}
+
+/** کارفرما پیشنهاد قطعه‌ساز را برنده می‌کند و به صفحه‌ی سفارش ساخته‌شده می‌رود. */
+export async function awardWinner(buyer: Page, rfqUrl: string, company: string): Promise<string> {
+  await buyer.goto(rfqUrl);
+  await buyer.getByRole("button", { name: `انتخاب ${company} به‌عنوان برنده` }).click();
+  await buyer
+    .getByRole("dialog", { name: "انتخاب برنده" })
+    .getByRole("button", { name: "بله، برنده را انتخاب کن" })
+    .click();
+  await buyer.getByRole("link", { name: "مشاهده‌ی سفارش" }).click();
+  await buyer.waitForURL("**/orders/**");
+  return buyer.url();
+}
+
+/** مدیر سازمان نسخه‌ی فعلی قرارداد سفارش را با رمز عبورش امضا می‌کند. */
+export async function signContract(page: Page, orderUrl: string): Promise<void> {
+  await page.goto(`${orderUrl}/contract`);
+  await page.getByRole("button", { name: "امضای قرارداد" }).click();
+  const dialog = page.getByRole("dialog", { name: "امضای قرارداد" });
+  await dialog.getByLabel("متن این نسخه را خوانده‌ام و از طرف سازمانم می‌پذیرم.").check();
+  await dialog.getByLabel("رمز عبور حساب شما").fill(PASSWORD);
+  await dialog.getByRole("button", { name: "امضا می‌کنم" }).click();
+  await expect(dialog).toBeHidden();
 }

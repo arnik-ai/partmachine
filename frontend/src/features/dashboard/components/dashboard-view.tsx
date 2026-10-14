@@ -207,11 +207,10 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
   ],
   qc: [
     {
-      href: "/dashboard",
-      label: "درخواست‌های بازرسی",
-      description: "بازرسی ابعادی، متریال و جوش",
+      href: "/orders",
+      label: "سفارش‌های بازرسی",
+      description: "سفارش‌هایی که کارفرما شما را برای بازرسی کیفیتشان انتخاب کرده است",
       icon: ClipboardList,
-      demoOnly: true,
     },
     {
       href: "/suppliers",

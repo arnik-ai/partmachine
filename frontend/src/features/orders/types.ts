@@ -84,7 +84,9 @@ export type OrderStatus =
   | "disputed";
 
 export type OrderAction = "cancel" | "ship" | "confirm_delivery";
-export type OrderSide = "buyer" | "supplier" | "admin";
+export type InspectionStatus = "requested" | "ready" | "passed" | "failed";
+/** qc: آزمایشگاهی که کارفرما برای بازرسی همین سفارش انتخاب کرده است */
+export type OrderSide = "buyer" | "supplier" | "qc" | "admin";
 export type OrderStatusGroup = "active" | "completed" | "cancelled" | "all";
 
 export interface OrderFile {
@@ -115,7 +117,8 @@ export interface OrderSummary {
   material: string;
   quantity: number;
   deliveryCity: string;
-  amountRials: number;
+  /** برای آزمایشگاه null است (مبلغ و پرداخت‌ها فقط برای دو طرف) */
+  amountRials: number | null;
   leadTimeDays: number;
   deliveryDue: string;
   isOverdue: boolean;
@@ -126,6 +129,8 @@ export interface OrderSummary {
   /** طرفی که بیننده در این سفارش است، و کارهایی که همین حالا مجاز است (از سرور) */
   mySide: OrderSide;
   nextActions: OrderAction[];
+  /** اگر کارفرما آزمایشگاه بازرسی انتخاب کرده باشد */
+  inspection?: { status: InspectionStatus; lab: { organizationId: string; name: string } } | null;
   createdAt: string;
   updatedAt: string;
   shippedAt?: string | null;
@@ -166,6 +171,11 @@ export const ORDER_FLOW: Array<{ status: OrderStatus; label: string; description
     description: "تنظیم قرارداد و امضای مدیر هر دو طرف",
   },
   { status: "in_production", label: "تولید", description: "قطعه‌ساز مشغول ساخت است" },
+  {
+    status: "in_inspection",
+    label: "کنترل کیفیت",
+    description: "بازرسی توسط آزمایشگاه تأییدشده (فقط اگر کارفرما انتخاب کرده باشد)",
+  },
   { status: "shipped", label: "ارسال", description: "قطعه‌ساز مرسوله را با اطلاعات ارسال فرستاد" },
   { status: "delivered", label: "تحویل", description: "کارفرما دریافت را تأیید کرد" },
   { status: "completed", label: "تکمیل", description: "تسویه و پایان سفارش" },

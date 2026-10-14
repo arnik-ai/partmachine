@@ -28,6 +28,7 @@ import type {
   Organization,
 } from "@/features/organization/types";
 import type { Contract, UpdateContractInput } from "@/features/contracts/types";
+import type { Inspection, InspectionResultInput, QcLabList } from "@/features/inspections/types";
 import type { OrderDetail, OrderPage } from "@/features/orders/types";
 import type { Payments, ReportPaymentInput } from "@/features/payments/types";
 import type {
@@ -79,6 +80,8 @@ export type ResponseContract = [
   Check<Assignable<Schemas["OrderPage"], OrderPage>>,
   Check<Assignable<Schemas["ContractOut"], Contract>>,
   Check<Assignable<Schemas["PaymentsOut"], Payments>>,
+  Check<Assignable<Schemas["InspectionOut"], Inspection>>,
+  Check<Assignable<Schemas["QcLabList"], QcLabList>>,
 ];
 
 /** ورودی‌هایی که فرانت می‌فرستد باید برای سرور معتبر باشند */
@@ -105,6 +108,9 @@ export type RequestContract = [
   Check<Assignable<{ note: string }, Schemas["ChangeRequestInput"]>>,
   Check<Assignable<ReportPaymentInput, Schemas["ReportPaymentInput"]>>,
   Check<Assignable<{ reason: string }, Schemas["RejectPaymentInput"]>>,
+  Check<Assignable<{ labOrganizationId: string }, Schemas["ChooseLabInput"]>>,
+  Check<Assignable<{ note: string }, Schemas["MarkReadyInput"]>>,
+  Check<Assignable<InspectionResultInput, Schemas["InspectionResultInput"]>>,
 ];
 
 /**

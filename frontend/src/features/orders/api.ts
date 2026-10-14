@@ -61,6 +61,7 @@ export function useOrderAction(id: string) {
     onSuccess: (order) => {
       queryClient.setQueryData(["orders", "detail", id], order);
       void queryClient.invalidateQueries({ queryKey: ["orders", "list"] });
+      void queryClient.invalidateQueries({ queryKey: ["inspection", id] });
       void queryClient.invalidateQueries({ queryKey: ["rfqs"] });
       void queryClient.invalidateQueries({ queryKey: ["quotations"] });
     },

@@ -30,7 +30,8 @@ type Dialog = { kind: "report" | "confirm" | "reject"; payment: Payment } | null
 
 /** اقساط سفارش طبق قرارداد. پول از پلتفرم عبور نمی‌کند؛ فقط اعلام و تأیید ثبت می‌شود. */
 export function PaymentsCard({ order }: { order: OrderDetail }) {
-  const signed = !["awaiting_contract", "cancelled"].includes(order.status);
+  const signed =
+    order.mySide !== "qc" && !["awaiting_contract", "cancelled"].includes(order.status);
   const { data, isLoading, isError, error, refetch } = usePayments(order.id, signed);
   const action = usePaymentAction(order.id);
   const [dialog, setDialog] = useState<Dialog>(null);

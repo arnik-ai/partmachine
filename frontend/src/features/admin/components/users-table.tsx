@@ -216,6 +216,15 @@ function UserRow({
         <span className="text-xs text-muted-foreground">
           {user.organizationName} — عضو از {faDate(user.createdAt)}
         </span>
+        {user.role === "qc" && (
+          <span className="text-xs text-muted-foreground">
+            {user.orgRole !== "owner"
+              ? "آزمایشگاه با تأیید حساب مدیرش تأیید می‌شود، نه حساب اعضا."
+              : user.verified
+                ? "این آزمایشگاه در فهرست انتخاب کارفرماها برای بازرسی کیفیت است."
+                : "با تأیید این حساب، آزمایشگاه در فهرست انتخاب کارفرماها برای بازرسی کیفیت قرار می‌گیرد."}
+          </span>
+        )}
       </div>
       {user.role !== "admin" && (
         <div className="flex flex-wrap gap-2">

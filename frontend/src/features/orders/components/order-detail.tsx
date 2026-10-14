@@ -10,6 +10,7 @@ import {
   Download,
   FileText,
   Hourglass,
+  Microscope,
   Truck,
   XCircle,
 } from "lucide-react";
@@ -24,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadFile } from "@/features/files/api";
 import { FileUploader, type UploadState } from "@/features/files/components/file-uploader";
+import { InspectionCard } from "@/features/inspections/components/inspection-card";
 import { PaymentsCard } from "@/features/payments/components/payments-card";
 import { ApiError, errorMessage } from "@/lib/api-client";
 import { faDate, faDateTime, faNumber, faToman } from "@/lib/utils";
@@ -50,6 +52,12 @@ const EVENT_LABELS: Record<string, string> = {
   payment_reported: "اعلام پرداخت",
   payment_confirmed: "تأیید دریافت پرداخت",
   payment_rejected: "رد اعلام پرداخت",
+  inspection_requested: "درخواست بازرسی کیفیت",
+  inspection_lab_changed: "تغییر آزمایشگاه بازرسی",
+  inspection_removed: "حذف بازرسی کیفیت",
+  inspection_ready: "اعلام آمادگی برای بازرسی",
+  inspection_passed: "قبولی بازرسی",
+  inspection_failed: "رد بازرسی",
   completed: "تکمیل سفارش",
 };
 
@@ -89,8 +97,10 @@ export function OrderDetailView({ orderId }: { orderId: string }) {
         بازگشت به سفارش‌ها
       </Link>
       <OrderHeader order={order} />
-      <NextStep order={order} />
-      <PaymentsCard order={order} />
+      {/* آزمایشگاه فقط بخش بازرسی را دارد؛ مبلغ، پرداخت‌ها و قرارداد برایش نیست */}
+      {order.mySide !== "qc" && <NextStep order={order} />}
+      <InspectionCard order={order} />
+      {order.mySide !== "qc" && <PaymentsCard order={order} />}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -110,7 +120,7 @@ function OrderHeader({ order }: { order: OrderDetail }) {
   const facts = [
     ["تعداد", `${faNumber(order.quantity)} عدد`],
     ["متریال", order.material],
-    ["مبلغ", faToman(order.amountRials)],
+    ...(order.amountRials !== null ? [["مبلغ", faToman(order.amountRials)]] : []),
     ["زمان تولید", `${faNumber(order.leadTimeDays)} روز`],
     ["تاریخ تحویل تعهدشده", faDate(order.deliveryDue)],
     ["محل تحویل", order.deliveryCity],
@@ -163,12 +173,14 @@ function OrderHeader({ order }: { order: OrderDetail }) {
             </div>
           ))}
         </dl>
-        <Link
-          href={`/rfqs/${order.rfqId}`}
-          className="self-start text-sm text-primary hover:underline"
-        >
-          مشاهده‌ی درخواست و پیشنهادها
-        </Link>
+        {order.mySide !== "qc" && (
+          <Link
+            href={`/rfqs/${order.rfqId}`}
+            className="self-start text-sm text-primary hover:underline"
+          >
+            مشاهده‌ی درخواست و پیشنهادها
+          </Link>
+        )}
       </CardContent>
     </Card>
   );
@@ -251,6 +263,24 @@ function NextStep({ order }: { order: OrderDetail }) {
       <span className="flex items-start gap-2">
         <Truck className="h-5 w-5 shrink-0 text-primary" aria-hidden />
         <span>پس از آماده شدن سفارش، ارسال را با اطلاعات باربری و بارنامه ثبت کنید.</span>
+      </span>
+    );
+  } else if (order.status === "in_inspection") {
+    message = (
+      <span className="flex items-start gap-2">
+        <Microscope className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <span>سفارش در مرحله‌ی بازرسی کیفیت است؛ جزئیات و نتیجه در بخش «کنترل کیفیت».</span>
+      </span>
+    );
+  } else if (order.status === "in_production" && order.inspection) {
+    message = (
+      <span className="flex items-start gap-2">
+        <Microscope className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <span>
+          {order.mySide === "supplier"
+            ? "پیش از ارسال، بازرسی کیفیت لازم است. وقتی قطعات آماده شد، در بخش «کنترل کیفیت» آمادگی برای بازرسی را اعلام کنید."
+            : "قطعه‌ساز در حال تولید است؛ پس از آماده شدن، آزمایشگاه قطعات را پیش از ارسال بازرسی می‌کند."}
+        </span>
       </span>
     );
   } else if (can("confirm_delivery")) {

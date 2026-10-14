@@ -48,6 +48,8 @@ export function usePaymentAction(orderId: string) {
     onSuccess: (payments) => {
       queryClient.setQueryData(["payments", orderId], payments);
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
+      // تأیید پیش‌پرداخت تولید را شروع می‌کند و «اعلام آمادگی برای بازرسی» را باز می‌کند
+      void queryClient.invalidateQueries({ queryKey: ["inspection", orderId] });
     },
   });
 }

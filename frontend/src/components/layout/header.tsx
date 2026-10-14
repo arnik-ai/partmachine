@@ -22,7 +22,7 @@ const NAV_LINKS: readonly NavLink[] = [
   { href: "/suppliers", label: "قطعه‌سازان" },
   { href: "/rfqs", label: "درخواست‌های من", roles: ["buyer", "agent"] },
   { href: "/organization", label: "سازمان من", roles: ["buyer", "supplier", "agent", "qc"] },
-  { href: "/orders", label: "سفارش‌ها", roles: ["buyer", "agent", "supplier", "admin"] },
+  { href: "/orders", label: "سفارش‌ها", roles: ["buyer", "agent", "supplier", "qc", "admin"] },
 ];
 
 function linksFor(role: string | undefined): NavLink[] {

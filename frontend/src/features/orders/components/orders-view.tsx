@@ -8,6 +8,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { INSPECTION_STATUS_LABELS } from "@/features/inspections/types";
 import { faDate, faNumber, faToman } from "@/lib/utils";
 import { ORDERS_PAGE_SIZE, useOrders } from "../api";
 import {
@@ -103,7 +104,13 @@ export function OrdersView() {
 }
 
 function OrderRow({ order }: { order: OrderSummary }) {
-  const counterpart = order.mySide === "supplier" ? order.buyer.name : order.supplier.name;
+  // آزمایشگاه هر دو طرف را می‌بیند؛ هر طرف، طرف مقابلش را
+  const parties =
+    order.mySide === "qc"
+      ? `کارفرما: ${order.buyer.name} · قطعه‌ساز: ${order.supplier.name}`
+      : order.mySide === "supplier"
+        ? `کارفرما: ${order.buyer.name}`
+        : `قطعه‌ساز: ${order.supplier.name}`;
   return (
     <Link href={`/orders/${order.id}`} className="block">
       <Card className="rounded-2xl transition-shadow hover:shadow-md">
@@ -114,9 +121,9 @@ function OrderRow({ order }: { order: OrderSummary }) {
               {order.title}
             </span>
             <span className="text-xs text-muted-foreground">
-              <span dir="ltr">{orderNumber(order.number)}</span> ·{" "}
-              {order.mySide === "supplier" ? "کارفرما" : "قطعه‌ساز"}: {counterpart} ·{" "}
-              {faNumber(order.quantity)} عدد · {faToman(order.amountRials)}
+              <span dir="ltr">{orderNumber(order.number)}</span> · {parties} ·{" "}
+              {faNumber(order.quantity)} عدد
+              {order.amountRials !== null && ` · ${faToman(order.amountRials)}`}
             </span>
             <span className="text-xs text-muted-foreground">
               تحویل تعهدشده: {faDate(order.deliveryDue)}
@@ -126,6 +133,11 @@ function OrderRow({ order }: { order: OrderSummary }) {
             <Badge variant={order.status === "cancelled" ? "destructive" : "secondary"}>
               {ORDER_STATUS_LABELS[order.status]}
             </Badge>
+            {order.inspection && (
+              <Badge variant={order.inspection.status === "failed" ? "destructive" : "secondary"}>
+                کنترل کیفیت: {INSPECTION_STATUS_LABELS[order.inspection.status]}
+              </Badge>
+            )}
             {order.isOverdue && (
               <Badge variant="destructive">
                 <AlertTriangle className="h-3.5 w-3.5" aria-hidden />

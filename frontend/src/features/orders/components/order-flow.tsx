@@ -2,20 +2,20 @@ import { Check, Loader2 } from "lucide-react";
 import { cn, faDate } from "@/lib/utils";
 import { ORDER_FLOW, type OrderDetail, type OrderStatus } from "../types";
 
-/** جایگاه هر وضعیت در مسیر اصلی (پیش‌پرداخت و بازرسی جزئی از مرحله‌ی تولیدند) */
-const STEP_OF: Partial<Record<OrderStatus, number>> = {
-  awaiting_contract: 0,
-  awaiting_prepayment: 1,
-  in_production: 1,
-  in_inspection: 1,
-  shipped: 2,
-  delivered: 3,
-  completed: 4,
+/** وضعیتی که هر مرحله‌ی مسیر را نشان می‌دهد (پیش‌پرداخت جزئی از مرحله‌ی تولید است) */
+const STEP_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
+  awaiting_prepayment: "in_production",
 };
 
 /** خط زمان سفارش واقعی: مرحله‌ی فعلی، مراحل انجام‌شده با تاریخ، و مراحل پیش رو */
 export function OrderFlow({ order }: { order: OrderDetail }) {
-  const current = STEP_OF[order.status] ?? 0;
+  // مرحله‌ی «کنترل کیفیت» فقط وقتی دیده می‌شود که کارفرما آزمایشگاه انتخاب کرده باشد
+  const withInspection = Boolean(order.inspection) || order.status === "in_inspection";
+  const steps = ORDER_FLOW.filter((step) => withInspection || step.status !== "in_inspection");
+  const index = steps.findIndex(
+    (step) => step.status === (STEP_STATUS[order.status] ?? order.status),
+  );
+  const current = Math.max(index, 0);
   const finished = order.status === "completed";
   const reachedAt = new Map<string, string>();
   for (const event of order.events) {
@@ -26,10 +26,10 @@ export function OrderFlow({ order }: { order: OrderDetail }) {
 
   return (
     <ol className="flex flex-col">
-      {ORDER_FLOW.map((step, i) => {
+      {steps.map((step, i) => {
         const isDone = i < current || (finished && i === current);
         const isCurrent = i === current && !finished;
-        const isLast = i === ORDER_FLOW.length - 1;
+        const isLast = i === steps.length - 1;
         const date = reachedAt.get(step.status);
         return (
           <li key={step.status} className="relative flex gap-3 pb-1">
