@@ -34,6 +34,7 @@ from app.modules.rfqs import lifecycle
 from app.modules.rfqs import service as rfq_service
 from app.modules.rfqs.models import Rfq
 from app.modules.rfqs.policies import RfqView, can_manage
+from app.modules.suppliers import track_record
 from app.modules.suppliers.models import Supplier
 from app.modules.suppliers.service import supplier_for_organization, trust_score
 
@@ -277,6 +278,9 @@ async def submit(
     except IntegrityError:
         await db.rollback()
         raise Conflict(DUPLICATE_QUOTE, code="duplicate_quotation") from None
+    # سرعت پاسخ در سابقه‌ی قطعه‌ساز؛ جدا از ثبت پیشنهاد تا خطای احتمالی آن را باطل نکند
+    await track_record.refresh(db, supplier.id)
+    await db.commit()
     return to_out(quotation, supplier, rfq)
 
 

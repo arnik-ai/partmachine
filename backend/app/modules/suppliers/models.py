@@ -35,6 +35,19 @@ class Supplier(Base, UUIDPrimaryKey, TimestampMixin):
         CheckConstraint("satisfaction_score BETWEEN 0 AND 100", name="satisfaction_range"),
         CheckConstraint("dispute_count >= 0", name="disputes_non_negative"),
         CheckConstraint("completed_jobs >= 0", name="jobs_non_negative"),
+        CheckConstraint(
+            "delivered_jobs >= 0 AND on_time_jobs >= 0 AND on_time_jobs <= delivered_jobs",
+            name="delivery_record_valid",
+        ),
+        CheckConstraint(
+            "inspected_jobs >= 0 AND first_pass_jobs >= 0 AND first_pass_jobs <= inspected_jobs",
+            name="inspection_record_valid",
+        ),
+        CheckConstraint(
+            "rating_count >= 0 AND rating_total BETWEEN rating_count AND rating_count * 5",
+            name="rating_record_valid",
+        ),
+        CheckConstraint("responses_count >= 0", name="responses_non_negative"),
     )
 
     organization_id: Mapped[uuid.UUID] = mapped_column(
@@ -75,5 +88,16 @@ class Supplier(Base, UUIDPrimaryKey, TimestampMixin):
     quality_score: Mapped[float] = mapped_column(Float, default=85, server_default="85")
     satisfaction_score: Mapped[float] = mapped_column(Float, default=85, server_default="85")
     dispute_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+
+    # سابقه‌ی واقعی در پارت‌ماشین (O12). track_record.refresh این شمارش‌ها را از سفارش‌ها،
+    # بازرسی‌ها، امتیازها، اختلاف‌ها و پیشنهادها دوباره می‌سازد و نرخ‌ها و امتیازهای بالا را از
+    # همین شمارش‌ها و مقدار اولیه به‌روز می‌کند
+    delivered_jobs: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    on_time_jobs: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    inspected_jobs: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    first_pass_jobs: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    rating_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    rating_total: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    responses_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     search_text: Mapped[str] = mapped_column(Text, Computed(SEARCH_TEXT_SQL, persisted=True))

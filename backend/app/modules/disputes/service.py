@@ -33,6 +33,7 @@ from app.modules.orders import service as orders
 from app.modules.orders.models import Order
 from app.modules.orders.schemas import OrderFileOut
 from app.modules.organizations.models import Organization
+from app.modules.suppliers import track_record
 
 NOT_FOUND = "اختلاف موردنظر پیدا نشد."
 RESOLUTION_LABELS = {
@@ -176,6 +177,8 @@ async def resolve(
             title=f"پشتیبانی درباره‌ی سفارش {orders.ref(order)} تصمیم گرفت: {label}",
             body=data.reason,
         )
+    if order.status == "completed":
+        await track_record.refresh(db, order.supplier_id)
     audit.record(
         db,
         action="dispute.resolved",

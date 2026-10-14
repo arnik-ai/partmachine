@@ -38,6 +38,7 @@ from app.modules.orders.lifecycle import Side
 from app.modules.orders.models import Order
 from app.modules.orders.schemas import OrderFileOut, OrderPartyOut
 from app.modules.organizations.models import Organization
+from app.modules.suppliers import track_record
 
 # آزمایشگاه پیش از ارسال (و تا پیش از قبولی بازرسی) انتخاب، عوض یا حذف می‌شود
 OPEN_FOR_CHOICE = frozenset(
@@ -461,6 +462,7 @@ async def record_result(
             title=f"بازرسی سفارش {orders.ref(order)} {verdict} شد",
             body=data.note,
         )
+    await track_record.refresh(db, order.supplier_id)
     _audit(db, user, order, inspection.status, attempt=inspection.attempt)
     await db.commit()
     return await _out(db, user, order, side, inspection)

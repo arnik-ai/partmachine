@@ -29,6 +29,8 @@ DEV_SEED_PASSWORD = "PartMachine-dev-1234"
 BUYER_EMAIL = "buyer@partmachine.ir"
 SUPPLIER_EMAIL = "supplier@partmachine.ir"
 
+# سابقه (پروژه‌ی تکمیل‌شده، تحویل به‌موقع، امتیازها) ساختگی ساخته نمی‌شود؛ از سفارش‌های واقعی
+# می‌آید (O12) و تا آن موقع مقدار اولیه نمایش داده می‌شود
 SUPPLIERS = [
     {
         "company_name": "صنایع دقیق‌تراش آریا",
@@ -48,13 +50,7 @@ SUPPLIERS = [
         ],
         "production_capacity_per_month": 12000,
         "lead_time_days": 14,
-        "completed_jobs": 312,
-        "on_time_delivery_rate": 0.96,
-        "response_time_hours": 2,
         "verified": True,
-        "quality_score": 91,
-        "satisfaction_score": 93,
-        "dispute_count": 0,
         "gallery_titles": ["فلنج استیل ۳۰۴", "شفت CNC فولادی", "بوش برنجی"],
     },
     {
@@ -72,13 +68,7 @@ SUPPLIERS = [
         ],
         "production_capacity_per_month": 500000,
         "lead_time_days": 30,
-        "completed_jobs": 198,
-        "on_time_delivery_rate": 0.91,
-        "response_time_hours": 5,
         "verified": True,
-        "quality_score": 86,
-        "satisfaction_score": 88,
-        "dispute_count": 1,
         "gallery_titles": ["قالب دو حفره‌ای بدنه", "قطعات ABS تولید انبوه"],
     },
     {
@@ -94,13 +84,7 @@ SUPPLIERS = [
         ],
         "production_capacity_per_month": 200000,
         "lead_time_days": 25,
-        "completed_jobs": 421,
-        "on_time_delivery_rate": 0.93,
-        "response_time_hours": 8,
         "verified": True,
-        "quality_score": 89,
-        "satisfaction_score": 90,
-        "dispute_count": 0,
         "gallery_titles": [],
     },
     {
@@ -114,13 +98,7 @@ SUPPLIERS = [
         "certifications": [],
         "production_capacity_per_month": 2000,
         "lead_time_days": 7,
-        "completed_jobs": 67,
-        "on_time_delivery_rate": 0.82,
-        "response_time_hours": 1,
         "verified": False,
-        "quality_score": 70,
-        "satisfaction_score": 78,
-        "dispute_count": 2,
         "gallery_titles": [],
     },
     {
@@ -137,13 +115,7 @@ SUPPLIERS = [
         ],
         "production_capacity_per_month": 50000,
         "lead_time_days": 35,
-        "completed_jobs": 502,
-        "on_time_delivery_rate": 0.95,
-        "response_time_hours": 12,
         "verified": True,
-        "quality_score": 92,
-        "satisfaction_score": 91,
-        "dispute_count": 0,
         "gallery_titles": [],
     },
 ]

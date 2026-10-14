@@ -35,13 +35,16 @@ from app.modules.orders.schemas import (
     OrderInspectionSummaryOut,
     OrderOut,
     OrderPartyOut,
+    OrderRatingOut,
     OrderSupplierOut,
     StatusGroup,
 )
 from app.modules.organizations.models import Organization
 from app.modules.payments.models import OrderPayment
 from app.modules.quotations.models import Quotation
+from app.modules.ratings.models import OrderRating
 from app.modules.rfqs.models import Rfq
+from app.modules.suppliers import track_record
 from app.modules.suppliers.models import Supplier
 
 ORDER_NOT_FOUND = "سفارش موردنظر پیدا نشد."
@@ -393,7 +396,33 @@ async def get_order(db: AsyncSession, user: CurrentUser, order_id: uuid.UUID) ->
     lab = user.organization_id if side == "qc" else None
     events = await _events(db, order_id, lab_organization_id=lab)
     dispute = await _open_dispute(db, order_id) if side != "qc" else None
-    return OrderDetailOut(**base.model_dump(), events=events, dispute=dispute)
+    rating = await _rating(db, order_id) if side != "qc" else None
+    return OrderDetailOut(
+        **base.model_dump(),
+        events=events,
+        dispute=dispute,
+        rating=rating,
+        can_rate=side == "buyer" and base.status == "completed",
+    )
+
+
+async def _rating(db: AsyncSession, order_id: uuid.UUID) -> OrderRatingOut | None:
+    row = (
+        await db.execute(
+            select(OrderRating, User.full_name)
+            .outerjoin(User, User.id == OrderRating.rated_by_id)
+            .where(OrderRating.order_id == order_id)
+        )
+    ).first()
+    if row is None:
+        return None
+    rating, rated_by = row
+    return OrderRatingOut(
+        score=rating.score,
+        comment=rating.comment,
+        rated_by_name=rated_by,
+        updated_at=rating.updated_at,
+    )
 
 
 async def _open_dispute(db: AsyncSession, order_id: uuid.UUID) -> OrderDisputeOut | None:
@@ -506,6 +535,8 @@ async def transition(
         order.completed_at = now
         record_event(db, order, "completed", rule.to_status, "completed", None, "system")
     await _notify_transition(db, order, action, side, user, note)
+    if order.status == "completed" or (action == "dispute" and side == "buyer"):
+        await track_record.refresh(db, order.supplier_id)  # سابقه‌ی واقعی قطعه‌ساز (O12)
     audit.record(
         db,
         action=f"order.{action}",

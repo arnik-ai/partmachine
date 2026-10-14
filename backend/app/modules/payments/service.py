@@ -28,6 +28,7 @@ from app.modules.payments.schemas import (
     RejectPaymentInput,
     ReportPaymentInput,
 )
+from app.modules.suppliers import track_record
 
 PAYMENT_NOT_FOUND = "قسط موردنظر پیدا نشد."
 # قسط پایانی از زمان ارسال به بعد قابل اعلام است
@@ -307,6 +308,8 @@ async def confirm(
         if changed and order.status == "in_production"
         else "",
     )
+    if order.status == "completed":
+        await track_record.refresh(db, order.supplier_id)
     audit.record(
         db,
         action="payment.confirmed",

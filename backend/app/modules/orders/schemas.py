@@ -71,6 +71,15 @@ class OrderDisputeOut(CamelModel):
     opened_at: datetime
 
 
+class OrderRatingOut(CamelModel):
+    """امتیاز کارفرما پس از تکمیل؛ توضیح فقط برای دو طرف همین سفارش."""
+
+    score: int
+    comment: str
+    rated_by_name: str | None = None
+    updated_at: datetime
+
+
 class OrderEventOut(CamelModel):
     id: uuid.UUID
     action: str
@@ -117,6 +126,9 @@ class OrderOut(CamelModel):
 class OrderDetailOut(OrderOut):
     events: list[OrderEventOut]
     dispute: OrderDisputeOut | None = None
+    rating: OrderRatingOut | None = None
+    # کارفرما پس از تکمیل می‌تواند امتیاز بدهد یا آن را تغییر دهد
+    can_rate: bool = False
 
 
 class OrderPage(CamelModel):

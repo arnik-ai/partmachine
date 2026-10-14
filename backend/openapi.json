@@ -8682,6 +8682,135 @@
         }
       }
     },
+    "/api/v1/orders/{order_id}/rating": {
+      "put": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Rate Order",
+        "description": "ثبت یا تغییر امتیاز ۱ تا ۵ (فقط کارفرما، پس از تکمیل سفارش).",
+        "operationId": "rate_order_api_v1_orders__order_id__rating_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RatingInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
     "/api/v1/pricing/estimate": {
       "post": {
         "tags": [
@@ -12608,6 +12737,32 @@
             "type": "integer",
             "title": "Completedjobs"
           },
+          "deliveredJobs": {
+            "type": "integer",
+            "title": "Deliveredjobs",
+            "default": 0
+          },
+          "onTimeJobs": {
+            "type": "integer",
+            "title": "Ontimejobs",
+            "default": 0
+          },
+          "ratingCount": {
+            "type": "integer",
+            "title": "Ratingcount",
+            "default": 0
+          },
+          "ratingAverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratingaverage"
+          },
           "onTimeDeliveryRate": {
             "type": "number",
             "title": "Ontimedeliveryrate"
@@ -12994,6 +13149,21 @@
                 "type": "null"
               }
             ]
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderRatingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canRate": {
+            "type": "boolean",
+            "title": "Canrate",
+            "default": false
           }
         },
         "type": "object",
@@ -13528,6 +13698,42 @@
           "name"
         ],
         "title": "OrderPartyOut"
+      },
+      "OrderRatingOut": {
+        "properties": {
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "comment": {
+            "type": "string",
+            "title": "Comment"
+          },
+          "ratedByName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratedbyname"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "score",
+          "comment",
+          "updatedAt"
+        ],
+        "title": "OrderRatingOut",
+        "description": "امتیاز کارفرما پس از تکمیل؛ توضیح فقط برای دو طرف همین سفارش."
       },
       "OrderSupplierOut": {
         "properties": {
@@ -14067,6 +14273,27 @@
           "isAwarded"
         ],
         "title": "QuotationOut"
+      },
+      "RatingInput": {
+        "properties": {
+          "score": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Score"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Comment",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "score"
+        ],
+        "title": "RatingInput"
       },
       "RegisterInput": {
         "properties": {
@@ -14908,6 +15135,32 @@
           "completedJobs": {
             "type": "integer",
             "title": "Completedjobs"
+          },
+          "deliveredJobs": {
+            "type": "integer",
+            "title": "Deliveredjobs",
+            "default": 0
+          },
+          "onTimeJobs": {
+            "type": "integer",
+            "title": "Ontimejobs",
+            "default": 0
+          },
+          "ratingCount": {
+            "type": "integer",
+            "title": "Ratingcount",
+            "default": 0
+          },
+          "ratingAverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratingaverage"
           },
           "onTimeDeliveryRate": {
             "type": "number",

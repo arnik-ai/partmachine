@@ -60,7 +60,13 @@ class SupplierOut(CamelModel):
     certifications: list[SupplierCertification]
     production_capacity_per_month: int | None = None
     lead_time_days: int
+    # سابقه‌ی واقعی در پارت‌ماشین (O12)
     completed_jobs: int
+    delivered_jobs: int = 0
+    on_time_jobs: int = 0
+    rating_count: int = 0
+    # میانگین امتیاز ۱ تا ۵ کارفرماها؛ بدون امتیاز null
+    rating_average: float | None = None
     on_time_delivery_rate: float
     response_time_hours: float
     verified: bool

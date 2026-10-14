@@ -13,6 +13,7 @@ from app.modules.audit import service as audit
 from app.modules.files.models import StoredFile
 from app.modules.identity.deps import CurrentUser
 from app.modules.organizations.models import Organization
+from app.modules.suppliers import track_record
 from app.modules.suppliers.models import Supplier
 from app.modules.suppliers.schemas import (
     MySupplierOut,
@@ -50,6 +51,7 @@ def trust_score(supplier: Supplier) -> dict[str, Any]:
         response_time_hours=supplier.response_time_hours,
         dispute_count=supplier.dispute_count,
         completed_jobs=supplier.completed_jobs,
+        record=track_record.of(supplier),
     )
 
 
@@ -84,6 +86,10 @@ def to_out(supplier: Supplier, portfolio: Sequence[uuid.UUID] = ()) -> SupplierO
             "production_capacity_per_month": supplier.production_capacity_per_month,
             "lead_time_days": supplier.lead_time_days,
             "completed_jobs": supplier.completed_jobs,
+            "delivered_jobs": supplier.delivered_jobs,
+            "on_time_jobs": supplier.on_time_jobs,
+            "rating_count": supplier.rating_count,
+            "rating_average": track_record.of(supplier).rating_average,
             "on_time_delivery_rate": supplier.on_time_delivery_rate,
             "response_time_hours": supplier.response_time_hours,
             "verified": supplier.verified,
