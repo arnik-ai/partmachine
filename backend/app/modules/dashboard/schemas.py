@@ -18,6 +18,7 @@ StatKey = Literal[
     "inspections_passed",
     # ادمین
     "pending_verifications",
+    "open_disputes",
     "unverified_accounts",
     "active_users",
 ]

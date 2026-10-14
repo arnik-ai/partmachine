@@ -17,6 +17,7 @@ from sqlalchemy.orm import aliased
 from app.core.errors import Conflict, Forbidden, NotFound, field_error
 from app.core.time import business_today, utcnow
 from app.modules.audit import service as audit
+from app.modules.disputes.models import OrderDispute
 from app.modules.files.models import StoredFile
 from app.modules.identity.deps import CurrentUser
 from app.modules.identity.models import User
@@ -26,7 +27,9 @@ from app.modules.orders import lifecycle
 from app.modules.orders.lifecycle import Action, Side
 from app.modules.orders.models import Order, OrderEvent
 from app.modules.orders.schemas import (
+    CancelRequestOut,
     OrderDetailOut,
+    OrderDisputeOut,
     OrderEventOut,
     OrderFileOut,
     OrderInspectionSummaryOut,
@@ -43,6 +46,8 @@ from app.modules.suppliers.models import Supplier
 
 ORDER_NOT_FOUND = "سفارش موردنظر پیدا نشد."
 NOT_YOUR_STEP = "این مرحله با طرف دیگر سفارش است."
+REASON_REQUIRED = "دلیل لغو را بنویسید؛ طرف مقابل آن را می‌بیند."
+SIDE_NAMES = {"buyer": "کارفرما", "supplier": "قطعه‌ساز"}
 INSPECTION_REQUIRED = (
     "این سفارش بازرسی کیفیت دارد و ارسال فقط پس از قبولی بازرسی ممکن است. ابتدا آمادگی برای "
     "بازرسی را اعلام کنید."
@@ -233,6 +238,16 @@ def _out(row: Any, user: CurrentUser) -> OrderOut:
         )
         if inspection_status is not None
         else None,
+        cancel_request=CancelRequestOut(
+            side=order.cancel_requested_side,
+            reason=order.cancel_request_reason or "",
+            requested_at=order.cancel_requested_at,
+        )
+        if order.cancel_requested_side is not None
+        and order.cancel_requested_at is not None
+        and order.status in lifecycle.SIGNED_OPEN
+        and side != "qc"
+        else None,
         created_at=order.created_at,
         updated_at=order.updated_at,
         shipped_at=order.shipped_at,
@@ -377,7 +392,35 @@ async def get_order(db: AsyncSession, user: CurrentUser, order_id: uuid.UUID) ->
     base = _out((await db.execute(_select().where(Order.id == order_id))).one(), user)
     lab = user.organization_id if side == "qc" else None
     events = await _events(db, order_id, lab_organization_id=lab)
-    return OrderDetailOut(**base.model_dump(), events=events)
+    dispute = await _open_dispute(db, order_id) if side != "qc" else None
+    return OrderDetailOut(**base.model_dump(), events=events, dispute=dispute)
+
+
+async def _open_dispute(db: AsyncSession, order_id: uuid.UUID) -> OrderDisputeOut | None:
+    row = (
+        await db.execute(
+            select(OrderDispute, User.full_name, StoredFile)
+            .join(User, User.id == OrderDispute.opened_by_id)
+            .outerjoin(StoredFile, StoredFile.id == OrderDispute.file_id)
+            .where(OrderDispute.order_id == order_id, OrderDispute.status == "open")
+        )
+    ).first()
+    if row is None:
+        return None
+    dispute, opened_by, stored = row
+    return OrderDisputeOut(
+        id=dispute.id,
+        opened_side=dispute.opened_side,
+        opened_by_name=opened_by,
+        reason=dispute.reason,
+        file=OrderFileOut(
+            id=stored.id, name=stored.original_name, size=stored.size_bytes, kind=stored.kind
+        )
+        if stored is not None
+        else None,
+        previous_status=dispute.previous_status,
+        opened_at=dispute.opened_at,
+    )
 
 
 # --- انتقال‌ها -------------------------------------------------------------------------------
@@ -423,9 +466,14 @@ async def transition(
     if action == "ship" and not lifecycle.ship_ready(order, await inspection_status(db, order.id)):
         # ردیف سفارش قفل است و هر تغییر بازرسی هم اول همین ردیف را قفل می‌کند
         raise Conflict(INSPECTION_REQUIRED, code="inspection_required")
+    if action == "cancel" and order.status != "awaiting_contract":
+        return await _cancel_after_signing(db, user, order, side, reason or "")
+    if action == "cancel" and len(reason or "") < 3:
+        raise field_error("reason", REASON_REQUIRED)
 
     previous = order.status
     now = utcnow()
+    attached = await attach_document(db, user, order, file_id) if file_id else None
     order.status = rule.to_status
     if action == "cancel":
         order.cancelled_at = now
@@ -435,7 +483,21 @@ async def transition(
         order.shipped_at = now
     elif action == "confirm_delivery":
         order.delivered_at = now
-    attached = await attach_document(db, user, order, file_id) if file_id else None
+    elif action == "dispute":
+        db.add(
+            OrderDispute(
+                id=uuid.uuid4(),
+                order_id=order.id,
+                opened_side=side,
+                opened_by_id=user.id,
+                reason=note,
+                file_id=attached,
+                previous_status=previous,
+                opened_at=now,
+                status="open",
+            )
+        )
+        _clear_cancel_request(order)  # تصمیم با پشتیبانی است
 
     record_event(db, order, action, previous, rule.to_status, user, side, note, attached)
     if action == "confirm_delivery" and await all_paid(db, order.id):
@@ -457,10 +519,133 @@ async def transition(
     return await get_order(db, user, order.id)
 
 
+def _clear_cancel_request(order: Order) -> None:
+    order.cancel_requested_side = None
+    order.cancel_requested_at = None
+    order.cancel_request_reason = None
+
+
+async def _cancel_after_signing(
+    db: AsyncSession, user: CurrentUser, order: Order, side: Side, reason: str
+) -> OrderDetailOut:
+    """لغو پس از امضا فقط با توافق دو طرف (O11): درخواست یک طرف، موافقت طرف دیگر."""
+    requested = order.cancel_requested_side
+    if requested == side:
+        return await get_order(db, user, order.id)  # درخواست تکراری: بی‌اثر
+    other = other_side(side)
+    if requested is None:
+        if len(reason) < 3:
+            raise field_error("reason", REASON_REQUIRED)
+        order.cancel_requested_side = side
+        order.cancel_requested_at = utcnow()
+        order.cancel_request_reason = reason
+        record_event(db, order, "cancel_requested", None, None, user, side, reason)
+        await notify_side(
+            db,
+            order,
+            other,
+            user,
+            kind="order_cancel_requested",
+            title=f"{SIDE_NAMES[side]} درخواست لغو سفارش {ref(order)} را داده است",
+            body=f"دلیل: {reason}. پس از امضای قرارداد، لغو فقط با موافقت شما انجام می‌شود.",
+        )
+        action = "order.cancel_requested"
+    else:
+        # طرف مقابل پیش‌تر درخواست داده بود ⇒ توافق دو طرف ⇒ لغو
+        previous = order.status
+        agreed = order.cancel_request_reason or ""
+        order.status = "cancelled"
+        order.cancelled_at = utcnow()
+        order.cancel_reason = agreed
+        record_event(
+            db, order, "cancel", previous, "cancelled", user, side, f"با توافق دو طرف: {agreed}"
+        )
+        await notify_side(
+            db,
+            order,
+            other,
+            user,
+            kind="order_cancel",
+            title=f"سفارش {ref(order)} با توافق دو طرف لغو شد",
+            body=f"دلیل: {agreed}",
+        )
+        action = "order.cancel"
+    audit.record(
+        db,
+        action=action,
+        entity_type="order",
+        entity_id=order.id,
+        actor_user_id=user.id,
+        organization_id=user.organization_id,
+        data={"status": order.status, "mutual": True},
+    )
+    await db.commit()
+    return await get_order(db, user, order.id)
+
+
+async def keep_order(
+    db: AsyncSession, user: CurrentUser, order_id: uuid.UUID, note: str
+) -> OrderDetailOut:
+    """ادامه‌ی سفارش: درخواست لغو پس گرفته یا پذیرفته‌نشده می‌شود (وضعیت عوض نمی‌شود)."""
+    order, side = await load(db, user, order_id, for_update=True, allow_lab=True)
+    if side not in ("buyer", "supplier"):
+        raise Forbidden(NOT_YOUR_STEP, code="not_your_step")
+    requested = order.cancel_requested_side
+    if requested is None:
+        return await get_order(db, user, order.id)  # درخواستی نمانده است: بی‌اثر
+    withdrawn = requested == side
+    _clear_cancel_request(order)
+    record_event(
+        db,
+        order,
+        "cancel_request_closed",
+        None,
+        None,
+        user,
+        side,
+        note
+        or ("درخواست لغو پس گرفته شد." if withdrawn else "با لغو موافقت نشد؛ سفارش ادامه دارد."),
+    )
+    await notify_side(
+        db,
+        order,
+        other_side(side),
+        user,
+        kind="order_cancel_request_closed",
+        title=f"درخواست لغو سفارش {ref(order)} پس گرفته شد"
+        if withdrawn
+        else f"{SIDE_NAMES[side]} با لغو سفارش {ref(order)} موافقت نکرد",
+        body=note or "سفارش ادامه دارد. اگر مشکلی هست، «اعلام مشکل» کنید.",
+    )
+    audit.record(
+        db,
+        action="order.cancel_request_closed",
+        entity_type="order",
+        entity_id=order.id,
+        actor_user_id=user.id,
+        organization_id=user.organization_id,
+        data={"withdrawn": withdrawn},
+    )
+    await db.commit()
+    return await get_order(db, user, order.id)
+
+
 async def _notify_transition(
     db: AsyncSession, order: Order, action: Action, side: Side, user: CurrentUser, note: str
 ) -> None:
     other = other_side(side)
+    if action == "dispute":
+        title = f"{SIDE_NAMES[side]} برای سفارش {ref(order)} مشکل اعلام کرد"
+        body = f"{note} — سفارش تا تصمیم پشتیبانی پارت‌ماشین متوقف است."
+        await notifications.notify_admins(
+            db,
+            kind="dispute_opened",
+            title=f"اختلاف تازه در سفارش {ref(order)}",
+            body=note,
+            link="/admin/disputes",
+        )
+        await notify_side(db, order, other, user, kind="order_dispute", title=title, body=body)
+        return
     if action == "cancel":
         title, body = f"سفارش {ref(order)} لغو شد", f"دلیل: {note}"
     elif action == "ship":

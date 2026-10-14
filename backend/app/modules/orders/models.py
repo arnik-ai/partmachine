@@ -54,6 +54,14 @@ class Order(Base, UUIDPrimaryKey, TimestampMixin):
         CheckConstraint(
             "(status = 'completed') = (completed_at IS NOT NULL)", name="completed_consistent"
         ),
+        CheckConstraint(
+            "cancel_requested_side IS NULL OR cancel_requested_side IN ('buyer', 'supplier')",
+            name="cancel_requested_side_valid",
+        ),
+        CheckConstraint(
+            "(cancel_requested_side IS NULL) = (cancel_requested_at IS NULL)",
+            name="cancel_request_consistent",
+        ),
     )
 
     # شماره‌ی خوانا برای کاربر (PM-1001، …)؛ شناسه‌ی اصلی همان UUID است
@@ -89,6 +97,13 @@ class Order(Base, UUIDPrimaryKey, TimestampMixin):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cancel_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # پس از امضای قرارداد، لغو فقط با توافق دو طرف است (O11): یک طرف درخواست می‌دهد و طرف دیگر
+    # موافقت می‌کند (لغو) یا نمی‌کند (ادامه‌ی سفارش)
+    cancel_requested_side: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    cancel_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    cancel_request_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
 class OrderEvent(Base, UUIDPrimaryKey):

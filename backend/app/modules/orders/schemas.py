@@ -51,6 +51,26 @@ class OrderFileOut(CamelModel):
     kind: FileKind
 
 
+class CancelRequestOut(CamelModel):
+    """درخواست لغو یک طرف پس از امضای قرارداد، در انتظار موافقت طرف دیگر (O11)."""
+
+    side: Literal["buyer", "supplier"]
+    reason: str
+    requested_at: datetime
+
+
+class OrderDisputeOut(CamelModel):
+    """اختلاف باز سفارش (مشکلی که یکی از دو طرف اعلام کرده و پشتیبانی بررسی می‌کند)."""
+
+    id: uuid.UUID
+    opened_side: Literal["buyer", "supplier"]
+    opened_by_name: str | None = None
+    reason: str
+    file: OrderFileOut | None = None
+    previous_status: OrderStatus
+    opened_at: datetime
+
+
 class OrderEventOut(CamelModel):
     id: uuid.UUID
     action: str
@@ -84,6 +104,7 @@ class OrderOut(CamelModel):
     my_side: Side
     next_actions: list[Action]
     inspection: OrderInspectionSummaryOut | None = None
+    cancel_request: CancelRequestOut | None = None
     created_at: datetime
     updated_at: datetime
     shipped_at: datetime | None = None
@@ -95,6 +116,7 @@ class OrderOut(CamelModel):
 
 class OrderDetailOut(OrderOut):
     events: list[OrderEventOut]
+    dispute: OrderDisputeOut | None = None
 
 
 class OrderPage(CamelModel):
@@ -109,15 +131,37 @@ def _clean(value: str) -> str:
 
 
 class CancelOrderInput(CamelModel):
-    reason: str = Field(min_length=3, max_length=500)
+    """دلیل برای لغو پیش از امضا و برای درخواست لغو پس از امضا لازم است (خطای فارسی همین فیلد
+    در سرویس داده می‌شود)؛ موافقت با درخواست لغو طرف مقابل دلیل نمی‌خواهد."""
+
+    reason: str = Field(default="", max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def _reason(cls, value: str) -> str:
+        return _clean(value)
+
+
+class OpenDisputeInput(CamelModel):
+    reason: str = Field(max_length=1000)
+    file_id: uuid.UUID | None = None
 
     @field_validator("reason")
     @classmethod
     def _reason(cls, value: str) -> str:
         cleaned = _clean(value)
-        if len(cleaned) < 3:
-            raise ValueError("دلیل لغو را بنویسید؛ طرف مقابل آن را می‌بیند.")
+        if len(cleaned) < 10:
+            raise ValueError("مشکل را کمی دقیق‌تر شرح دهید (دست‌کم ۱۰ نویسه).")
         return cleaned
+
+
+class KeepOrderInput(CamelModel):
+    note: str = Field(default="", max_length=500)
+
+    @field_validator("note")
+    @classmethod
+    def _note(cls, value: str) -> str:
+        return _clean(value)
 
 
 class ShipOrderInput(CamelModel):

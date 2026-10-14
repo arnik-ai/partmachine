@@ -98,6 +98,25 @@ def notify_user(
     )
 
 
+async def notify_admins(
+    db: AsyncSession, *, kind: str, title: str, body: str = "", link: str = ""
+) -> None:
+    """اعلان برای همه‌ی ادمین‌های فعال، مثلاً اختلاف تازه در صف بررسی (در تراکنش فراخواننده)."""
+    admins = await db.execute(
+        select(User.id, User.organization_id).where(User.role == "admin", User.is_active.is_(True))
+    )
+    for user_id, organization_id in admins:
+        _add(
+            db,
+            user_id=user_id,
+            organization_id=organization_id,
+            kind=kind,
+            title=title,
+            body=body,
+            link=link,
+        )
+
+
 def _mine(user: CurrentUser):  # type: ignore[no-untyped-def]
     return (
         Notification.user_id == user.id,

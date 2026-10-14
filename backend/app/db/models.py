@@ -4,6 +4,7 @@ from app.db.base import Base
 from app.modules.agreements.models import AgreementAcceptance
 from app.modules.audit.models import AuditEvent
 from app.modules.contracts.models import Contract, ContractSignature, ContractVersion
+from app.modules.disputes.models import OrderDispute
 from app.modules.files.models import StoredFile
 from app.modules.identity.models import RefreshToken, User
 from app.modules.inspections.models import OrderInspection
@@ -24,6 +25,7 @@ __all__ = [
     "ContractVersion",
     "Base",
     "Order",
+    "OrderDispute",
     "OrderInspection",
     "OrderPayment",
     "OrderEvent",

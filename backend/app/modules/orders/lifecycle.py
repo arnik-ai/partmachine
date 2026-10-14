@@ -13,10 +13,15 @@ from app.modules.orders.models import Order
 
 # qc: آزمایشگاهی که کارفرما برای بازرسی همین سفارش انتخاب کرده است (فقط بخش بازرسی را می‌بیند)
 Side = Literal["buyer", "supplier", "qc", "admin"]
-Action = Literal["cancel", "ship", "confirm_delivery"]
+# keep: «ادامه‌ی سفارش» — پس گرفتن یا نپذیرفتن درخواست لغو (وضعیت عوض نمی‌شود)
+Action = Literal["cancel", "ship", "confirm_delivery", "dispute", "keep"]
 
 OPEN_STATUSES = frozenset(
     {"awaiting_contract", "awaiting_prepayment", "in_production", "in_inspection", "shipped"}
+)
+# پس از امضای قرارداد و پیش از تکمیل: لغو فقط با توافق دو طرف و «اعلام مشکل» ممکن است (O11)
+SIGNED_OPEN = frozenset(
+    {"awaiting_prepayment", "in_production", "in_inspection", "shipped", "delivered"}
 )
 # تعهد تحویل پس از امضای قرارداد شروع می‌شود؛ «دیرکرد» فقط در این وضعیت‌ها معنا دارد
 DELIVERY_PENDING = frozenset({"awaiting_prepayment", "in_production", "in_inspection"})
@@ -37,11 +42,12 @@ class Transition:
 
 
 TRANSITIONS: dict[Action, Transition] = {
+    # پیش از امضا: لغو فوری با دلیل. پس از امضا: درخواست یک طرف و موافقت طرف دیگر (O11)
     "cancel": Transition(
-        frozenset({"awaiting_contract"}),
+        frozenset({"awaiting_contract"}) | SIGNED_OPEN,
         "cancelled",
         frozenset({"buyer", "supplier"}),
-        "پس از امضای قرارداد، سفارش فقط با توافق دو طرف یا تصمیم پشتیبانی لغو می‌شود.",
+        "این سفارش دیگر قابل لغو نیست. اگر مشکلی هست، «اعلام مشکل» کنید.",
     ),
     # با بازرسی کیفیت، ارسال از «در حال بازرسی» و فقط پس از قبولی است (ship_ready)
     "ship": Transition(
@@ -58,6 +64,13 @@ TRANSITIONS: dict[Action, Transition] = {
         "تحویل فقط پس از ارسال سفارش تأیید می‌شود.",
         frozenset({"completed"}),
     ),
+    # «اعلام مشکل»: سفارش تا تصمیم پشتیبانی متوقف می‌شود (disputes)
+    "dispute": Transition(
+        SIGNED_OPEN,
+        "disputed",
+        frozenset({"buyer", "supplier"}),
+        "اعلام مشکل پس از امضای قرارداد و پیش از تکمیل سفارش ممکن است.",
+    ),
 }
 
 
@@ -73,13 +86,19 @@ def allowed_actions(
 ) -> list[Action]:
     if side is None:
         return []
-    return [
+    actions: list[Action] = [
         action
         for action, rule in TRANSITIONS.items()
         if side in rule.sides
         and order.status in rule.from_statuses
         and (action != "ship" or ship_ready(order, inspection_status))
     ]
+    pending = order.cancel_requested_side
+    if pending is not None and order.status in SIGNED_OPEN and side in ("buyer", "supplier"):
+        actions.append("keep")
+        if pending == side:
+            actions.remove("cancel")  # درخواست خودش در انتظار پاسخ طرف مقابل است
+    return actions
 
 
 def is_overdue(order: Order, today: date) -> bool:

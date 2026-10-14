@@ -130,8 +130,11 @@ async def test_shipping_with_a_private_document_and_delivery(
     # قرارداد و پرداخت در گام‌های 3b و 3c می‌آیند؛ اینجا سفارش مستقیم به تولید برده می‌شود
     await _set_status(order["id"], "in_production")
 
+    # پس از امضا لغو یک‌طرفه نیست؛ فقط درخواست ثبت می‌شود و سفارش ادامه دارد (O11)
     late_cancel = await _act(deal.buyer, order["id"], "cancel", {"reason": "پشیمان شدم"})
-    assert late_cancel.status_code == 409 and late_cancel.json()["code"] == "invalid_transition"
+    assert late_cancel.status_code == 200, late_cancel.text
+    assert late_cancel.json()["status"] == "in_production"
+    assert late_cancel.json()["cancelRequest"]["side"] == "buyer"
     wrong_side = await _act(deal.buyer, order["id"], "ship", {})
     assert wrong_side.status_code == 403 and wrong_side.json()["code"] == "not_your_step"
 

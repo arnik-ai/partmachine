@@ -83,6 +83,7 @@ async def test_lab_and_admin_stats(client_factory: Callable[[], httpx.AsyncClien
 
     assert await _stats(admin) == {
         "pending_verifications": 0,
+        "open_disputes": 0,
         "unverified_accounts": 1,
         "active_orders": 1,
         "active_users": 4,

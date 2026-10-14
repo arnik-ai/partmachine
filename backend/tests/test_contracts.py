@@ -161,7 +161,8 @@ async def test_both_owners_sign_and_the_order_moves_to_production(
     supplier_order = (
         await deal.supplier.client.get(f"{API}/orders/{order_id}", headers=deal.supplier.auth)
     ).json()
-    assert supplier_order["nextActions"] == ["ship"]
+    # پس از امضا: ارسال، و «درخواست لغو» و «اعلام مشکل» (O11)
+    assert supplier_order["nextActions"] == ["cancel", "ship", "dispute"]
 
     # پس از امضا قرارداد قفل است؛ امضای تکراری بی‌اثر است
     locked = await _revise(deal.buyer, order_id, prepaymentPercent=50)

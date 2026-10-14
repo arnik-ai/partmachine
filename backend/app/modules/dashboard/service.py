@@ -9,6 +9,7 @@ from app.core.catalog import RFQ_CREATOR_ROLES
 from app.core.time import business_today
 from app.modules.admin.service import MANUALLY_VERIFIED_ROLES
 from app.modules.dashboard.schemas import DashboardOut, StatKey, StatOut
+from app.modules.disputes.models import OrderDispute
 from app.modules.identity.deps import CurrentUser
 from app.modules.identity.models import User
 from app.modules.inspections.models import OrderInspection
@@ -122,6 +123,13 @@ async def _admin(db: AsyncSession) -> list[StatOut]:
                 select(func.count())
                 .select_from(VerificationRequest)
                 .where(VerificationRequest.status == "pending"),
+            ),
+        ),
+        StatOut(
+            key="open_disputes",
+            value=await _count(
+                db,
+                select(func.count()).select_from(OrderDispute).where(OrderDispute.status == "open"),
             ),
         ),
         StatOut(

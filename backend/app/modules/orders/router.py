@@ -11,6 +11,8 @@ from app.modules.orders import service
 from app.modules.orders.schemas import (
     CancelOrderInput,
     ConfirmDeliveryInput,
+    KeepOrderInput,
+    OpenDisputeInput,
     OrderDetailOut,
     OrderPage,
     ShipOrderInput,
@@ -48,8 +50,33 @@ async def cancel_order(
     user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OrderDetailOut:
-    """پیش از امضای قرارداد، هر طرف با ذکر دلیل (O11)."""
+    """پیش از امضای قرارداد: لغو با ذکر دلیل. پس از امضا (O11): بار اول «درخواست لغو» یک طرف
+    است و همین درخواست از طرف دیگر یعنی موافقت، و سفارش لغو می‌شود."""
     return await service.transition(db, user, order_id, "cancel", reason=payload.reason)
+
+
+@router.post("/{order_id}/keep", response_model=OrderDetailOut)
+async def keep_order(
+    order_id: uuid.UUID,
+    payload: KeepOrderInput,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> OrderDetailOut:
+    """ادامه‌ی سفارش: پس گرفتن درخواست لغو خود، یا نپذیرفتن درخواست لغو طرف مقابل."""
+    return await service.keep_order(db, user, order_id, payload.note)
+
+
+@router.post("/{order_id}/dispute", response_model=OrderDetailOut)
+async def open_dispute(
+    order_id: uuid.UUID,
+    payload: OpenDisputeInput,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> OrderDetailOut:
+    """«اعلام مشکل»: سفارش تا تصمیم پشتیبانی متوقف می‌شود (O11)."""
+    return await service.transition(
+        db, user, order_id, "dispute", note=payload.reason, file_id=payload.file_id
+    )
 
 
 @router.post("/{order_id}/ship", response_model=OrderDetailOut)

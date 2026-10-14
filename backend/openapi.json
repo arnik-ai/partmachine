@@ -5308,7 +5308,7 @@
           "orders"
         ],
         "summary": "Cancel Order",
-        "description": "پیش از امضای قرارداد، هر طرف با ذکر دلیل (O11).",
+        "description": "پیش از امضای قرارداد: لغو با ذکر دلیل. پس از امضا (O11): بار اول «درخواست لغو» یک طرف\nاست و همین درخواست از طرف دیگر یعنی موافقت، و سفارش لغو می‌شود.",
         "operationId": "cancel_order_api_v1_orders__order_id__cancel_post",
         "security": [
           {
@@ -5333,6 +5333,264 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CancelOrderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/keep": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Keep Order",
+        "description": "ادامه‌ی سفارش: پس گرفتن درخواست لغو خود، یا نپذیرفتن درخواست لغو طرف مقابل.",
+        "operationId": "keep_order_api_v1_orders__order_id__keep_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeepOrderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/dispute": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Open Dispute",
+        "description": "«اعلام مشکل»: سفارش تا تصمیم پشتیبانی متوقف می‌شود (O11).",
+        "operationId": "open_dispute_api_v1_orders__order_id__dispute_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenDisputeInput"
               }
             }
           }
@@ -8144,6 +8402,286 @@
         ]
       }
     },
+    "/api/v1/admin/disputes": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Disputes",
+        "operationId": "list_disputes_api_v1_admin_disputes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "resolved"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDisputePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/disputes/{dispute_id}/resolve": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Resolve Dispute",
+        "description": "تصمیم با دلیل: ادامه‌ی سفارش، تکمیل یا لغو.",
+        "operationId": "resolve_dispute_api_v1_admin_disputes__dispute_id__resolve_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dispute_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Dispute Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveDisputeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDisputeOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
     "/api/v1/pricing/estimate": {
       "post": {
         "tags": [
@@ -9817,6 +10355,214 @@
         "title": "AdminActionInput",
         "description": "دلیل اختیاری؛ در رویدادهای audit ثبت می‌شود."
       },
+      "AdminDisputeOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Orderid"
+          },
+          "orderNumber": {
+            "type": "integer",
+            "title": "Ordernumber"
+          },
+          "orderTitle": {
+            "type": "string",
+            "title": "Ordertitle"
+          },
+          "orderStatus": {
+            "type": "string",
+            "enum": [
+              "awaiting_contract",
+              "awaiting_prepayment",
+              "in_production",
+              "in_inspection",
+              "shipped",
+              "delivered",
+              "completed",
+              "cancelled",
+              "disputed"
+            ],
+            "title": "Orderstatus"
+          },
+          "amountRials": {
+            "type": "integer",
+            "title": "Amountrials"
+          },
+          "buyerName": {
+            "type": "string",
+            "title": "Buyername"
+          },
+          "supplierName": {
+            "type": "string",
+            "title": "Suppliername"
+          },
+          "openedSide": {
+            "type": "string",
+            "enum": [
+              "buyer",
+              "supplier"
+            ],
+            "title": "Openedside"
+          },
+          "openedByName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Openedbyname"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderFileOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previousStatus": {
+            "type": "string",
+            "enum": [
+              "awaiting_contract",
+              "awaiting_prepayment",
+              "in_production",
+              "in_inspection",
+              "shipped",
+              "delivered",
+              "completed",
+              "cancelled",
+              "disputed"
+            ],
+            "title": "Previousstatus"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Openedat"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "resolved"
+            ],
+            "title": "Status"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "resume",
+                  "complete",
+                  "cancel"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          },
+          "decisionReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decisionreason"
+          },
+          "resolvedByName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedbyname"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "orderId",
+          "orderNumber",
+          "orderTitle",
+          "orderStatus",
+          "amountRials",
+          "buyerName",
+          "supplierName",
+          "openedSide",
+          "reason",
+          "previousStatus",
+          "openedAt",
+          "status"
+        ],
+        "title": "AdminDisputeOut"
+      },
+      "AdminDisputePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminDisputeOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "AdminDisputePage"
+      },
       "AdminUserOut": {
         "properties": {
           "id": {
@@ -10364,15 +11110,42 @@
           "reason": {
             "type": "string",
             "maxLength": 500,
-            "minLength": 3,
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "CancelOrderInput",
+        "description": "دلیل برای لغو پیش از امضا و برای درخواست لغو پس از امضا لازم است (خطای فارسی همین فیلد\nدر سرویس داده می‌شود)؛ موافقت با درخواست لغو طرف مقابل دلیل نمی‌خواهد."
+      },
+      "CancelRequestOut": {
+        "properties": {
+          "side": {
+            "type": "string",
+            "enum": [
+              "buyer",
+              "supplier"
+            ],
+            "title": "Side"
+          },
+          "reason": {
+            "type": "string",
             "title": "Reason"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Requestedat"
           }
         },
         "type": "object",
         "required": [
-          "reason"
+          "side",
+          "reason",
+          "requestedAt"
         ],
-        "title": "CancelOrderInput"
+        "title": "CancelRequestOut",
+        "description": "درخواست لغو یک طرف پس از امضای قرارداد، در انتظار موافقت طرف دیگر (O11)."
       },
       "CancelRfqInput": {
         "properties": {
@@ -11400,6 +12173,18 @@
         ],
         "title": "InviteOut"
       },
+      "KeepOrderInput": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "KeepOrderInput"
+      },
       "LoginInput": {
         "properties": {
           "email": {
@@ -11972,6 +12757,32 @@
         ],
         "title": "NotificationPage"
       },
+      "OpenDisputeInput": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Reason"
+          },
+          "fileId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fileid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "OpenDisputeInput"
+      },
       "OrderDetailOut": {
         "properties": {
           "id": {
@@ -12070,7 +12881,9 @@
               "enum": [
                 "cancel",
                 "ship",
-                "confirm_delivery"
+                "confirm_delivery",
+                "dispute",
+                "keep"
               ]
             },
             "type": "array",
@@ -12080,6 +12893,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/OrderInspectionSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancelRequest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CancelRequestOut"
               },
               {
                 "type": "null"
@@ -12161,6 +12984,16 @@
             },
             "type": "array",
             "title": "Events"
+          },
+          "dispute": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderDisputeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -12187,6 +13020,78 @@
           "events"
         ],
         "title": "OrderDetailOut"
+      },
+      "OrderDisputeOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "openedSide": {
+            "type": "string",
+            "enum": [
+              "buyer",
+              "supplier"
+            ],
+            "title": "Openedside"
+          },
+          "openedByName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Openedbyname"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderFileOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previousStatus": {
+            "type": "string",
+            "enum": [
+              "awaiting_contract",
+              "awaiting_prepayment",
+              "in_production",
+              "in_inspection",
+              "shipped",
+              "delivered",
+              "completed",
+              "cancelled",
+              "disputed"
+            ],
+            "title": "Previousstatus"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Openedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "openedSide",
+          "reason",
+          "previousStatus",
+          "openedAt"
+        ],
+        "title": "OrderDisputeOut",
+        "description": "اختلاف باز سفارش (مشکلی که یکی از دو طرف اعلام کرده و پشتیبانی بررسی می‌کند)."
       },
       "OrderEventOut": {
         "properties": {
@@ -12452,7 +13357,9 @@
               "enum": [
                 "cancel",
                 "ship",
-                "confirm_delivery"
+                "confirm_delivery",
+                "dispute",
+                "keep"
               ]
             },
             "type": "array",
@@ -12462,6 +13369,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/OrderInspectionSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cancelRequest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CancelRequestOut"
               },
               {
                 "type": "null"
@@ -13303,6 +14220,30 @@
         ],
         "title": "RescheduleRfqInput"
       },
+      "ResolveDisputeInput": {
+        "properties": {
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "resume",
+              "complete",
+              "cancel"
+            ],
+            "title": "Resolution"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resolution",
+          "reason"
+        ],
+        "title": "ResolveDisputeInput"
+      },
       "RfqBrief": {
         "properties": {
           "id": {
@@ -13687,6 +14628,7 @@
               "inspections_ready",
               "inspections_passed",
               "pending_verifications",
+              "open_disputes",
               "unverified_accounts",
               "active_users"
             ],
