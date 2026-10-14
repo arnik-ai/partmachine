@@ -28,10 +28,15 @@ class CurrentUser:
     email: str
     full_name: str
     is_verified: bool
+    org_role: str = "owner"
 
     @property
     def is_admin(self) -> bool:
         return self.role == "admin"
+
+    @property
+    def is_org_owner(self) -> bool:
+        return self.org_role == "owner"
 
 
 async def get_current_user(
@@ -50,7 +55,7 @@ async def get_current_user(
     except ValueError:
         raise Unauthorized(SESSION_EXPIRED, code="token_invalid") from None
     user = await db.get(User, user_id)
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or payload.get("ver", 0) != user.token_version:
         raise Unauthorized(SESSION_EXPIRED, code="token_invalid")
     return CurrentUser(
         id=user.id,
@@ -59,7 +64,14 @@ async def get_current_user(
         email=user.email,
         full_name=user.full_name,
         is_verified=user.is_verified,
+        org_role=user.org_role,
     )
+
+
+async def require_org_owner(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    if not user.is_org_owner:
+        raise Forbidden("فقط مدیر سازمان می‌تواند این کار را انجام دهد.", code="not_org_owner")
+    return user
 
 
 def require_roles(*roles: str) -> Callable[..., Awaitable[CurrentUser]]:
@@ -74,6 +86,20 @@ def require_roles(*roles: str) -> Callable[..., Awaitable[CurrentUser]]:
 def client_ip(request: Request) -> str:
     # پشت reverse proxy باید uvicorn با --proxy-headers اجرا شود تا IP واقعی برسد
     return request.client.host if request.client else "unknown"
+
+
+@dataclass(frozen=True)
+class ClientInfo:
+    """IP و مرورگر درخواست — فقط برای شاهدِ پذیرش توافق‌ها ذخیره می‌شود."""
+
+    ip: str
+    user_agent: str
+
+
+def client_info(request: Request) -> ClientInfo:
+    return ClientInfo(
+        ip=client_ip(request)[:64], user_agent=request.headers.get("user-agent", "")[:300]
+    )
 
 
 async def require_csrf(request: Request) -> None:

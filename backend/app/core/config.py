@@ -5,11 +5,15 @@
 """
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["development", "test", "staging", "production"]
+# ارسال کد یک‌بارمصرف (P8): console فقط برای توسعه و تست (کد در لاگ)؛ تا انتخاب و تأیید سرویس
+# پیامک/ایمیل واقعی، در تولید disabled است
+OtpSender = Literal["console", "disabled"]
 
 DEV_SECRET_KEY = "dev-only-insecure-secret-key-do-not-use-in-production"
 DEV_DATABASE_URL = "postgresql+asyncpg://partmachine:partmachine@localhost:5433/partmachine"
@@ -50,8 +54,14 @@ class Settings(BaseSettings):
     log_json: bool | None = None
 
     max_body_bytes: int = 1_000_000
+    # فایل‌ها: فعلاً دیسک محلی (در تولید یک volume پایدار)؛ پیاده‌سازی S3 با انتخاب سرویس در فاز ۴
+    storage_local_dir: str = "var/storage"
+    upload_max_bytes: int = 50 * 1024 * 1024
+    download_link_ttl_seconds: int = 120
     business_timezone: str = "Asia/Tehran"
     log_level: str = "INFO"
+    # None یعنی «بر اساس محیط»: console در development/test، disabled در staging/production
+    otp_sender: OtpSender | None = None
 
     @property
     def is_production_like(self) -> bool:
@@ -72,6 +82,12 @@ class Settings(BaseSettings):
     @property
     def show_docs(self) -> bool:
         return self.docs_enabled if self.docs_enabled is not None else not self.is_production_like
+
+    @property
+    def otp_sender_name(self) -> OtpSender:
+        if self.otp_sender is not None:
+            return self.otp_sender
+        return "disabled" if self.is_production_like else "console"
 
     @property
     def rate_limit_should_fail_open(self) -> bool:
@@ -107,6 +123,15 @@ class Settings(BaseSettings):
             found.append("ALLOWED_HOSTS must list explicit host names")
         if not self.secure_cookies:
             found.append("COOKIE_SECURE must not be disabled")
+        if (
+            "storage_local_dir" not in self.model_fields_set
+            or not Path(self.storage_local_dir).is_absolute()
+        ):
+            found.append(
+                "STORAGE_LOCAL_DIR must be an explicit absolute path on persistent storage"
+            )
+        if self.otp_sender_name == "console":
+            found.append("OTP_SENDER=console writes one-time codes to the logs; not allowed here")
         return found
 
 

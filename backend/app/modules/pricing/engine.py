@@ -10,6 +10,8 @@
 
 from __future__ import annotations
 
+from app.core.text import fa_digits
+
 # نرخ ساعتی ماشین (ریال) + زمان تنظیم (دقیقه) + زمان هر قطعه (دقیقه)
 MACHINE_RATES: dict[str, dict] = {
     "cnc": {"hourly": 1_200_000, "setup": 90, "per_piece": 12},
@@ -91,13 +93,13 @@ def estimate_price(
                 "key": "material",
                 "label": "مواد اولیه",
                 "amount_rials": material_cost,
-                "detail": f"{qty} عدد × {kg} کیلوگرم + ۸٪ پرت",
+                "detail": f"{fa_digits(qty)} عدد × {fa_digits(kg)} کیلوگرم + ۸٪ پرت",
             },
             {
                 "key": "machine",
                 "label": "کار ماشین و دستمزد",
                 "amount_rials": machine_cost,
-                "detail": f"{round(total_hours, 1)} ساعت کار با نرخ ساعتی ماشین",
+                "detail": f"{fa_digits(round(total_hours, 1))} ساعت کار با نرخ ساعتی ماشین",
             },
             {
                 "key": "overhead",
@@ -129,13 +131,13 @@ def judge_quote_price(quoted_total: int, estimate: dict) -> dict:
         return {
             "verdict": "low",
             "deviation_percent": deviation,
-            "message": f"حدود {abs(deviation)}٪ زیر برآورد منطقی — احتمال افت کیفیت",
+            "message": f"حدود {fa_digits(abs(deviation))}٪ زیر برآورد منطقی — احتمال افت کیفیت",
         }
     if quoted_total > estimate["range_high_rials"]:
         return {
             "verdict": "high",
             "deviation_percent": deviation,
-            "message": f"حدود {deviation}٪ بالای برآورد منطقی — قیمت گران",
+            "message": f"حدود {fa_digits(deviation)}٪ بالای برآورد منطقی — قیمت گران",
         }
     return {
         "verdict": "fair",

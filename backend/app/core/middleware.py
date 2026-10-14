@@ -32,9 +32,19 @@ SECURITY_HEADERS = {
 
 
 class RequestContextMiddleware:
-    def __init__(self, app: ASGIApp, max_body_bytes: int) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        max_body_bytes: int,
+        *,
+        upload_paths: tuple[str, ...] = (),
+        upload_max_bytes: int = 0,
+    ) -> None:
         self.app = app
         self.max_body_bytes = max_body_bytes
+        # مسیر آپلود فایل سقف جداگانه دارد؛ خود endpoint هم سقف هر نوع فایل را اعمال می‌کند
+        self.upload_paths = upload_paths
+        self.upload_max_bytes = upload_max_bytes
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -60,20 +70,23 @@ class RequestContextMiddleware:
             await send(message)
 
         received = 0
+        limit = (
+            self.upload_max_bytes if scope.get("path") in self.upload_paths else self.max_body_bytes
+        )
 
         async def limited_receive() -> Message:
             nonlocal received
             message = await receive()
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
-                if received > self.max_body_bytes:
+                if received > limit:
                     # FastAPI این HTTPException را بدون تغییر به handler خطا می‌رساند
                     raise HTTPException(status_code=413, detail=_TOO_LARGE)
             return message
 
         try:
             length = headers.get("content-length", "")
-            if length.isdigit() and int(length) > self.max_body_bytes:
+            if length.isdigit() and int(length) > limit:
                 await self._send_json(
                     send_wrapper, 413, error_body(_TOO_LARGE, "payload_too_large")
                 )

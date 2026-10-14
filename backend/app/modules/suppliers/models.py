@@ -1,10 +1,12 @@
 import uuid
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Computed,
+    DateTime,
     Float,
     ForeignKey,
     Integer,
@@ -16,11 +18,11 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.text import search_text_sql
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKey
 
-# متن جستجوی یکسان‌شده: حروف کوچک، «ي/ى/ك» عربی ← «ی/ی/ک» فارسی، نیم‌فاصله (chr 8204) ← فاصله.
-# باید با app.core.text.normalize_search هم‌خوان بماند (تست test_suppliers آن را بررسی می‌کند).
-SEARCH_TEXT_SQL = "translate(lower(company_name || ' ' || description), 'يىك' || chr(8204), 'ییک ')"
+# متن جستجوی یکسان‌شده (حروف کوچک، ی/ک فارسی، نیم‌فاصله ← فاصله)؛ تست test_suppliers هم‌خوانی را بررسی می‌کند
+SEARCH_TEXT_SQL = search_text_sql("company_name || ' ' || description")
 
 
 class Supplier(Base, UUIDPrimaryKey, TimestampMixin):
@@ -51,7 +53,9 @@ class Supplier(Base, UUIDPrimaryKey, TimestampMixin):
     completed_jobs: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     on_time_delivery_rate: Mapped[float] = mapped_column(Float, default=0.9, server_default="0.9")
     response_time_hours: Mapped[float] = mapped_column(Float, default=6, server_default="6")
+    # نشان «تأییدشده» فقط با تأیید ادمین روی مدارک (verification_requests) روشن می‌شود
     verified: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     capabilities: Mapped[list[str]] = mapped_column(
         JSONB, default=list, server_default=text("'[]'::jsonb")
@@ -62,6 +66,7 @@ class Supplier(Base, UUIDPrimaryKey, TimestampMixin):
     certifications: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB, default=list, server_default=text("'[]'::jsonb")
     )
+    # قدیمی (عنوان‌های placeholder فاز ۱)؛ تصاویر واقعی فایل‌های portfolio_image سازمان‌اند
     gallery_titles: Mapped[list[str]] = mapped_column(
         JSONB, default=list, server_default=text("'[]'::jsonb")
     )

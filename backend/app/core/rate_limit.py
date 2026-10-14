@@ -29,8 +29,16 @@ class Limit:
 
 LOGIN_PER_IP = Limit("login-ip", 30, 300)
 LOGIN_FAILURES_PER_EMAIL = Limit("login-fail-email", 8, 900)
-REGISTER_PER_IP = Limit("register-ip", 10, 3600)
+# کارمندان یک شرکت اغلب پشت یک IP هستند (مثلاً هنگام عضویت با لینک دعوت)؛ سقف برای جلوگیری از
+# ثبت‌نام خودکار است، نه برای محدود کردن ثبت‌نام جمعی همکاران
+REGISTER_PER_IP = Limit("register-ip", 30, 3600)
 REFRESH_PER_IP = Limit("refresh-ip", 120, 300)
+UPLOADS_PER_USER = Limit("upload-user", 120, 3600)
+PASSWORD_CHANGE_FAILURES_PER_USER = Limit("password-change-fail-user", 8, 900)
+# کد یک‌بارمصرف: ارسال (هزینه‌ی پیامک و مزاحمت) و حدس زدن کد
+OTP_SEND_PER_IP = Limit("otp-send-ip", 20, 3600)
+OTP_SEND_PER_DESTINATION = Limit("otp-send-destination", 5, 3600)
+OTP_VERIFY_PER_IP = Limit("otp-verify-ip", 60, 3600)
 
 
 def _key(limit: Limit, subject: str) -> str:

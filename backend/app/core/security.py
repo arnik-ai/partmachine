@@ -54,15 +54,20 @@ def password_needs_rehash(hashed: str) -> bool:
 
 
 def create_access_token(
-    *, user_id: uuid.UUID, organization_id: uuid.UUID, role: str
+    *, user_id: uuid.UUID, organization_id: uuid.UUID, role: str, version: int = 0
 ) -> tuple[str, int]:
-    """توکن دسترسی و مدت اعتبار آن (ثانیه) را برمی‌گرداند."""
+    """توکن دسترسی و مدت اعتبار آن (ثانیه) را برمی‌گرداند.
+
+    `ver` نسخه‌ی نشست‌های کاربر است؛ با تغییر یا بازیابی رمز بالا می‌رود و همه‌ی توکن‌های
+    دسترسی قبلی بلافاصله (نه پس از ۱۵ دقیقه) بی‌اعتبار می‌شوند.
+    """
     now = utcnow()
     lifetime = timedelta(minutes=settings.access_token_expire_minutes)
     payload = {
         "sub": str(user_id),
         "org": str(organization_id),
         "role": role,
+        "ver": version,
         "type": ACCESS_TOKEN_TYPE,
         "jti": uuid.uuid4().hex,
         "iat": now,
@@ -86,6 +91,35 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
     if payload.get("type") != ACCESS_TOKEN_TYPE:
         return None
     return payload
+
+
+def create_signed_token(
+    *, subject: str, token_type: str, ttl: timedelta, extra: dict[str, Any] | None = None
+) -> str:
+    """توکن کوتاه‌عمر امضاشده برای کارهای غیر از ورود (مثلاً لینک دانلود)؛ نوعش جدا بررسی می‌شود."""
+    now = utcnow()
+    payload = {
+        "sub": subject,
+        "type": token_type,
+        "jti": uuid.uuid4().hex,
+        "iat": now,
+        "exp": now + ttl,
+        **(extra or {}),
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=_ALGORITHM)
+
+
+def decode_signed_token(token: str, token_type: str) -> dict[str, Any] | None:
+    try:
+        payload: dict[str, Any] = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[_ALGORITHM],
+            options={"require": ["exp", "iat", "sub", "jti", "type"]},
+        )
+    except jwt.PyJWTError:
+        return None
+    return payload if payload.get("type") == token_type else None
 
 
 def new_refresh_token() -> str:

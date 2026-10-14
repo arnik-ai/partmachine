@@ -13,9 +13,27 @@ from app.core import rate_limit
 from app.core.config import settings
 from app.core.errors import AppError, Unauthorized, error_body
 from app.db.session import get_db
-from app.modules.identity import service
-from app.modules.identity.deps import CurrentUser, client_ip, get_current_user, require_csrf
-from app.modules.identity.schemas import AuthSession, LoginInput, RegisterInput, UserOut
+from app.modules.identity import otp, service
+from app.modules.identity.deps import (
+    CurrentUser,
+    client_info,
+    client_ip,
+    get_current_user,
+    require_csrf,
+)
+from app.modules.identity.schemas import (
+    AuthOptionsOut,
+    AuthSession,
+    ChangePasswordInput,
+    LoginInput,
+    MessageOut,
+    PasswordResetConfirmInput,
+    PasswordResetRequestInput,
+    PhoneCodeInput,
+    PhoneVerifyInput,
+    RegisterInput,
+    UserOut,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -53,7 +71,7 @@ async def register(
     payload: RegisterInput, request: Request, response: Response, db: AsyncSession = Depends(get_db)
 ) -> AuthSession:
     await rate_limit.hit(rate_limit.REGISTER_PER_IP, client_ip(request))
-    issued = await service.register(db, payload)
+    issued = await service.register(db, payload, client_info(request))
     _set_refresh_cookie(response, issued.refresh_token)
     return issued.session
 
@@ -106,3 +124,66 @@ async def me(
     user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> UserOut:
     return await service.current_profile(db, user.id)
+
+
+@router.get("/options", response_model=AuthOptionsOut)
+async def options() -> AuthOptionsOut:
+    """قابلیت‌هایی که به ارسال کد وابسته‌اند (تا انتخاب سرویس پیامک/ایمیل در تولید خاموش‌اند)."""
+    enabled = otp.is_enabled()
+    return AuthOptionsOut(password_reset=enabled, phone_verification=enabled)
+
+
+@router.post("/change-password", response_model=AuthSession)
+async def change_password(
+    payload: ChangePasswordInput,
+    response: Response,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AuthSession:
+    """رمز را عوض می‌کند، همه‌ی نشست‌های دیگر را می‌بندد و برای همین مرورگر نشست تازه می‌دهد."""
+    issued = await service.change_password(db, user, payload)
+    _set_refresh_cookie(response, issued.refresh_token)
+    return issued.session
+
+
+@router.post("/password-reset/request", response_model=MessageOut, status_code=202)
+async def request_password_reset(
+    payload: PasswordResetRequestInput, request: Request, db: AsyncSession = Depends(get_db)
+) -> MessageOut:
+    await service.request_password_reset(db, payload.email, client_ip(request))
+    return MessageOut(detail=service.RESET_SENT)
+
+
+@router.post("/password-reset/confirm", response_model=AuthSession)
+async def confirm_password_reset(
+    payload: PasswordResetConfirmInput,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> AuthSession:
+    await rate_limit.hit(rate_limit.OTP_VERIFY_PER_IP, client_ip(request))
+    issued = await service.confirm_password_reset(db, payload)
+    _set_refresh_cookie(response, issued.refresh_token)
+    return issued.session
+
+
+@router.post("/phone/request", response_model=MessageOut, status_code=202)
+async def request_phone_code(
+    payload: PhoneCodeInput,
+    request: Request,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MessageOut:
+    await service.request_phone_code(db, user, payload.phone, client_ip(request))
+    return MessageOut(detail=service.PHONE_SENT)
+
+
+@router.post("/phone/verify", response_model=UserOut)
+async def verify_phone(
+    payload: PhoneVerifyInput,
+    request: Request,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    await rate_limit.hit(rate_limit.OTP_VERIFY_PER_IP, client_ip(request))
+    return await service.verify_phone(db, user, payload)

@@ -214,6 +214,7 @@ async def seed() -> None:
             quantity=500,
             delivery_city="تهران",
             deadline=today + timedelta(days=45),
+            quotes_due=today + timedelta(days=10),
             status="quoting",
             files=[
                 {"name": "flange-drawing.pdf", "size": 845000, "kind": "pdf"},

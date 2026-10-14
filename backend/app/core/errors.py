@@ -77,6 +77,16 @@ class ServiceUnavailable(AppError):
     code = "service_unavailable"
 
 
+def field_error(field: str, message: str) -> AppError:
+    """خطای اعتبارسنجی یک فیلد، با همان شکل پاسخ‌های 422 pydantic (برای قواعدی که در سرویس بررسی می‌شوند)."""
+    return AppError(
+        message,
+        code="validation_error",
+        status_code=422,
+        errors=[{"field": field, "message": message}],
+    )
+
+
 GENERIC_500 = (
     "خطای غیرمنتظره‌ای رخ داد. لطفاً دوباره تلاش کنید؛ اگر تکرار شد با پشتیبانی تماس بگیرید."
 )
@@ -128,6 +138,8 @@ def validation_message(err: dict[str, Any]) -> str:
         return f"حداکثر {fa_digits(ctx.get('max_length'))} کاراکتر مجاز است."
     if kind == "too_long":
         return f"حداکثر {fa_digits(ctx.get('max_length'))} مورد مجاز است."
+    if kind == "too_short":
+        return f"حداقل {fa_digits(ctx.get('min_length'))} مورد لازم است."
     if kind == "greater_than":
         return f"باید بیشتر از {fa_digits(ctx.get('gt'))} باشد."
     if kind == "greater_than_equal":

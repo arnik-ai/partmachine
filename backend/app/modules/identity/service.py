@@ -1,4 +1,5 @@
-"""منطق احراز هویت: ثبت‌نام (با ساخت خودکار سازمان)، ورود، چرخش و ابطال نشست."""
+"""منطق احراز هویت: ثبت‌نام (با ساخت خودکار سازمان)، ورود، چرخش و ابطال نشست، تغییر و بازیابی
+رمز، و تأیید موبایل با کد یک‌بارمصرف."""
 
 import logging
 import uuid
@@ -11,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import rate_limit
 from app.core.config import settings
-from app.core.errors import Conflict, Forbidden, Unauthorized
+from app.core.errors import Conflict, Forbidden, Unauthorized, field_error
 from app.core.security import (
     burn_password_check,
     create_access_token,
@@ -22,15 +23,30 @@ from app.core.security import (
     verify_password,
 )
 from app.core.time import utcnow
+from app.modules.agreements import service as agreements
+from app.modules.agreements.catalog import SIGNUP_AGREEMENT_BY_ROLE
 from app.modules.audit import service as audit
+from app.modules.identity import otp
+from app.modules.identity.deps import ClientInfo, CurrentUser
 from app.modules.identity.models import RefreshToken, User
-from app.modules.identity.schemas import AuthSession, RegisterInput, UserOut
+from app.modules.identity.schemas import (
+    AuthSession,
+    ChangePasswordInput,
+    PasswordResetConfirmInput,
+    PhoneVerifyInput,
+    RegisterInput,
+    UserOut,
+)
+from app.modules.organizations import service as organizations
 from app.modules.organizations.models import Organization
 from app.modules.suppliers.models import Supplier
 
 logger = logging.getLogger("partmachine.auth")
 
 INVALID_CREDENTIALS = "ایمیل یا رمز عبور درست نیست."
+RESET_SENT = "اگر حسابی با این ایمیل وجود داشته باشد، کد بازیابی برایش فرستاده شد."
+PHONE_SENT = "کد تأیید به این شماره فرستاده شد."
+PHONE_TAKEN = "این شماره برای حساب دیگری تأیید شده است."
 SESSION_INVALID = "نشست شما معتبر نیست. لطفاً دوباره وارد شوید."
 # دو تب که هم‌زمان نشست را تازه می‌کنند نباید کاربر را بیرون بیندازند
 REUSE_GRACE = timedelta(seconds=20)
@@ -51,6 +67,8 @@ def user_out(user: User, organization: Organization) -> UserOut:
         organization_id=user.organization_id,
         company_name=organization.name,
         verified=user.is_verified,
+        org_role=user.org_role,
+        phone=user.phone,
     )
 
 
@@ -58,7 +76,10 @@ def _issue(
     db: AsyncSession, user: User, organization: Organization, family_id: uuid.UUID | None = None
 ) -> tuple[IssuedSession, RefreshToken]:
     access_token, expires_in = create_access_token(
-        user_id=user.id, organization_id=user.organization_id, role=user.role
+        user_id=user.id,
+        organization_id=user.organization_id,
+        role=user.role,
+        version=user.token_version,
     )
     raw = new_refresh_token()
     token = RefreshToken(
@@ -75,7 +96,15 @@ def _issue(
     return IssuedSession(session=session, refresh_token=raw), token
 
 
-async def register(db: AsyncSession, data: RegisterInput) -> IssuedSession:
+async def register(
+    db: AsyncSession, data: RegisterInput, client: ClientInfo | None = None
+) -> IssuedSession:
+    if data.invite_token:
+        return await _register_with_invite(db, data, data.invite_token, client)
+    # پذیرش قوانین نقش در سرور هم الزامی است، نه فقط در فرم
+    agreement = agreements.require_accepted(
+        data.accepted_agreements, SIGNUP_AGREEMENT_BY_ROLE[data.role]
+    )
     existing = await db.scalar(select(User.id).where(User.email == data.email))
     if existing is not None:
         raise Conflict("این ایمیل قبلاً ثبت شده است. اگر حساب دارید وارد شوید.", code="email_taken")
@@ -99,10 +128,70 @@ async def register(db: AsyncSession, data: RegisterInput) -> IssuedSession:
         if data.role == "supplier":
             # پروفایل پایه تا قطعه‌ساز بلافاصله بتواند قیمت بدهد؛ تکمیل پروفایل در فاز ۲
             db.add(Supplier(organization_id=organization.id, company_name=organization.name))
+        agreements.record(
+            db,
+            agreement=agreement,
+            user_id=user.id,
+            organization_id=organization.id,
+            client=client,
+        )
         issued, _ = _issue(db, user, organization)
         await db.commit()
     except IntegrityError:
         # ثبت‌نام هم‌زمان با یک ایمیل
+        await db.rollback()
+        raise Conflict(
+            "این ایمیل قبلاً ثبت شده است. اگر حساب دارید وارد شوید.", code="email_taken"
+        ) from None
+    return issued
+
+
+async def _register_with_invite(
+    db: AsyncSession, data: RegisterInput, token: str, client: ClientInfo | None
+) -> IssuedSession:
+    """ثبت‌نام با لینک دعوت: عضو همان سازمان، با نقش کاری مدیر آن؛ دعوت یک‌بارمصرف است."""
+    invite = await organizations.find_usable_invite(db, token, for_update=True)
+    if invite is None:
+        raise field_error("inviteToken", organizations.INVITE_INVALID)
+    role = invite.user_role
+    agreement = agreements.require_accepted(
+        data.accepted_agreements, SIGNUP_AGREEMENT_BY_ROLE[role]
+    )
+    existing = await db.scalar(select(User.id).where(User.email == data.email))
+    if existing is not None:
+        raise Conflict("این ایمیل قبلاً ثبت شده است. اگر حساب دارید وارد شوید.", code="email_taken")
+    organization = await db.get(Organization, invite.organization_id)
+    assert organization is not None
+
+    user = User(
+        id=uuid.uuid4(),
+        organization_id=organization.id,
+        email=data.email,
+        full_name=data.full_name,
+        hashed_password=await hash_password(data.password),
+        role=role,
+        org_role="member",
+    )
+    try:
+        db.add(user)
+        await db.flush()
+        invite.accepted_at = utcnow()
+        invite.accepted_by_id = user.id
+        agreements.record(
+            db, agreement=agreement, user_id=user.id, organization_id=organization.id, client=client
+        )
+        audit.record(
+            db,
+            action="organization.member_joined",
+            entity_type="user",
+            entity_id=user.id,
+            actor_user_id=user.id,
+            organization_id=organization.id,
+            data={"invite_id": str(invite.id)},
+        )
+        issued, _ = _issue(db, user, organization)
+        await db.commit()
+    except IntegrityError:
         await db.rollback()
         raise Conflict(
             "این ایمیل قبلاً ثبت شده است. اگر حساب دارید وارد شوید.", code="email_taken"
@@ -200,6 +289,126 @@ async def current_profile(db: AsyncSession, user_id: uuid.UUID) -> UserOut:
     user = await db.get(User, user_id)
     if user is None:
         raise Unauthorized(SESSION_INVALID, code="session_invalid")
+    organization = await db.get(Organization, user.organization_id)
+    assert organization is not None
+    return user_out(user, organization)
+
+
+# --- حساب کاربری -----------------------------------------------------------------------------
+
+
+async def _revoke_all_sessions(db: AsyncSession, user_id: uuid.UUID) -> None:
+    await db.execute(
+        update(RefreshToken)
+        .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
+        .values(revoked_at=utcnow())
+    )
+
+
+async def _replace_password(
+    db: AsyncSession, user: User, new_password: str, *, action: str
+) -> IssuedSession:
+    """رمز تازه، باطل شدن همه‌ی نشست‌ها و توکن‌های قبلی (همه‌ی دستگاه‌ها) و یک نشست تازه."""
+    user.hashed_password = await hash_password(new_password)
+    user.token_version += 1
+    await _revoke_all_sessions(db, user.id)
+    audit.record(
+        db,
+        action=action,
+        entity_type="user",
+        entity_id=user.id,
+        actor_user_id=user.id,
+        organization_id=user.organization_id,
+    )
+    organization = await db.get(Organization, user.organization_id)
+    assert organization is not None
+    issued, _ = _issue(db, user, organization)
+    await db.commit()
+    return issued
+
+
+async def _locked_user(db: AsyncSession, user_id: uuid.UUID) -> User:
+    user = await db.scalar(select(User).where(User.id == user_id).with_for_update())
+    if user is None or not user.is_active:
+        raise Unauthorized(SESSION_INVALID, code="session_invalid")
+    return user
+
+
+async def change_password(
+    db: AsyncSession, current: CurrentUser, data: ChangePasswordInput
+) -> IssuedSession:
+    subject = str(current.id)
+    await rate_limit.ensure_below(rate_limit.PASSWORD_CHANGE_FAILURES_PER_USER, subject)
+    user = await _locked_user(db, current.id)
+    if not await verify_password(data.current_password, user.hashed_password):
+        await rate_limit.record(rate_limit.PASSWORD_CHANGE_FAILURES_PER_USER, subject)
+        raise field_error("currentPassword", "رمز فعلی درست نیست.")
+    await rate_limit.reset(rate_limit.PASSWORD_CHANGE_FAILURES_PER_USER, subject)
+    if data.new_password == data.current_password:
+        raise field_error("newPassword", "رمز جدید باید با رمز فعلی فرق داشته باشد.")
+    return await _replace_password(db, user, data.new_password, action="auth.password_changed")
+
+
+async def request_password_reset(db: AsyncSession, email: str, ip: str) -> None:
+    """پاسخ برای ایمیل موجود و ناموجود یکسان است تا فهرست کاربران لو نرود."""
+    await otp.throttle(purpose="password_reset", subject=email, destination=email, ip=ip)
+    user = await db.scalar(select(User).where(User.email == email))
+    if user is None or not user.is_active:
+        return
+    await otp.issue(purpose="password_reset", subject=email, channel="email", destination=email)
+
+
+async def confirm_password_reset(
+    db: AsyncSession, data: PasswordResetConfirmInput
+) -> IssuedSession:
+    await otp.consume(purpose="password_reset", subject=data.email, code=data.code)
+    user = await db.scalar(select(User).where(User.email == data.email).with_for_update())
+    if user is None or not user.is_active:
+        raise field_error("code", otp.CODE_EXPIRED)
+    issued = await _replace_password(db, user, data.new_password, action="auth.password_reset")
+    # کسی که رمز را از راه ایمیل بازیابی کرده نباید به‌خاطر تلاش‌های ناموفق قبلی قفل بماند
+    await rate_limit.reset(rate_limit.LOGIN_FAILURES_PER_EMAIL, user.email)
+    return issued
+
+
+def _phone_subject(user_id: uuid.UUID, phone: str) -> str:
+    return f"{user_id}:{phone}"
+
+
+async def request_phone_code(db: AsyncSession, current: CurrentUser, phone: str, ip: str) -> None:
+    owner = await db.scalar(select(User.id).where(User.phone == phone))
+    if owner == current.id:
+        raise field_error("phone", "این شماره همین حالا برای حساب شما تأیید شده است.")
+    if owner is not None:
+        raise field_error("phone", PHONE_TAKEN)
+    subject = _phone_subject(current.id, phone)
+    await otp.throttle(purpose="phone_verification", subject=subject, destination=phone, ip=ip)
+    await otp.issue(purpose="phone_verification", subject=subject, channel="sms", destination=phone)
+
+
+async def verify_phone(db: AsyncSession, current: CurrentUser, data: PhoneVerifyInput) -> UserOut:
+    await otp.consume(
+        purpose="phone_verification",
+        subject=_phone_subject(current.id, data.phone),
+        code=data.code,
+    )
+    user = await _locked_user(db, current.id)
+    user.phone = data.phone
+    user.phone_verified_at = utcnow()
+    audit.record(
+        db,
+        action="auth.phone_verified",
+        entity_type="user",
+        entity_id=user.id,
+        actor_user_id=user.id,
+        organization_id=user.organization_id,
+    )
+    try:
+        await db.commit()
+    except IntegrityError:
+        # هم‌زمان حساب دیگری همین شماره را تأیید کرد
+        await db.rollback()
+        raise field_error("phone", PHONE_TAKEN) from None
     organization = await db.get(Organization, user.organization_id)
     assert organization is not None
     return user_out(user, organization)
