@@ -172,7 +172,9 @@ async def test_both_owners_sign_and_the_order_moves_to_production(
     async with engine.connect() as conn:
         rows = (
             await conn.execute(
-                select(ContractSignature.side, ContractSignature.ip, ContractSignature.content_sha256)
+                select(
+                    ContractSignature.side, ContractSignature.ip, ContractSignature.content_sha256
+                )
             )
         ).all()
         current_hash = await conn.scalar(
@@ -213,7 +215,9 @@ async def test_change_requests_and_cancelled_orders(
     assert from_buyer.status_code == 403
 
     await deal.buyer.client.post(
-        f"{API}/orders/{order_id}/cancel", json={"reason": "پروژه منتفی شد"}, headers=deal.buyer.auth
+        f"{API}/orders/{order_id}/cancel",
+        json={"reason": "پروژه منتفی شد"},
+        headers=deal.buyer.auth,
     )
     assert (await _revise(deal.buyer, order_id)).status_code == 409
     assert (await _sign(deal.supplier, order_id, 1)).status_code == 409
