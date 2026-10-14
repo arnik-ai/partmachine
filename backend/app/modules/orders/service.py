@@ -1,5 +1,9 @@
 """سفارش: ساخت خودکار پس از انتخاب برنده (O1)، فهرست و جزئیات برای دو طرف، و انتقال‌های
-چرخه‌ی وضعیت با قفل ردیف، تاریخچه و audit. دسترسی فقط برای دو سازمان طرف سفارش و ادمین."""
+چرخه‌ی وضعیت با قفل ردیف، تاریخچه و audit.
+
+دسترسی: دو سازمان طرف سفارش و ادمین. آزمایشگاهی که کارفرما برای بازرسی انتخاب کرده (3d) فقط
+با `allow_lab=True` راه می‌یابد: خود سفارش (بدون مبلغ)، رویدادهای بازرسی و بخش بازرسی؛ قرارداد،
+پرداخت‌ها و اسناد دیگر برایش 404 است."""
 
 import uuid
 from collections.abc import Sequence
@@ -16,6 +20,7 @@ from app.modules.audit import service as audit
 from app.modules.files.models import StoredFile
 from app.modules.identity.deps import CurrentUser
 from app.modules.identity.models import User
+from app.modules.inspections.models import OrderInspection
 from app.modules.orders import lifecycle
 from app.modules.orders.lifecycle import Action, Side
 from app.modules.orders.models import Order, OrderEvent
@@ -23,6 +28,7 @@ from app.modules.orders.schemas import (
     OrderDetailOut,
     OrderEventOut,
     OrderFileOut,
+    OrderInspectionSummaryOut,
     OrderOut,
     OrderPartyOut,
     OrderSupplierOut,
@@ -36,13 +42,29 @@ from app.modules.suppliers.models import Supplier
 
 ORDER_NOT_FOUND = "سفارش موردنظر پیدا نشد."
 NOT_YOUR_STEP = "این مرحله با طرف دیگر سفارش است."
+INSPECTION_REQUIRED = (
+    "این سفارش بازرسی کیفیت دارد و ارسال فقط پس از قبولی بازرسی ممکن است. ابتدا آمادگی برای "
+    "بازرسی را اعلام کنید."
+)
+# رویدادهایی که آزمایشگاه در تاریخچه می‌بیند (نه پرداخت، نه قرارداد)
+LAB_EVENTS = (
+    "inspection_requested",
+    "inspection_lab_changed",
+    "inspection_ready",
+    "inspection_passed",
+    "inspection_failed",
+)
 
 
-def side_of(order: Order, user: CurrentUser) -> Side | None:
+def side_of(
+    order: Order, user: CurrentUser, lab_organization_id: uuid.UUID | None = None
+) -> Side | None:
     if user.organization_id == order.buyer_organization_id:
         return "buyer"
     if user.organization_id == order.supplier_organization_id:
         return "supplier"
+    if lab_organization_id is not None and user.organization_id == lab_organization_id:
+        return "qc"
     if user.is_admin:
         return "admin"
     return None
@@ -124,18 +146,28 @@ async def order_id_for_rfq(db: AsyncSession, rfq_id: uuid.UUID) -> uuid.UUID | N
 def _select() -> Select[Any]:
     buyer_org = aliased(Organization)
     supplier_org = aliased(Organization)
+    lab_org = aliased(Organization)
     return (
-        select(Order, buyer_org.name, supplier_org.name, Supplier.verified)
+        select(
+            Order,
+            buyer_org.name,
+            supplier_org.name,
+            Supplier.verified,
+            OrderInspection.status,
+            OrderInspection.lab_organization_id,
+            lab_org.name,
+        )
         .join(buyer_org, buyer_org.id == Order.buyer_organization_id)
         .join(supplier_org, supplier_org.id == Order.supplier_organization_id)
         .join(Supplier, Supplier.id == Order.supplier_id)
+        .outerjoin(OrderInspection, OrderInspection.order_id == Order.id)
+        .outerjoin(lab_org, lab_org.id == OrderInspection.lab_organization_id)
     )
 
 
-def _out(
-    order: Order, buyer_name: str, supplier_name: str, verified: bool, user: CurrentUser
-) -> OrderOut:
-    side = side_of(order, user)
+def _out(row: Any, user: CurrentUser) -> OrderOut:
+    order, buyer_name, supplier_name, verified, inspection_status, lab_id, lab_name = row
+    side = side_of(order, user, lab_id)
     assert side is not None
     return OrderOut(
         id=order.id,
@@ -145,7 +177,7 @@ def _out(
         material=order.material,
         quantity=order.quantity,
         delivery_city=order.delivery_city,
-        amount_rials=order.amount_rials,
+        amount_rials=None if side == "qc" else order.amount_rials,
         lead_time_days=order.lead_time_days,
         delivery_due=order.delivery_due,
         is_overdue=lifecycle.is_overdue(order, business_today()),
@@ -159,7 +191,13 @@ def _out(
             verified=verified,
         ),
         my_side=side,
-        next_actions=lifecycle.allowed_actions(order, side),
+        next_actions=lifecycle.allowed_actions(order, side, inspection_status),
+        inspection=OrderInspectionSummaryOut(
+            status=inspection_status,
+            lab=OrderPartyOut(organization_id=lab_id, name=lab_name),
+        )
+        if inspection_status is not None
+        else None,
         created_at=order.created_at,
         updated_at=order.updated_at,
         shipped_at=order.shipped_at,
@@ -184,11 +222,16 @@ async def list_orders(
     db: AsyncSession, user: CurrentUser, *, group: StatusGroup, limit: int, offset: int
 ) -> tuple[list[OrderOut], int]:
     stmt = _select()
-    count = select(func.count()).select_from(Order)
+    count = (
+        select(func.count())
+        .select_from(Order)
+        .outerjoin(OrderInspection, OrderInspection.order_id == Order.id)
+    )
     if not user.is_admin:
         mine = or_(
             Order.buyer_organization_id == user.organization_id,
             Order.supplier_organization_id == user.organization_id,
+            OrderInspection.lab_organization_id == user.organization_id,
         )
         stmt = stmt.where(mine)
         count = count.where(mine)
@@ -202,19 +245,23 @@ async def list_orders(
         )
     ).all()
     total = await db.scalar(count) or 0
-    return [_out(order, b, s, v, user) for order, b, s, v in rows], total
+    return [_out(row, user) for row in rows], total
 
 
-async def _events(db: AsyncSession, order_id: uuid.UUID) -> list[OrderEventOut]:
-    rows = (
-        await db.execute(
-            select(OrderEvent, User.full_name, StoredFile)
-            .outerjoin(User, User.id == OrderEvent.actor_user_id)
-            .outerjoin(StoredFile, StoredFile.id == OrderEvent.file_id)
-            .where(OrderEvent.order_id == order_id)
-            .order_by(OrderEvent.created_at, OrderEvent.id)
-        )
-    ).all()
+async def _events(
+    db: AsyncSession, order_id: uuid.UUID, *, lab_organization_id: uuid.UUID | None = None
+) -> list[OrderEventOut]:
+    """تاریخچه‌ی سفارش؛ برای آزمایشگاه فقط رویدادهای بازرسی و فقط سندهای خود آزمایشگاه."""
+    stmt = (
+        select(OrderEvent, User.full_name, StoredFile)
+        .outerjoin(User, User.id == OrderEvent.actor_user_id)
+        .outerjoin(StoredFile, StoredFile.id == OrderEvent.file_id)
+        .where(OrderEvent.order_id == order_id)
+        .order_by(OrderEvent.created_at, OrderEvent.id)
+    )
+    if lab_organization_id is not None:
+        stmt = stmt.where(OrderEvent.action.in_(LAB_EVENTS))
+    rows = (await db.execute(stmt)).all()
     return [
         OrderEventOut(
             id=event.id,
@@ -228,6 +275,7 @@ async def _events(db: AsyncSession, order_id: uuid.UUID) -> list[OrderEventOut]:
                 id=stored.id, name=stored.original_name, size=stored.size_bytes, kind=stored.kind
             )
             if stored is not None
+            and (lab_organization_id is None or stored.organization_id == lab_organization_id)
             else None,
             created_at=event.created_at,
         )
@@ -235,26 +283,66 @@ async def _events(db: AsyncSession, order_id: uuid.UUID) -> list[OrderEventOut]:
     ]
 
 
+async def lab_of(db: AsyncSession, order_id: uuid.UUID) -> uuid.UUID | None:
+    """سازمان آزمایشگاهِ بازرسی این سفارش (اگر کارفرما انتخاب کرده باشد)."""
+    return await db.scalar(
+        select(OrderInspection.lab_organization_id).where(OrderInspection.order_id == order_id)
+    )
+
+
+async def inspection_status(db: AsyncSession, order_id: uuid.UUID) -> str | None:
+    return await db.scalar(
+        select(OrderInspection.status).where(OrderInspection.order_id == order_id)
+    )
+
+
+async def lab_has_rfq(db: AsyncSession, organization_id: uuid.UUID, rfq_id: uuid.UUID) -> bool:
+    """آیا این سازمان آزمایشگاهِ بازرسی سفارشِ همین RFQ است؟ (برای دانلود نقشه‌ها پس از NDA)"""
+    found = await db.scalar(
+        select(OrderInspection.id)
+        .join(Order, Order.id == OrderInspection.order_id)
+        .where(Order.rfq_id == rfq_id, OrderInspection.lab_organization_id == organization_id)
+    )
+    return found is not None
+
+
 async def load(
-    db: AsyncSession, user: CurrentUser, order_id: uuid.UUID, *, for_update: bool = False
+    db: AsyncSession,
+    user: CurrentUser,
+    order_id: uuid.UUID,
+    *,
+    for_update: bool = False,
+    allow_lab: bool = False,
 ) -> tuple[Order, Side]:
-    """سفارش را با بررسی دسترسی برمی‌گرداند؛ برای هر سازمان دیگری 404."""
+    """سفارش را با بررسی دسترسی برمی‌گرداند؛ برای هر سازمان دیگری 404.
+
+    آزمایشگاه بازرسی فقط با `allow_lab=True` پذیرفته می‌شود (سفارش و بخش بازرسی)؛ قرارداد،
+    پرداخت‌ها و اسناد سفارش با مقدار پیش‌فرض برایش 404 می‌دهند.
+    """
     stmt = select(Order).where(Order.id == order_id)
     if for_update:
         stmt = stmt.with_for_update()
     order = await db.scalar(stmt)
-    side = side_of(order, user) if order is not None else None
-    if order is None or side is None:
+    if order is None:
+        raise NotFound(ORDER_NOT_FOUND)
+    lab = None
+    if allow_lab and user.organization_id not in (
+        order.buyer_organization_id,
+        order.supplier_organization_id,
+    ):
+        lab = await lab_of(db, order.id)
+    side = side_of(order, user, lab)
+    if side is None:
         raise NotFound(ORDER_NOT_FOUND)
     return order, side
 
 
 async def get_order(db: AsyncSession, user: CurrentUser, order_id: uuid.UUID) -> OrderDetailOut:
-    await load(db, user, order_id)
-    row = (await db.execute(_select().where(Order.id == order_id))).one()
-    order, buyer_name, supplier_name, verified = row
-    base = _out(order, buyer_name, supplier_name, verified, user)
-    return OrderDetailOut(**base.model_dump(), events=await _events(db, order.id))
+    _, side = await load(db, user, order_id, allow_lab=True)
+    base = _out((await db.execute(_select().where(Order.id == order_id))).one(), user)
+    lab = user.organization_id if side == "qc" else None
+    events = await _events(db, order_id, lab_organization_id=lab)
+    return OrderDetailOut(**base.model_dump(), events=events)
 
 
 # --- انتقال‌ها -------------------------------------------------------------------------------
@@ -288,7 +376,7 @@ async def transition(
     reason: str | None = None,
     file_id: uuid.UUID | None = None,
 ) -> OrderDetailOut:
-    order, side = await load(db, user, order_id, for_update=True)
+    order, side = await load(db, user, order_id, for_update=True, allow_lab=True)
     rule = lifecycle.TRANSITIONS[action]
     if side not in rule.sides:
         raise Forbidden(NOT_YOUR_STEP, code="not_your_step")
@@ -297,6 +385,9 @@ async def transition(
         return await get_order(db, user, order.id)
     if order.status not in rule.from_statuses:
         raise Conflict(rule.blocked, code="invalid_transition")
+    if action == "ship" and not lifecycle.ship_ready(order, await inspection_status(db, order.id)):
+        # ردیف سفارش قفل است و هر تغییر بازرسی هم اول همین ردیف را قفل می‌کند
+        raise Conflict(INSPECTION_REQUIRED, code="inspection_required")
 
     previous = order.status
     now = utcnow()

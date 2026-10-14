@@ -27,6 +27,7 @@ from app.modules.agreements.router import router as agreements_router
 from app.modules.contracts.router import router as contracts_router
 from app.modules.files.router import router as files_router
 from app.modules.identity.router import router as auth_router
+from app.modules.inspections.router import router as inspections_router
 from app.modules.orders.router import router as orders_router
 from app.modules.organizations.router import router as organizations_router
 from app.modules.payments.router import router as payments_router
@@ -63,6 +64,7 @@ def build_api_router() -> APIRouter:
         orders_router,
         contracts_router,
         payments_router,
+        inspections_router,
         pricing_router,
         admin_router,
     ):

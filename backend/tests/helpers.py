@@ -224,10 +224,17 @@ class Deal:
     quote: dict[str, Any]
 
 
-async def make_deal(client_factory: Callable[[], httpx.AsyncClient]) -> Deal:
+async def make_deal(
+    client_factory: Callable[[], httpx.AsyncClient], *, with_drawing: bool = False
+) -> Deal:
     buyer = await register(client_factory(), company="کارخانه‌ی خریدار")
     supplier = await register(client_factory(), role="supplier", company="کارگاه برنده")
-    rfq = await create_rfq(buyer, title="ساخت ۲۰۰ عدد بوش برنجی")
+    extra: dict[str, Any] = {}
+    if with_drawing:
+        drawing = await upload_file(buyer, "bush-drawing.pdf")
+        assert drawing.status_code == 201, drawing.text
+        extra["fileIds"] = [drawing.json()["id"]]
+    rfq = await create_rfq(buyer, title="ساخت ۲۰۰ عدد بوش برنجی", **extra)
     quote = await submit_quote(supplier, rfq["id"], price=2_000_000_000, leadTimeDays=20)
     assert quote.status_code == 201, quote.text
     return Deal(buyer, supplier, rfq, quote.json())
@@ -249,3 +256,46 @@ async def order_of(deal: Deal) -> dict[str, Any]:
     )
     assert response.status_code == 200, response.text
     return response.json()  # type: ignore[no-any-return]
+
+
+async def signed_order(
+    client_factory: Callable[[], httpx.AsyncClient],
+    *,
+    prepayment: int = 0,
+    with_drawing: bool = False,
+) -> tuple[Deal, str]:
+    """سفارشی که قراردادش با درصد پیش‌پرداخت داده‌شده توسط هر دو طرف امضا شده است."""
+    deal = await make_deal(client_factory, with_drawing=with_drawing)
+    await award(deal)
+    order_id = str((await order_of(deal))["id"])
+    contract = (
+        await deal.buyer.client.get(f"{API}/orders/{order_id}/contract", headers=deal.buyer.auth)
+    ).json()
+    version = contract["version"]
+    if prepayment:
+        revised = await deal.buyer.client.put(
+            f"{API}/orders/{order_id}/contract",
+            json={**contract["terms"], "prepaymentPercent": prepayment, "changeNote": ""},
+            headers=deal.buyer.auth,
+        )
+        version = revised.json()["version"]
+    for account in (deal.buyer, deal.supplier):
+        signed = await account.client.post(
+            f"{API}/orders/{order_id}/contract/sign",
+            json={"version": version, "password": PASSWORD},
+            headers=account.auth,
+        )
+        assert signed.status_code == 200, signed.text
+    return deal, order_id
+
+
+async def verified_lab(
+    client_factory: Callable[[], httpx.AsyncClient], admin: Account, name: str
+) -> Account:
+    """آزمایشگاهی که ادمین حساب مدیرش را تأیید کرده است (قابل انتخاب برای بازرسی)."""
+    lab = await register(client_factory(), role="qc", company=name)
+    verified = await admin.client.post(
+        f"{API}/admin/users/{lab.user['id']}/verify", json={}, headers=admin.auth
+    )
+    assert verified.status_code == 200, verified.text
+    return lab

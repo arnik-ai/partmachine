@@ -13,14 +13,12 @@ from app.core.time import business_today
 from app.db.session import engine
 from tests.helpers import (
     API,
-    PASSWORD,
     PDF_BYTES,
     Account,
     Deal,
-    award,
-    make_deal,
     order_of,
     register,
+    signed_order,
     upload_file,
 )
 
@@ -28,29 +26,7 @@ from tests.helpers import (
 async def _signed(
     client_factory: Callable[[], httpx.AsyncClient], prepayment: int = 0
 ) -> tuple[Deal, str]:
-    """سفارشی که قراردادش با درصد پیش‌پرداخت داده‌شده توسط هر دو طرف امضا شده است."""
-    deal = await make_deal(client_factory)
-    await award(deal)
-    order_id = str((await order_of(deal))["id"])
-    contract = (
-        await deal.buyer.client.get(f"{API}/orders/{order_id}/contract", headers=deal.buyer.auth)
-    ).json()
-    version = contract["version"]
-    if prepayment:
-        revised = await deal.buyer.client.put(
-            f"{API}/orders/{order_id}/contract",
-            json={**contract["terms"], "prepaymentPercent": prepayment, "changeNote": ""},
-            headers=deal.buyer.auth,
-        )
-        version = revised.json()["version"]
-    for account in (deal.buyer, deal.supplier):
-        signed = await account.client.post(
-            f"{API}/orders/{order_id}/contract/sign",
-            json={"version": version, "password": PASSWORD},
-            headers=account.auth,
-        )
-        assert signed.status_code == 200, signed.text
-    return deal, order_id
+    return await signed_order(client_factory, prepayment=prepayment)
 
 
 async def _payments(account: Account, order_id: str) -> dict[str, Any]:

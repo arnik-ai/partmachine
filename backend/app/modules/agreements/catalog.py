@@ -1,4 +1,4 @@
-"""متن توافق‌ها — تنها مرجع متن قوانین ثبت‌نام، تعهدات کارفرما و NDA هر RFQ.
+"""متن توافق‌ها — تنها مرجع متن قوانین ثبت‌نام، تعهدات کارفرما، NDA هر RFQ و NDA آزمایشگاه.
 
 نسخه‌ی هر متن از خود محتوا ساخته می‌شود؛ هر تغییری در متن نسخه‌ی تازه می‌دهد و کاربر باید
 دوباره بپذیرد. پذیرش‌ها با نسخه، زمان، کاربر و سازمان در `agreement_acceptances` ثبت می‌شوند.
@@ -168,8 +168,45 @@ RFQ_NDA = Agreement(
     ),
 )
 
+# آزمایشگاهی که کارفرما برای بازرسی یک سفارش انتخاب کرده، پیش از دیدن نقشه‌ها می‌پذیرد (3d)
+INSPECTION_NDA = Agreement(
+    key="inspection_nda",
+    title="تعهد عدم افشای اطلاعات این سفارش (آزمایشگاه)",
+    items=(
+        AgreementItem(
+            "inspection-nda-confidential",
+            "نقشه‌ها، فایل‌های فنی، نمونه‌ها و نتایج بازرسی این سفارش را محرمانه نگه می‌دارم و در "
+            "اختیار شخص ثالث قرار نمی‌دهم.",
+            critical=True,
+        ),
+        AgreementItem(
+            "inspection-nda-purpose",
+            "این اطلاعات را فقط برای بازرسی کیفیت همین سفارش استفاده می‌کنم.",
+        ),
+        AgreementItem(
+            "inspection-nda-team",
+            "در سازمان ما فقط افرادی که در این بازرسی نقش دارند به فایل‌ها دسترسی خواهند داشت.",
+        ),
+        AgreementItem(
+            "inspection-nda-logging",
+            "می‌دانم هر دانلود فایل به نام من ثبت می‌شود و نقض این تعهد ممکن است به مسدود شدن حساب "
+            "و پیگیری حقوقی منجر شود.",
+            critical=True,
+        ),
+    ),
+)
+
 AGREEMENTS: dict[str, Agreement] = {
-    a.key: a for a in (BUYER_SIGNUP, SUPPLIER_SIGNUP, AGENT_SIGNUP, QC_SIGNUP, BUYER_ORDER, RFQ_NDA)
+    a.key: a
+    for a in (
+        BUYER_SIGNUP,
+        SUPPLIER_SIGNUP,
+        AGENT_SIGNUP,
+        QC_SIGNUP,
+        BUYER_ORDER,
+        RFQ_NDA,
+        INSPECTION_NDA,
+    )
 }
 
 SIGNUP_AGREEMENT_BY_ROLE: dict[str, str] = {

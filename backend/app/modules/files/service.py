@@ -18,6 +18,7 @@ from app.core.storage import FileTooLarge, get_storage
 from app.core.text import fa_digits
 from app.core.time import utcnow
 from app.modules.agreements import service as agreements
+from app.modules.agreements.catalog import INSPECTION_NDA
 from app.modules.audit import service as audit
 from app.modules.files.content import (
     CONTENT_TYPES,
@@ -187,6 +188,16 @@ async def _authorize_download(db: AsyncSession, user: CurrentUser, stored: Store
             if stored.organization_id != user.organization_id:
                 raise NotFound(FILE_NOT_FOUND)
             return
+        # آزمایشگاه بازرسی سفارشِ همین RFQ: پس از پذیرش تعهد عدم افشای مخصوص آزمایشگاه
+        if user.role == "qc" and await orders.lab_has_rfq(db, user.organization_id, stored.rfq_id):
+            if not await agreements.has_accepted_rfq_nda(
+                db, user.organization_id, stored.rfq_id, agreement=INSPECTION_NDA
+            ):
+                raise Forbidden(
+                    "برای دانلود فایل‌های این سفارش ابتدا تعهد عدم افشا را بپذیرید.",
+                    code="nda_required",
+                )
+            return
         rfq, view = await rfq_service.load_visible(db, user, stored.rfq_id)
         if view is RfqView.SUMMARY and not await agreements.has_accepted_rfq_nda(
             db, user.organization_id, rfq.id
@@ -201,11 +212,12 @@ async def _authorize_download(db: AsyncSession, user: CurrentUser, stored: Store
             raise NotFound(FILE_NOT_FOUND)
         return
     if stored.purpose == "order_document":
-        if stored.order_id is None:
-            if stored.organization_id != user.organization_id:
-                raise NotFound(FILE_NOT_FOUND)
+        # سند خود سازمان (مثلاً گزارش آزمایشگاه یا رسید کارفرما) همیشه برای خودش در دسترس است
+        if stored.organization_id == user.organization_id:
             return
-        # فقط طرف‌های همان سفارش (و ادمین)؛ بقیه 404
+        if stored.order_id is None:
+            raise NotFound(FILE_NOT_FOUND)
+        # فقط طرف‌های همان سفارش (و ادمین)؛ بقیه، از جمله آزمایشگاه، 404
         await orders.load(db, user, stored.order_id)
         return
     # portfolio_image: تصویر عمومی پروفایل قطعه‌ساز

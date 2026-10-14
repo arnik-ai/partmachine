@@ -23,6 +23,14 @@ class AgreementAcceptance(Base, UUIDPrimaryKey):
             unique=True,
             postgresql_where=text("document = 'rfq_nda'"),
         ),
+        # NDA آزمایشگاه برای فایل‌های همان RFQِ سفارش؛ هر سازمان یک‌بار
+        Index(
+            "uq_agreement_acceptances_inspection_nda",
+            "organization_id",
+            "rfq_id",
+            unique=True,
+            postgresql_where=text("document = 'inspection_nda'"),
+        ),
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))

@@ -34,6 +34,16 @@ class OrderSupplierOut(OrderPartyOut):
     verified: bool
 
 
+InspectionStatus = Literal["requested", "ready", "passed", "failed"]
+
+
+class OrderInspectionSummaryOut(CamelModel):
+    """خلاصه‌ی بازرسی کیفیت (اگر کارفرما آزمایشگاه انتخاب کرده باشد)."""
+
+    status: InspectionStatus
+    lab: OrderPartyOut
+
+
 class OrderFileOut(CamelModel):
     id: uuid.UUID
     name: str
@@ -61,7 +71,8 @@ class OrderOut(CamelModel):
     material: str
     quantity: int
     delivery_city: str
-    amount_rials: int
+    # برای آزمایشگاه null است؛ مبلغ و پرداخت‌ها فقط برای دو طرف و ادمین است
+    amount_rials: int | None
     lead_time_days: int
     delivery_due: date
     is_overdue: bool
@@ -72,6 +83,7 @@ class OrderOut(CamelModel):
     # طرفی که بیننده در این سفارش است، و کارهایی که همین حالا مجاز به انجامشان است
     my_side: Side
     next_actions: list[Action]
+    inspection: OrderInspectionSummaryOut | None = None
     created_at: datetime
     updated_at: datetime
     shipped_at: datetime | None = None

@@ -2,7 +2,7 @@
 
 سرویس فقط از همین جدول استفاده می‌کند و فرانت هم فهرست «کارهای مجاز من» را از سرور می‌گیرد؛
 قاعده‌ای در دو جا تکرار نمی‌شود. گام‌های بعدی فاز ۳ (قرارداد، پرداخت، بازرسی، اختلاف) اقدام‌های
-خود را به همین جدول اضافه می‌کنند.
+خود را به همین جدول اضافه می‌کنند؛ بازرسی کیفیت شرط «ارسال» را تعیین می‌کند (ship_ready).
 """
 
 from dataclasses import dataclass
@@ -11,7 +11,8 @@ from typing import Literal
 
 from app.modules.orders.models import Order
 
-Side = Literal["buyer", "supplier", "admin"]
+# qc: آزمایشگاهی که کارفرما برای بازرسی همین سفارش انتخاب کرده است (فقط بخش بازرسی را می‌بیند)
+Side = Literal["buyer", "supplier", "qc", "admin"]
 Action = Literal["cancel", "ship", "confirm_delivery"]
 
 OPEN_STATUSES = frozenset(
@@ -42,8 +43,9 @@ TRANSITIONS: dict[Action, Transition] = {
         frozenset({"buyer", "supplier"}),
         "پس از امضای قرارداد، سفارش فقط با توافق دو طرف یا تصمیم پشتیبانی لغو می‌شود.",
     ),
+    # با بازرسی کیفیت، ارسال از «در حال بازرسی» و فقط پس از قبولی است (ship_ready)
     "ship": Transition(
-        frozenset({"in_production"}),
+        frozenset({"in_production", "in_inspection"}),
         "shipped",
         frozenset({"supplier"}),
         "ارسال فقط پس از امضای قرارداد و شروع تولید ممکن است.",
@@ -59,13 +61,24 @@ TRANSITIONS: dict[Action, Transition] = {
 }
 
 
-def allowed_actions(order: Order, side: Side | None) -> list[Action]:
+def ship_ready(order: Order, inspection_status: str | None) -> bool:
+    """بدون بازرسی: از «در حال تولید». با بازرسی انتخاب‌شده: فقط پس از قبولی (O9)."""
+    if inspection_status is None:
+        return order.status == "in_production"
+    return order.status == "in_inspection" and inspection_status == "passed"
+
+
+def allowed_actions(
+    order: Order, side: Side | None, inspection_status: str | None = None
+) -> list[Action]:
     if side is None:
         return []
     return [
         action
         for action, rule in TRANSITIONS.items()
-        if side in rule.sides and order.status in rule.from_statuses
+        if side in rule.sides
+        and order.status in rule.from_statuses
+        and (action != "ship" or ship_ready(order, inspection_status))
     ]
 
 
