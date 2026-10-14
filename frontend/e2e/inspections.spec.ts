@@ -9,6 +9,7 @@ import {
   signContract,
   stamp,
   uniqueEmail,
+  verifyLab,
 } from "./helpers";
 
 /**
@@ -59,12 +60,7 @@ test.describe("quality inspection", () => {
 
     // ادمین حساب مدیر آزمایشگاه را تأیید می‌کند ⇒ آزمایشگاه در فهرست انتخاب کارفرماها
     const admin = await login(browser, ADMIN_EMAIL, ADMIN_PASSWORD);
-    await admin.goto("/admin/users");
-    await admin.getByLabel("جستجوی کاربر").fill(labEmail);
-    await admin.getByRole("button", { name: `تأیید حساب ${labOwner}` }).click();
-    await expect(
-      admin.getByText("این آزمایشگاه در فهرست انتخاب کارفرماها برای بازرسی کیفیت است."),
-    ).toBeVisible();
+    await verifyLab(admin, labEmail, labOwner);
 
     const title = `بازرسی آزمون ${stamp}`;
     const company = `کارگاه بازرسی ${stamp}`;

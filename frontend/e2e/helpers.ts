@@ -99,3 +99,18 @@ export async function signContract(page: Page, orderUrl: string): Promise<void> 
   await dialog.getByRole("button", { name: "امضا می‌کنم" }).click();
   await expect(dialog).toBeHidden();
 }
+
+/**
+ * ادمین حساب مدیر آزمایشگاه را تأیید می‌کند ⇒ آزمایشگاه در فهرست انتخاب کارفرماها قرار می‌گیرد.
+ * پیش از کلیک صبر می‌کند تا جستجو فقط همین کاربر را نشان دهد (آزمایشگاه‌های تأییدشده‌ی دیگر هم
+ * همان پیام راهنما را دارند).
+ */
+export async function verifyLab(admin: Page, email: string, ownerName: string): Promise<void> {
+  await admin.goto("/admin/users");
+  await admin.getByLabel("جستجوی کاربر").fill(email);
+  await expect(admin.getByText("۱ کاربر", { exact: true })).toBeVisible();
+  await admin.getByRole("button", { name: `تأیید حساب ${ownerName}` }).click();
+  await expect(
+    admin.getByText("این آزمایشگاه در فهرست انتخاب کارفرماها برای بازرسی کیفیت است."),
+  ).toBeVisible();
+}
