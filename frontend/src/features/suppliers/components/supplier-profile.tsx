@@ -12,6 +12,7 @@ import {
   MapPin,
   Package,
   Phone,
+  Star,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -111,6 +112,22 @@ export function SupplierProfile({ id }: { id: string }) {
               <Package className="h-4 w-4" />
               {faNumber(supplier.completedJobs)} پروژه‌ی تکمیل‌شده
             </span>
+            {supplier.deliveredJobs !== undefined && (
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-4 w-4" />
+                {supplier.deliveredJobs
+                  ? `تحویل به‌موقع: ${faNumber(supplier.onTimeJobs ?? 0)} از ${faNumber(supplier.deliveredJobs)}`
+                  : "هنوز سفارشی در پارت‌ماشین تحویل نداده است"}
+              </span>
+            )}
+            {supplier.ratingCount !== undefined && (
+              <span className="inline-flex items-center gap-1.5">
+                <Star className="h-4 w-4" />
+                {supplier.ratingAverage != null && supplier.ratingCount
+                  ? `امتیاز کارفرماها: ${faNumber(Math.round(supplier.ratingAverage * 10) / 10)} از ۵ (${faNumber(supplier.ratingCount)} امتیاز)`
+                  : "هنوز امتیازی از کارفرماها ندارد"}
+              </span>
+            )}
             {supplier.phone && (
               <span className="inline-flex items-center gap-1.5">
                 <Phone className="h-4 w-4" />

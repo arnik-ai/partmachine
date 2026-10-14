@@ -42,6 +42,13 @@ export function openDispute(
   return apiFetch<OrderDetail>(`/orders/${id}/dispute`, { method: "POST", body: input });
 }
 
+export function rateOrder(
+  id: string,
+  input: { score: number; comment: string },
+): Promise<OrderDetail> {
+  return apiFetch<OrderDetail>(`/orders/${id}/rating`, { method: "PUT", body: input });
+}
+
 export function confirmDelivery(id: string, note: string): Promise<OrderDetail> {
   return apiFetch<OrderDetail>(`/orders/${id}/confirm-delivery`, {
     method: "POST",

@@ -127,4 +127,17 @@ test("both owners sign the contract, the order is shipped, delivered and paid", 
     .click();
   await expect(supplier.getByText("تکمیل‌شده").first()).toBeVisible();
   await expect(supplier.getByText("این سفارش با موفقیت تکمیل شده است.")).toBeVisible();
+
+  // کارفرما امتیاز می‌دهد؛ سابقه‌ی عمومی قطعه‌ساز از همین سفارش واقعی ساخته می‌شود (O12)
+  await buyer.goto(orderUrl);
+  await buyer.getByRole("radio", { name: "۵ از ۵ — عالی" }).click();
+  await buyer.getByLabel("توضیح برای قطعه‌ساز (اختیاری)").fill("کیفیت و تحویل عالی");
+  await buyer.getByRole("button", { name: "ثبت امتیاز" }).click();
+  await expect(buyer.getByText("امتیاز شما ثبت شد. سپاس از بازخوردتان.")).toBeVisible();
+  await supplier.reload();
+  await expect(supplier.getByText("کیفیت و تحویل عالی").first()).toBeVisible();
+  await buyer.getByRole("link", { name: company }).click();
+  await buyer.waitForURL("**/suppliers/**");
+  await expect(buyer.getByText("تحویل به‌موقع: ۱ از ۱")).toBeVisible();
+  await expect(buyer.getByText("امتیاز کارفرماها: ۵ از ۵ (۱ امتیاز)")).toBeVisible();
 });

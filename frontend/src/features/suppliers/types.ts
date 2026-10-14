@@ -49,6 +49,12 @@ export interface Supplier {
   productionCapacityPerMonth?: number | null;
   leadTimeDays: number;
   completedJobs: number;
+  /** سابقه‌ی واقعی در پارت‌ماشین (نسخه‌ی نمایشی ندارد) */
+  deliveredJobs?: number;
+  onTimeJobs?: number;
+  ratingCount?: number;
+  /** میانگین امتیاز ۱ تا ۵ کارفرماها؛ بدون امتیاز null */
+  ratingAverage?: number | null;
   onTimeDeliveryRate: number; // 0-1
   responseTimeHours: number;
   verified: boolean;

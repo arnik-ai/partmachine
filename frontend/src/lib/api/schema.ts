@@ -1145,6 +1145,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orders/{order_id}/rating": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Rate Order
+         * @description ثبت یا تغییر امتیاز ۱ تا ۵ (فقط کارفرما، پس از تکمیل سفارش).
+         */
+        put: operations["rate_order_api_v1_orders__order_id__rating_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pricing/estimate": {
         parameters: {
             query?: never;
@@ -2334,6 +2354,23 @@ export interface components {
             leadTimeDays: number;
             /** Completedjobs */
             completedJobs: number;
+            /**
+             * Deliveredjobs
+             * @default 0
+             */
+            deliveredJobs: number;
+            /**
+             * Ontimejobs
+             * @default 0
+             */
+            onTimeJobs: number;
+            /**
+             * Ratingcount
+             * @default 0
+             */
+            ratingCount: number;
+            /** Ratingaverage */
+            ratingAverage?: number | null;
             /** Ontimedeliveryrate */
             onTimeDeliveryRate: number;
             /** Responsetimehours */
@@ -2476,6 +2513,12 @@ export interface components {
             /** Events */
             events: components["schemas"]["OrderEventOut"][];
             dispute?: components["schemas"]["OrderDisputeOut"] | null;
+            rating?: components["schemas"]["OrderRatingOut"] | null;
+            /**
+             * Canrate
+             * @default false
+             */
+            canRate: boolean;
         };
         /**
          * OrderDisputeOut
@@ -2661,6 +2704,23 @@ export interface components {
             organizationId: string;
             /** Name */
             name: string;
+        };
+        /**
+         * OrderRatingOut
+         * @description امتیاز کارفرما پس از تکمیل؛ توضیح فقط برای دو طرف همین سفارش.
+         */
+        OrderRatingOut: {
+            /** Score */
+            score: number;
+            /** Comment */
+            comment: string;
+            /** Ratedbyname */
+            ratedByName?: string | null;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
         };
         /** OrderSupplierOut */
         OrderSupplierOut: {
@@ -2895,6 +2955,16 @@ export interface components {
             /** Isawarded */
             isAwarded: boolean;
             priceAssessment?: components["schemas"]["PriceAssessmentOut"] | null;
+        };
+        /** RatingInput */
+        RatingInput: {
+            /** Score */
+            score: number;
+            /**
+             * Comment
+             * @default
+             */
+            comment: string;
         };
         /** RegisterInput */
         RegisterInput: {
@@ -3209,6 +3279,23 @@ export interface components {
             leadTimeDays: number;
             /** Completedjobs */
             completedJobs: number;
+            /**
+             * Deliveredjobs
+             * @default 0
+             */
+            deliveredJobs: number;
+            /**
+             * Ontimejobs
+             * @default 0
+             */
+            onTimeJobs: number;
+            /**
+             * Ratingcount
+             * @default 0
+             */
+            ratingCount: number;
+            /** Ratingaverage */
+            ratingAverage?: number | null;
             /** Ontimedeliveryrate */
             onTimeDeliveryRate: number;
             /** Responsetimehours */
@@ -10107,6 +10194,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminDisputeOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    rate_order_api_v1_orders__order_id__rating_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RatingInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailOut"];
                 };
             };
             /** @description Bad Request */

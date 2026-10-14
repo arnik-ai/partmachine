@@ -158,9 +158,20 @@ export interface OrderDispute {
   openedAt: string;
 }
 
+/** امتیاز ۱ تا ۵ کارفرما پس از تکمیل؛ توضیح فقط برای دو طرف همین سفارش */
+export interface OrderRating {
+  score: number;
+  comment: string;
+  ratedByName?: string | null;
+  updatedAt: string;
+}
+
 export interface OrderDetail extends OrderSummary {
   events: OrderEvent[];
   dispute?: OrderDispute | null;
+  rating?: OrderRating | null;
+  /** کارفرما پس از تکمیل می‌تواند امتیاز بدهد یا آن را تغییر دهد */
+  canRate: boolean;
 }
 
 export interface OrderPage {

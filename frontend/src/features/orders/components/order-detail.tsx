@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { downloadFile } from "@/features/files/api";
 import { FileUploader, type UploadState } from "@/features/files/components/file-uploader";
 import { InspectionCard } from "@/features/inspections/components/inspection-card";
+import { RatingCard } from "./rating-card";
 import { PaymentsCard } from "@/features/payments/components/payments-card";
 import { ApiError, errorMessage } from "@/lib/api-client";
 import { faDate, faDateTime, faNumber, faToman } from "@/lib/utils";
@@ -71,6 +72,7 @@ const EVENT_LABELS: Record<string, string> = {
   cancel_request_closed: "بسته شدن درخواست لغو",
   dispute: "اعلام مشکل",
   dispute_resolved: "تصمیم پشتیبانی",
+  rated: "امتیاز کارفرما",
   completed: "تکمیل سفارش",
 };
 
@@ -112,6 +114,7 @@ export function OrderDetailView({ orderId }: { orderId: string }) {
       <OrderHeader order={order} />
       {/* آزمایشگاه فقط بخش بازرسی را دارد؛ مبلغ، پرداخت‌ها و قرارداد برایش نیست */}
       {order.mySide !== "qc" && <NextStep order={order} />}
+      {order.status === "completed" && order.mySide !== "qc" && <RatingCard order={order} />}
       <InspectionCard order={order} />
       {order.mySide !== "qc" && <PaymentsCard order={order} />}
       <div className="grid gap-6 lg:grid-cols-2">

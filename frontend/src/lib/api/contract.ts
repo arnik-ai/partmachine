@@ -127,6 +127,7 @@ export type RequestContract = [
   Check<Assignable<InspectionResultInput, Schemas["InspectionResultInput"]>>,
   Check<Assignable<{ reason: string; fileId?: string | null }, Schemas["OpenDisputeInput"]>>,
   Check<Assignable<{ note: string }, Schemas["KeepOrderInput"]>>,
+  Check<Assignable<{ score: number; comment: string }, Schemas["RatingInput"]>>,
   Check<
     Assignable<
       { resolution: "resume" | "complete" | "cancel"; reason: string },
