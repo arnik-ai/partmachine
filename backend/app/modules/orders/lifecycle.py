@@ -28,6 +28,11 @@ class Transition:
     sides: frozenset[Side]
     # پیام وقتی وضعیت فعلی اجازه نمی‌دهد
     blocked: str
+    # وضعیت‌هایی که یعنی این اقدام قبلاً انجام شده (درخواست تکراری بی‌اثر و موفق است)
+    done_statuses: frozenset[str] = frozenset()
+
+    def already_done(self, status: str) -> bool:
+        return status == self.to_status or status in self.done_statuses
 
 
 TRANSITIONS: dict[Action, Transition] = {
@@ -42,12 +47,14 @@ TRANSITIONS: dict[Action, Transition] = {
         "shipped",
         frozenset({"supplier"}),
         "ارسال فقط پس از امضای قرارداد و شروع تولید ممکن است.",
+        frozenset({"delivered", "completed"}),
     ),
     "confirm_delivery": Transition(
         frozenset({"shipped"}),
         "delivered",
         frozenset({"buyer"}),
         "تحویل فقط پس از ارسال سفارش تأیید می‌شود.",
+        frozenset({"completed"}),
     ),
 }
 

@@ -29,6 +29,7 @@ from app.modules.orders.schemas import (
     StatusGroup,
 )
 from app.modules.organizations.models import Organization
+from app.modules.payments.models import OrderPayment
 from app.modules.quotations.models import Quotation
 from app.modules.rfqs.models import Rfq
 from app.modules.suppliers.models import Supplier
@@ -259,7 +260,7 @@ async def get_order(db: AsyncSession, user: CurrentUser, order_id: uuid.UUID) ->
 # --- انتقال‌ها -------------------------------------------------------------------------------
 
 
-async def _attach_file(
+async def attach_document(
     db: AsyncSession, user: CurrentUser, order: Order, file_id: uuid.UUID
 ) -> uuid.UUID:
     stored = await db.scalar(
@@ -291,7 +292,7 @@ async def transition(
     rule = lifecycle.TRANSITIONS[action]
     if side not in rule.sides:
         raise Forbidden(NOT_YOUR_STEP, code="not_your_step")
-    if order.status == rule.to_status:
+    if rule.already_done(order.status):
         # درخواست تکراری (مثلاً دوبار زدن دکمه یا تکرار شبکه): بی‌اثر و موفق
         return await get_order(db, user, order.id)
     if order.status not in rule.from_statuses:
@@ -308,9 +309,14 @@ async def transition(
         order.shipped_at = now
     elif action == "confirm_delivery":
         order.delivered_at = now
-    attached = await _attach_file(db, user, order, file_id) if file_id else None
+    attached = await attach_document(db, user, order, file_id) if file_id else None
 
     record_event(db, order, action, previous, rule.to_status, user, side, note, attached)
+    if action == "confirm_delivery" and await all_paid(db, order.id):
+        # همه‌ی اقساط پیش‌تر تأیید شده‌اند (مثلاً ۱۰۰٪ پیش‌پرداخت) ⇒ سفارش همین حالا تکمیل است
+        order.status = "completed"
+        order.completed_at = now
+        record_event(db, order, "completed", rule.to_status, "completed", None, "system")
     audit.record(
         db,
         action=f"order.{action}",
@@ -322,6 +328,17 @@ async def transition(
     )
     await db.commit()
     return await get_order(db, user, order.id)
+
+
+async def all_paid(db: AsyncSession, order_id: uuid.UUID, *, also: uuid.UUID | None = None) -> bool:
+    """آیا اقساط این سفارش ساخته شده و همه تأیید شده‌اند؟ (`also`: قسطی که در همین تراکنش
+    تأیید می‌شود.) بدون اقساط پاسخ منفی است."""
+    rows = (
+        await db.execute(
+            select(OrderPayment.id, OrderPayment.status).where(OrderPayment.order_id == order_id)
+        )
+    ).all()
+    return bool(rows) and all(status == "confirmed" or pid == also for pid, status in rows)
 
 
 async def orders_for_quotations(

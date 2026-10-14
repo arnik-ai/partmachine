@@ -165,8 +165,9 @@ async def test_shipping_with_a_private_document_and_delivery(
     delivered = await _act(deal.buyer, order["id"], "confirm-delivery", {"note": "سالم رسید"})
     assert delivered.status_code == 200
     assert delivered.json()["status"] == "delivered" and delivered.json()["deliveredAt"]
+    # تکرار «ارسال» پس از تحویل بی‌اثر و موفق است (مثلاً تکرار شبکه)
     reship = await _act(deal.supplier, order["id"], "ship", {})
-    assert reship.status_code == 409
+    assert reship.status_code == 200 and reship.json()["status"] == "delivered"
 
 
 async def test_documents_must_be_fresh_and_owned(

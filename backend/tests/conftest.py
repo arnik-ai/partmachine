@@ -42,7 +42,8 @@ from app.main import app  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 TABLES = (
-    "audit_events, agreement_acceptances, contract_signatures, contract_versions, contracts, "
+    "audit_events, agreement_acceptances, order_payments, contract_signatures, contract_versions, "
+    "contracts, "
     "order_events, files, orders, verification_requests, organization_invites, refresh_tokens, "
     "quotations, rfqs, suppliers, users, organizations"
 )

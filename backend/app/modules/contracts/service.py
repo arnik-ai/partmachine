@@ -32,6 +32,7 @@ from app.modules.identity.models import User
 from app.modules.orders import service as orders
 from app.modules.orders.models import Order
 from app.modules.organizations.models import Organization
+from app.modules.payments import service as payments
 from app.modules.suppliers.models import Supplier
 
 # پیش‌فرض‌های نسخه‌ی اول (O4): پرداخت کامل پس از تحویل، جریمه‌ی ۰٫۵٪ روزانه تا سقف ۱۰٪
@@ -351,6 +352,8 @@ async def sign_contract(
         contract.signed_at = utcnow()
         to_status = "awaiting_prepayment" if current.prepayment_percent > 0 else "in_production"
         order.status = to_status
+        # اقساط طبق شرایط پرداخت همین نسخه (O7)
+        await payments.create_schedule(db, order, current.prepayment_percent)
     orders.record_event(
         db,
         order,

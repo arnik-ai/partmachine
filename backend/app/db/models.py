@@ -8,6 +8,7 @@ from app.modules.files.models import StoredFile
 from app.modules.identity.models import RefreshToken, User
 from app.modules.orders.models import Order, OrderEvent
 from app.modules.organizations.models import Organization, OrganizationInvite
+from app.modules.payments.models import OrderPayment
 from app.modules.quotations.models import Quotation
 from app.modules.rfqs.models import Rfq
 from app.modules.suppliers.models import Supplier
@@ -21,6 +22,7 @@ __all__ = [
     "ContractVersion",
     "Base",
     "Order",
+    "OrderPayment",
     "OrderEvent",
     "Organization",
     "OrganizationInvite",
