@@ -3,7 +3,8 @@
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import NotFound, field_error
@@ -57,6 +58,39 @@ def record(
             user_agent=client.user_agent if client else None,
         )
     )
+
+
+async def record_rfq_nda(
+    db: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    rfq_id: uuid.UUID,
+    client: ClientInfo | None,
+) -> bool:
+    """پذیرش NDA یک RFQ برای سازمان؛ اگر هم‌زمان ثبت شده باشد کاری نمی‌کند و False برمی‌گرداند.
+
+    با ON CONFLICT DO NOTHING خطای تکراری اصلاً رخ نمی‌دهد و تراکنش و اتصال سالم می‌مانند
+    (ادامه‌ی کار پس از IntegrityError و rollback در asyncpg گاهی به خطای اتصال می‌خورد).
+    """
+    result = await db.execute(
+        insert(AgreementAcceptance)
+        .values(
+            id=uuid.uuid4(),
+            user_id=user_id,
+            organization_id=organization_id,
+            document=RFQ_NDA.key,
+            version=RFQ_NDA.version,
+            rfq_id=rfq_id,
+            ip=client.ip if client else None,
+            user_agent=client.user_agent if client else None,
+        )
+        .on_conflict_do_nothing(
+            index_elements=["organization_id", "rfq_id"],
+            index_where=text("document = 'rfq_nda'"),
+        )
+    )
+    return bool(result.rowcount)  # type: ignore[attr-defined]
 
 
 async def has_accepted_rfq_nda(

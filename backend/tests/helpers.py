@@ -1,6 +1,7 @@
 """ابزارهای کمکی تست: ساخت حساب، RFQ و پیشنهاد از طریق خود API (نه مستقیم در DB)."""
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
@@ -210,3 +211,41 @@ async def join_organization(owner: Account, client: httpx.AsyncClient) -> Accoun
     assert response.status_code == 201, response.text
     data = response.json()
     return Account(client=client, user=data["user"], token=data["accessToken"])
+
+
+# --- سفارش و قرارداد (فاز ۳) ---------------------------------------------------------------
+
+
+@dataclass
+class Deal:
+    buyer: Account
+    supplier: Account
+    rfq: dict[str, Any]
+    quote: dict[str, Any]
+
+
+async def make_deal(client_factory: Callable[[], httpx.AsyncClient]) -> Deal:
+    buyer = await register(client_factory(), company="کارخانه‌ی خریدار")
+    supplier = await register(client_factory(), role="supplier", company="کارگاه برنده")
+    rfq = await create_rfq(buyer, title="ساخت ۲۰۰ عدد بوش برنجی")
+    quote = await submit_quote(supplier, rfq["id"], price=2_000_000_000, leadTimeDays=20)
+    assert quote.status_code == 201, quote.text
+    return Deal(buyer, supplier, rfq, quote.json())
+
+
+async def award(deal: Deal) -> httpx.Response:
+    return await deal.buyer.client.post(
+        f"{API}/quotations/{deal.quote['id']}/award", headers=deal.buyer.auth
+    )
+
+
+async def order_of(deal: Deal) -> dict[str, Any]:
+    rfq = (
+        await deal.buyer.client.get(f"{API}/rfqs/{deal.rfq['id']}", headers=deal.buyer.auth)
+    ).json()
+    assert rfq["orderId"], rfq
+    response = await deal.buyer.client.get(
+        f"{API}/orders/{rfq['orderId']}", headers=deal.buyer.auth
+    )
+    assert response.status_code == 200, response.text
+    return response.json()  # type: ignore[no-any-return]

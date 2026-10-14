@@ -24,6 +24,7 @@ from app.core.schemas import ErrorResponse
 from app.db.session import engine
 from app.modules.admin.router import router as admin_router
 from app.modules.agreements.router import router as agreements_router
+from app.modules.contracts.router import router as contracts_router
 from app.modules.files.router import router as files_router
 from app.modules.identity.router import router as auth_router
 from app.modules.orders.router import router as orders_router
@@ -59,6 +60,7 @@ def build_api_router() -> APIRouter:
         rfqs_router,
         quotations_router,
         orders_router,
+        contracts_router,
         pricing_router,
         admin_router,
     ):

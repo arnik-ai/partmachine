@@ -73,7 +73,7 @@ async def create_for_award(
     )
     db.add(order)
     await db.flush()
-    _event(db, order, "created", None, "awaiting_contract", actor, "buyer")
+    record_event(db, order, "created", None, "awaiting_contract", actor, "buyer")
     audit.record(
         db,
         action="order.created",
@@ -86,7 +86,7 @@ async def create_for_award(
     return order
 
 
-def _event(
+def record_event(
     db: AsyncSession,
     order: Order,
     action: str,
@@ -310,7 +310,7 @@ async def transition(
         order.delivered_at = now
     attached = await _attach_file(db, user, order, file_id) if file_id else None
 
-    _event(db, order, action, previous, rule.to_status, user, side, note, attached)
+    record_event(db, order, action, previous, rule.to_status, user, side, note, attached)
     audit.record(
         db,
         action=f"order.{action}",

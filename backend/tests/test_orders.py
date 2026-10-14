@@ -3,7 +3,6 @@
 
 import asyncio
 from collections.abc import Callable
-from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
 
@@ -17,47 +16,13 @@ from tests.helpers import (
     API,
     PDF_BYTES,
     Account,
-    create_rfq,
+    award,
     make_admin,
+    make_deal,
+    order_of,
     register,
-    submit_quote,
     upload_file,
 )
-
-
-@dataclass
-class Deal:
-    buyer: Account
-    supplier: Account
-    rfq: dict[str, Any]
-    quote: dict[str, Any]
-
-
-async def _deal(client_factory: Callable[[], httpx.AsyncClient]) -> Deal:
-    buyer = await register(client_factory(), company="کارخانه‌ی خریدار")
-    supplier = await register(client_factory(), role="supplier", company="کارگاه برنده")
-    rfq = await create_rfq(buyer, title="ساخت ۲۰۰ عدد بوش برنجی")
-    quote = await submit_quote(supplier, rfq["id"], price=2_000_000_000, leadTimeDays=20)
-    assert quote.status_code == 201, quote.text
-    return Deal(buyer, supplier, rfq, quote.json())
-
-
-async def _award(deal: Deal) -> httpx.Response:
-    return await deal.buyer.client.post(
-        f"{API}/quotations/{deal.quote['id']}/award", headers=deal.buyer.auth
-    )
-
-
-async def _order_of(deal: Deal) -> dict[str, Any]:
-    rfq = (
-        await deal.buyer.client.get(f"{API}/rfqs/{deal.rfq['id']}", headers=deal.buyer.auth)
-    ).json()
-    assert rfq["orderId"], rfq
-    response = await deal.buyer.client.get(
-        f"{API}/orders/{rfq['orderId']}", headers=deal.buyer.auth
-    )
-    assert response.status_code == 200, response.text
-    return response.json()  # type: ignore[no-any-return]
 
 
 async def _set_status(order_id: str, status: str, **extra: Any) -> None:
@@ -80,14 +45,14 @@ async def _act(
 async def test_award_creates_exactly_one_order_for_both_parties(
     client_factory: Callable[[], httpx.AsyncClient],
 ) -> None:
-    deal = await _deal(client_factory)
+    deal = await make_deal(client_factory)
     # چند درخواست هم‌زمان انتخاب برنده ⇒ فقط یک سفارش
-    responses = await asyncio.gather(*(_award(deal) for _ in range(5)))
+    responses = await asyncio.gather(*(award(deal) for _ in range(5)))
     assert all(r.status_code == 200 for r in responses)
     async with engine.connect() as conn:
         assert await conn.scalar(select(func.count()).select_from(Order)) == 1
 
-    order = await _order_of(deal)
+    order = await order_of(deal)
     assert order["status"] == "awaiting_contract"
     assert order["number"] >= 1001
     assert order["amountRials"] == 2_000_000_000 and order["leadTimeDays"] == 20
@@ -121,9 +86,9 @@ async def test_award_creates_exactly_one_order_for_both_parties(
 async def test_either_side_can_cancel_before_the_contract(
     client_factory: Callable[[], httpx.AsyncClient],
 ) -> None:
-    deal = await _deal(client_factory)
-    await _award(deal)
-    order = await _order_of(deal)
+    deal = await make_deal(client_factory)
+    await award(deal)
+    order = await order_of(deal)
 
     no_reason = await _act(deal.supplier, order["id"], "cancel", {"reason": " "})
     assert no_reason.status_code == 422
@@ -159,9 +124,9 @@ async def test_either_side_can_cancel_before_the_contract(
 async def test_shipping_with_a_private_document_and_delivery(
     client_factory: Callable[[], httpx.AsyncClient],
 ) -> None:
-    deal = await _deal(client_factory)
-    await _award(deal)
-    order = await _order_of(deal)
+    deal = await make_deal(client_factory)
+    await award(deal)
+    order = await order_of(deal)
     # قرارداد و پرداخت در گام‌های 3b و 3c می‌آیند؛ اینجا سفارش مستقیم به تولید برده می‌شود
     await _set_status(order["id"], "in_production")
 
@@ -207,9 +172,9 @@ async def test_shipping_with_a_private_document_and_delivery(
 async def test_documents_must_be_fresh_and_owned(
     client_factory: Callable[[], httpx.AsyncClient],
 ) -> None:
-    deal = await _deal(client_factory)
-    await _award(deal)
-    order = await _order_of(deal)
+    deal = await make_deal(client_factory)
+    await award(deal)
+    order = await order_of(deal)
     await _set_status(order["id"], "in_production")
 
     async def ship_with(file_id: str) -> httpx.Response:
@@ -234,9 +199,9 @@ async def test_documents_must_be_fresh_and_owned(
 async def test_lists_filters_overdue_and_admin_view(
     client_factory: Callable[[], httpx.AsyncClient],
 ) -> None:
-    deal = await _deal(client_factory)
-    await _award(deal)
-    order = await _order_of(deal)
+    deal = await make_deal(client_factory)
+    await award(deal)
+    order = await order_of(deal)
     yesterday = business_today() - timedelta(days=1)
     await _set_status(order["id"], "in_production", delivery_due=yesterday)
 

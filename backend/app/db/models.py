@@ -3,6 +3,7 @@
 from app.db.base import Base
 from app.modules.agreements.models import AgreementAcceptance
 from app.modules.audit.models import AuditEvent
+from app.modules.contracts.models import Contract, ContractSignature, ContractVersion
 from app.modules.files.models import StoredFile
 from app.modules.identity.models import RefreshToken, User
 from app.modules.orders.models import Order, OrderEvent
@@ -15,6 +16,9 @@ from app.modules.verification.models import VerificationRequest
 __all__ = [
     "AgreementAcceptance",
     "AuditEvent",
+    "Contract",
+    "ContractSignature",
+    "ContractVersion",
     "Base",
     "Order",
     "OrderEvent",

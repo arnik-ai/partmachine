@@ -5687,6 +5687,507 @@
         }
       }
     },
+    "/api/v1/orders/{order_id}/contract": {
+      "get": {
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Get Contract",
+        "operationId": "get_contract_api_v1_orders__order_id__contract_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Update Contract",
+        "description": "نسخه‌ی تازه با پارامترهای جدید؛ امضاهای نسخه‌ی قبلی دیگر معتبر نیستند (O5).",
+        "operationId": "update_contract_api_v1_orders__order_id__contract_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateContractInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/contract/sign": {
+      "post": {
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Sign Contract",
+        "operationId": "sign_contract_api_v1_orders__order_id__contract_sign_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignContractInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/contract/change-request": {
+      "post": {
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Request Change",
+        "operationId": "request_change_api_v1_orders__order_id__contract_change_request_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
     "/api/v1/pricing/estimate": {
       "post": {
         "tags": [
@@ -7957,6 +8458,21 @@
         ],
         "title": "ChangePasswordInput"
       },
+      "ChangeRequestInput": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 3,
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "note"
+        ],
+        "title": "ChangeRequestInput"
+      },
       "ConfirmDeliveryInput": {
         "properties": {
           "note": {
@@ -7968,6 +8484,267 @@
         },
         "type": "object",
         "title": "ConfirmDeliveryInput"
+      },
+      "ContractArticleOut": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "paragraphs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Paragraphs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "title",
+          "paragraphs"
+        ],
+        "title": "ContractArticleOut"
+      },
+      "ContractOut": {
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Orderid"
+          },
+          "orderNumber": {
+            "type": "integer",
+            "title": "Ordernumber"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "partially_signed",
+              "signed"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "terms": {
+            "$ref": "#/components/schemas/ContractTermsOut"
+          },
+          "articles": {
+            "items": {
+              "$ref": "#/components/schemas/ContractArticleOut"
+            },
+            "type": "array",
+            "title": "Articles"
+          },
+          "contentSha256": {
+            "type": "string",
+            "title": "Contentsha256"
+          },
+          "templateVersion": {
+            "type": "string",
+            "title": "Templateversion"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "signedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signedat"
+          },
+          "signatures": {
+            "items": {
+              "$ref": "#/components/schemas/ContractSignatureOut"
+            },
+            "type": "array",
+            "title": "Signatures"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/ContractVersionSummary"
+            },
+            "type": "array",
+            "title": "History"
+          },
+          "mySide": {
+            "type": "string",
+            "enum": [
+              "buyer",
+              "supplier",
+              "admin"
+            ],
+            "title": "Myside"
+          },
+          "isOpen": {
+            "type": "boolean",
+            "title": "Isopen"
+          },
+          "canEdit": {
+            "type": "boolean",
+            "title": "Canedit"
+          },
+          "canSign": {
+            "type": "boolean",
+            "title": "Cansign"
+          },
+          "canRequestChange": {
+            "type": "boolean",
+            "title": "Canrequestchange"
+          },
+          "draftNotice": {
+            "type": "string",
+            "title": "Draftnotice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "orderId",
+          "orderNumber",
+          "status",
+          "version",
+          "terms",
+          "articles",
+          "contentSha256",
+          "templateVersion",
+          "createdAt",
+          "signatures",
+          "history",
+          "mySide",
+          "isOpen",
+          "canEdit",
+          "canSign",
+          "canRequestChange",
+          "draftNotice"
+        ],
+        "title": "ContractOut"
+      },
+      "ContractSignatureOut": {
+        "properties": {
+          "side": {
+            "type": "string",
+            "enum": [
+              "buyer",
+              "supplier"
+            ],
+            "title": "Side"
+          },
+          "signerName": {
+            "type": "string",
+            "title": "Signername"
+          },
+          "organizationName": {
+            "type": "string",
+            "title": "Organizationname"
+          },
+          "signedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Signedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "side",
+          "signerName",
+          "organizationName",
+          "signedAt"
+        ],
+        "title": "ContractSignatureOut"
+      },
+      "ContractTermsOut": {
+        "properties": {
+          "deliveryDue": {
+            "type": "string",
+            "format": "date",
+            "title": "Deliverydue"
+          },
+          "prepaymentPercent": {
+            "type": "integer",
+            "title": "Prepaymentpercent"
+          },
+          "penaltyPerDayBp": {
+            "type": "integer",
+            "title": "Penaltyperdaybp"
+          },
+          "penaltyCapPercent": {
+            "type": "integer",
+            "title": "Penaltycappercent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deliveryDue",
+          "prepaymentPercent",
+          "penaltyPerDayBp",
+          "penaltyCapPercent"
+        ],
+        "title": "ContractTermsOut"
+      },
+      "ContractVersionSummary": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "createdByName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdbyname"
+          },
+          "changeNote": {
+            "type": "string",
+            "title": "Changenote"
+          },
+          "contentSha256": {
+            "type": "string",
+            "title": "Contentsha256"
+          },
+          "signatures": {
+            "items": {
+              "$ref": "#/components/schemas/ContractSignatureOut"
+            },
+            "type": "array",
+            "title": "Signatures"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "createdAt",
+          "changeNote",
+          "contentSha256",
+          "signatures"
+        ],
+        "title": "ContractVersionSummary"
       },
       "CostComponent": {
         "properties": {
@@ -10291,6 +11068,28 @@
         "title": "ShipOrderInput",
         "description": "اطلاعات ارسال (مثلاً نام باربری و شماره‌ی بارنامه) و سند اختیاری."
       },
+      "SignContractInput": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "password"
+        ],
+        "title": "SignContractInput",
+        "description": "نسخه‌ای که امضاکننده خوانده است؛ اگر در این فاصله عوض شده باشد امضا رد می‌شود."
+      },
       "SubmitVerificationInput": {
         "properties": {
           "fileIds": {
@@ -10851,6 +11650,47 @@
           "components"
         ],
         "title": "TrustScoreOut"
+      },
+      "UpdateContractInput": {
+        "properties": {
+          "deliveryDue": {
+            "type": "string",
+            "format": "date",
+            "title": "Deliverydue"
+          },
+          "prepaymentPercent": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Prepaymentpercent"
+          },
+          "penaltyPerDayBp": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Penaltyperdaybp"
+          },
+          "penaltyCapPercent": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Penaltycappercent"
+          },
+          "changeNote": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Changenote",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "deliveryDue",
+          "prepaymentPercent",
+          "penaltyPerDayBp",
+          "penaltyCapPercent"
+        ],
+        "title": "UpdateContractInput"
       },
       "UserOut": {
         "properties": {

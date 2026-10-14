@@ -6,7 +6,6 @@ from datetime import date, timedelta
 from typing import Any, Literal
 
 from sqlalchemy import ColumnElement, Subquery, and_, false, func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import Conflict, NotFound, field_error
@@ -422,29 +421,24 @@ async def accept_nda(
     """قطعه‌ساز NDA همین RFQ را از طرف سازمانش می‌پذیرد (یک‌بار برای هر سازمان)."""
     agreement = agreements.require_accepted([data], RFQ_NDA.key)
     rfq, view, _ = await _load(db, user, rfq_id)
-    if view is RfqView.SUMMARY and not await agreements.has_accepted_rfq_nda(
-        db, user.organization_id, rfq.id
-    ):
-        agreements.record(
+    if view is RfqView.SUMMARY:
+        # درخواست هم‌زمان عضو دیگری از همین سازمان: فقط یکی ثبت می‌شود، نتیجه برای هر دو یکی است
+        recorded = await agreements.record_rfq_nda(
             db,
-            agreement=agreement,
             user_id=user.id,
             organization_id=user.organization_id,
-            client=client,
             rfq_id=rfq.id,
+            client=client,
         )
-        audit.record(
-            db,
-            action="rfq.nda_accepted",
-            entity_type="rfq",
-            entity_id=rfq.id,
-            actor_user_id=user.id,
-            organization_id=user.organization_id,
-            data={"version": agreement.version},
-        )
-        try:
-            await db.commit()
-        except IntegrityError:
-            # عضو دیگری از همین سازمان هم‌زمان پذیرفت؛ نتیجه همان است
-            await db.rollback()
+        if recorded:
+            audit.record(
+                db,
+                action="rfq.nda_accepted",
+                entity_type="rfq",
+                entity_id=rfq.id,
+                actor_user_id=user.id,
+                organization_id=user.organization_id,
+                data={"version": agreement.version},
+            )
+        await db.commit()
     return await get_rfq(db, user, rfq.id)
