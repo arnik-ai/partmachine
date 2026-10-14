@@ -13,6 +13,8 @@ const STATUS_VARIANT: Record<
   draft: "outline",
   published: "secondary",
   quoting: "warning",
+  evaluating: "warning",
+  expired: "outline",
   awarded: "success",
   closed: "outline",
   cancelled: "destructive",
@@ -53,10 +55,12 @@ export function RfqCard({ rfq }: { rfq: Rfq }) {
             <FileText className="h-3.5 w-3.5" />
             {faNumber(rfq.files.length)} فایل
           </span>
-          <span className="inline-flex items-center gap-1">
-            <MessageSquareQuote className="h-3.5 w-3.5" />
-            {faNumber(rfq.quotationsCount)} استعلام دریافتی
-          </span>
+          {rfq.quotationsCount !== null && (
+            <span className="inline-flex items-center gap-1">
+              <MessageSquareQuote className="h-3.5 w-3.5" />
+              {faNumber(rfq.quotationsCount)} پیشنهاد دریافتی
+            </span>
+          )}
         </div>
       </CardContent>
       </Card>

@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
+import { RequireAuth } from "@/features/auth/components/require-auth";
 import { ContractDocument } from "@/features/contracts/components/contract-document";
+import { ContractView } from "@/features/contracts/components/contract-view";
 import { MOCK_ORDERS } from "@/features/orders/mock";
+import { DEMO_MODE } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "قرارداد سفارش",
+  robots: { index: false },
 };
 
-// خروجی استاتیک: صفحه‌ی قرارداد همه‌ی سفارش‌های دمو از پیش ساخته می‌شود
+// نسخه‌ی نمایشی (خروجی استاتیک): صفحه‌ی قرارداد سفارش‌های نمونه از پیش ساخته می‌شود.
+// در نسخه‌ی سروری چیزی از پیش ساخته نمی‌شود و هر صفحه هنگام درخواست رندر می‌شود.
 export function generateStaticParams() {
-  return MOCK_ORDERS.map((o) => ({ id: o.id }));
+  return DEMO_MODE ? MOCK_ORDERS.map((o) => ({ id: o.id })) : [];
 }
 
 export default async function ContractPage({
@@ -17,5 +22,9 @@ export default async function ContractPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <ContractDocument orderId={id} />;
+  return (
+    <RequireAuth>
+      {DEMO_MODE ? <ContractDocument orderId={id} /> : <ContractView orderId={id} />}
+    </RequireAuth>
+  );
 }

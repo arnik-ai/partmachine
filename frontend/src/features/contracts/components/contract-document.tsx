@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -17,7 +16,8 @@ import {
   SUPPLIER_TERMS,
 } from "@/features/agreements/terms";
 import { MOCK_ORDERS } from "@/features/orders/mock";
-import { cn, faDate, faNumber, faToman } from "@/lib/utils";
+import { faDate, faNumber, faToman } from "@/lib/utils";
+import { useHydrated } from "@/lib/use-hydrated";
 import { useSignatureStore } from "../signature-store";
 
 /** بند قرارداد با شماره‌ی ماده */
@@ -76,8 +76,8 @@ export function ContractDocument({ orderId }: { orderId: string }) {
   const order = MOCK_ORDERS.find((o) => o.id === orderId);
   const { user } = useAuthStore();
   const { signatures, sign } = useSignatureStore();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // امضاها در localStorage (فقط نسخه‌ی نمایشی) هستند؛ قبل از hydration نمایش داده نمی‌شوند
+  const mounted = useHydrated();
 
   if (!order) {
     return (
@@ -147,12 +147,11 @@ export function ContractDocument({ orderId }: { orderId: string }) {
           (RFQ) که جزء لاینفک این قرارداد است.
         </Article>
 
-        <Article number={3} title="مبلغ قرارداد و پرداخت امانی (Escrow)">
-          مبلغ کل قرارداد <strong>{faToman(order.amountRials)}</strong> است که
-          کارفرما آن را به کیف پول امانی پلتفرم واریز می‌کند. وجه نزد پلتفرم
-          مسدود می‌ماند و صرفاً پس از تأیید گزارش کنترل کیفیت و تأیید نهایی
-          کارفرما به مجری آزاد می‌شود. پرداخت خارج از پلتفرم ممنوع و فاقد
-          پشتیبانی است.
+        <Article number={3} title="مبلغ قرارداد و شرایط پرداخت">
+          مبلغ کل قرارداد <strong>{faToman(order.amountRials)}</strong> است.
+          کارفرما مبلغ را طبق شرایط پرداخت مستقیماً به مجری می‌پردازد و هر
+          پرداخت را در پلتفرم اعلام می‌کند؛ مجری دریافت را تأیید می‌کند. پلتفرم
+          وجهی دریافت یا نگهداری نمی‌کند.
         </Article>
 
         <Article number={4} title="مدت و محل تحویل">
@@ -199,8 +198,7 @@ export function ContractDocument({ orderId }: { orderId: string }) {
           به ازای هر روز تأخیر غیرموجه در تحویل، معادل نیم‌درصد (۰٫۵٪) از مبلغ
           کل قرارداد ({faToman(penaltyPerDayRials)} به ازای هر روز) و حداکثر تا
           سقف ده‌درصد (۱۰٪) مبلغ قرارداد، از مطالبات مجری کسر می‌گردد. تأخیر
-          بیش از بیست روز، حق فسخ و استرداد وجه امانی را برای کارفرما ایجاد
-          می‌کند.
+          بیش از بیست روز، حق فسخ قرارداد را برای کارفرما ایجاد می‌کند.
         </Article>
 
         <Article number={9} title="محرمانگی و عدم افشا (NDA)">

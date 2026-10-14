@@ -2,30 +2,48 @@
 
 پلتفرم اتصال قطعه‌سازان، کارفرمایان، مأموران خرید و آزمایشگاه‌های کنترل کیفیت — مشابه دیوار اما تخصصی برای تولید و تأمین صنعتی.
 
+> **وضعیت:** فاز ۱ (تثبیت و ایمنی تولید) انجام شده و منتظر بازبینی است. هنوز روی هیچ سرور واقعی مستقر نشده است. نسخه‌ی [GitHub Pages](https://arnik-ai.github.io/partmachine/) فقط **دموی نمایشی** با داده‌ی نمونه است.
+
 ## ساختار مخزن
 
 ```
 partmachine/
-├── frontend/   # Next.js 16 + TypeScript + TailwindCSS (RTL فارسی)
-├── backend/    # FastAPI + Python 3.13 + SQLAlchemy 2 (افزایش ۲)
-├── docs/       # معماری، ERD، نقشه‌ی پیاده‌سازی
-└── docker-compose.yml
+├── frontend/           # Next.js 16 + TypeScript + Tailwind v4 (RTL فارسی)
+├── backend/            # FastAPI + SQLAlchemy 2 (async) + Alembic + PostgreSQL + Redis
+├── docs/               # راهنمای توسعه، مدل امنیتی، معماری، گزارش فازها
+├── docker-compose.yml  # PostgreSQL 17 و Redis 7 برای توسعه‌ی محلی
+└── .github/workflows/  # CI و انتشار دموی Pages
 ```
 
-## اجرای فرانت‌اند (توسعه)
+## راه‌اندازی سریع
 
 ```bash
-cd frontend
-npm install
-npm run dev
+docker compose up -d db redis                     # PostgreSQL :5433، Redis :6380
+
+cd backend
+python -m venv .venv
+.venv/Scripts/pip install -r requirements-dev.txt     # لینوکس/مک: .venv/bin/...
+.venv/Scripts/alembic upgrade head
+.venv/Scripts/python -m app.seed                      # اختیاری: داده‌ی نمونه
+.venv/Scripts/uvicorn app.main:app --reload --port 8100
+
+cd ../frontend
+npm ci
+npm run dev                                           # http://localhost:3100
 ```
 
-سپس http://localhost:3000 را باز کنید.
+جزئیات، متغیرهای محیطی، تست‌ها و رفع اشکال در [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) آمده است.
 
 ## مستندات
 
-- [گزارش معماری](docs/ARCHITECTURE.md)
-- [نقشه‌ی پیاده‌سازی](docs/IMPLEMENTATION_PLAN.md)
+| سند | محتوا |
+|---|---|
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | راه‌اندازی، env، migration، تست، build، CI، پشتیبان‌گیری |
+| [docs/SECURITY_MODEL.md](docs/SECURITY_MODEL.md) | نشست، CSRF، محدودیت نرخ، نقش‌ها، قواعد دسترسی، قیود داده |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | معماری و تصمیم‌های کلیدی |
+| [docs/PHASE0_ASSESSMENT.md](docs/PHASE0_ASSESSMENT.md) | ارزیابی فاز ۰ (یافته‌های F01–F38) |
+| [docs/PHASE1_REPORT.md](docs/PHASE1_REPORT.md) | گزارش فاز ۱ و نتایج ثبت‌شده‌ی تست‌ها |
+| [CLAUDE.md](CLAUDE.md) | قواعد کار و برنامه‌ی فازها |
 
 ## نقش‌ها (Actors)
 

@@ -29,7 +29,13 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# فایل‌های بارگذاری‌شده در توسعه‌ی محلی
+backend/var/
+
 # Test / coverage
+playwright-report/
+test-results/
+blob-report/
 .coverage
 htmlcov/
 .pytest_cache/

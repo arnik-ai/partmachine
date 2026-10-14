@@ -2,24 +2,51 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Factory, LogOut } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Factory, LogOut, UserRound } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { logout } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
+import { DEMO_MODE } from "@/lib/config";
 import { roleLabel } from "@/lib/constants";
+import { useHydrated } from "@/lib/use-hydrated";
 
-const NAV_LINKS = [
+type NavLink = { href: string; label: string; roles?: readonly string[]; demoOnly?: boolean };
+
+/** منو بر اساس نقش: هر کس فقط کارهایی را می‌بیند که برایش معنی دارد */
+const NAV_LINKS: readonly NavLink[] = [
+  { href: "/admin", label: "مدیریت", roles: ["admin"] },
+  { href: "/rfqs/open", label: "درخواست‌های باز", roles: ["supplier"] },
+  { href: "/quotations", label: "پیشنهادهای من", roles: ["supplier"] },
+  { href: "/profile", label: "پروفایل شرکت", roles: ["supplier"] },
   { href: "/suppliers", label: "قطعه‌سازان" },
-  { href: "/rfqs", label: "درخواست‌های من" },
-  { href: "/orders", label: "سفارش‌ها" },
-] as const;
+  { href: "/rfqs", label: "درخواست‌های من", roles: ["buyer", "agent"] },
+  { href: "/organization", label: "سازمان من", roles: ["buyer", "supplier", "agent", "qc"] },
+  { href: "/orders", label: "سفارش‌ها", roles: ["buyer", "agent", "supplier", "qc", "admin"] },
+];
+
+function linksFor(role: string | undefined): NavLink[] {
+  return NAV_LINKS.filter(
+    (link) =>
+      (DEMO_MODE || !link.demoOnly) &&
+      (!link.roles || (role !== undefined && link.roles.includes(role))),
+  );
+}
 
 export function Header() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
-  // جلوگیری از mismatch هیدریشن (استور persist بعد از mount لود می‌شود)
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  const status = useAuthStore((s) => s.status);
+  const hydrated = useHydrated();
+  const links = linksFor(user?.role);
+
+  async function handleLogout() {
+    await logout();
+    queryClient.clear();
+    router.push("/");
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-card/95 text-card-foreground backdrop-blur">
@@ -29,8 +56,8 @@ export function Header() {
             <Factory className="h-6 w-6 text-primary" />
             پارت‌ماشین
           </Link>
-          <nav className="hidden items-center gap-5 text-sm md:flex">
-            {NAV_LINKS.map((link) => (
+          <nav aria-label="منوی اصلی" className="hidden items-center gap-5 text-sm md:flex">
+            {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -43,7 +70,9 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-3">
-          {mounted && user ? (
+          {!hydrated || status === "unknown" ? (
+            <span className="h-9 w-24" aria-hidden />
+          ) : user ? (
             <>
               <Link
                 href="/dashboard"
@@ -54,14 +83,22 @@ export function Header() {
                   {roleLabel(user.role)}
                 </span>
               </Link>
+              {/* نسخه‌ی نمایشی سرور ندارد و اعلانی هم ساخته نمی‌شود */}
+              {!DEMO_MODE && <NotificationBell />}
+              <Link
+                href="/account"
+                aria-label="حساب کاربری"
+                title="حساب کاربری"
+                className={buttonVariants({ variant: "ghost", size: "icon" })}
+              >
+                <UserRound className="h-4 w-4" />
+              </Link>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="خروج"
-                onClick={() => {
-                  logout();
-                  router.push("/");
-                }}
+                title="خروج"
+                onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -81,6 +118,21 @@ export function Header() {
           )}
         </div>
       </div>
+      {/* موبایل: همان لینک‌ها در یک ردیف ساده، بدون منوی کشویی */}
+      <nav
+        aria-label="منوی اصلی"
+        className="mx-auto flex max-w-6xl gap-5 overflow-x-auto px-4 pb-3 text-sm md:hidden"
+      >
+        {links.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
     </header>
   );
 }

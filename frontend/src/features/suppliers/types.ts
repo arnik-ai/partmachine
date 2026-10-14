@@ -9,7 +9,7 @@ export interface SupplierMachine {
 export interface SupplierCertification {
   title: string;
   issuer: string;
-  validUntil?: string;
+  validUntil?: string | null;
 }
 
 /** خروجی موتور امتیاز اعتماد — explainable */
@@ -27,32 +27,83 @@ export interface TrustScore {
   }>;
 }
 
+/** تصویر نمونه‌کار؛ `url` نسبی به آدرس API است و بدون ورود نمایش داده می‌شود */
+export interface PortfolioImage {
+  id: string;
+  url: string;
+}
+
 export interface Supplier {
   id: string;
   companyName: string;
   description: string;
   city: string;
-  address?: string;
-  phone?: string;
-  website?: string;
-  foundedYear?: number;
-  employeeCount?: number;
+  address?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  foundedYear?: number | null;
+  employeeCount?: number | null;
   capabilities: CapabilityValue[];
   machines: SupplierMachine[];
   certifications: SupplierCertification[];
-  productionCapacityPerMonth?: number;
+  productionCapacityPerMonth?: number | null;
   leadTimeDays: number;
   completedJobs: number;
+  /** سابقه‌ی واقعی در پارت‌ماشین (نسخه‌ی نمایشی ندارد) */
+  deliveredJobs?: number;
+  onTimeJobs?: number;
+  ratingCount?: number;
+  /** میانگین امتیاز ۱ تا ۵ کارفرماها؛ بدون امتیاز null */
+  ratingAverage?: number | null;
   onTimeDeliveryRate: number; // 0-1
   responseTimeHours: number;
   verified: boolean;
   score: TrustScore;
-  /** عناوین نمونه‌کارهای گالری (تا اتصال S3، به‌صورت placeholder نمایش داده می‌شود) */
+  /** فقط داده‌ی نمونه‌ی نسخه‌ی نمایشی: عنوان نمونه‌کارها بدون تصویر */
   galleryTitles?: string[];
+  /** تصاویر واقعی نمونه‌کار */
+  portfolio?: PortfolioImage[];
+}
+
+/** پروفایل سازمان خود قطعه‌ساز، با وضعیت‌هایی که فقط خودش می‌بیند */
+export interface MySupplier extends Supplier {
+  /** در فهرست عمومی دیده می‌شود؟ (شهر و حداقل یک خدمت لازم است) */
+  listed: boolean;
+  /** فقط مدیر سازمان ویرایش می‌کند */
+  canEdit: boolean;
+}
+
+/** کل پروفایل عمومی، همان‌طور که فرم ویرایش می‌فرستد */
+export interface SupplierProfileInput {
+  companyName: string;
+  description: string;
+  city: string;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  foundedYear: number | null;
+  employeeCount: number | null;
+  capabilities: CapabilityValue[];
+  machines: SupplierMachine[];
+  certifications: Array<{ title: string; issuer: string; validUntil: string | null }>;
+  productionCapacityPerMonth: number | null;
+  leadTimeDays: number;
 }
 
 export interface SupplierFilters {
   q?: string;
   capability?: string;
   city?: string;
+  /** فقط قطعه‌سازهای تأییدشده */
+  verified?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+/** پاسخ صفحه‌بندی‌شده‌ی سرور */
+export interface SupplierPage {
+  items: Supplier[];
+  total: number;
+  limit: number;
+  offset: number;
 }

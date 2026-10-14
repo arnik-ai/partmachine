@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
+import { DemoBanner } from "@/components/layout/demo-banner";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
       <body className="min-h-screen font-[family-name:var(--font-vazirmatn)] antialiased">
+        <DemoBanner />
         <Providers>{children}</Providers>
       </body>
     </html>

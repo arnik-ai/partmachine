@@ -7,9 +7,12 @@ import {
   Clock,
   Cog,
   Factory,
+  Globe,
   Image as ImageIcon,
   MapPin,
   Package,
+  Phone,
+  Star,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -19,17 +22,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StarRating, scoreToStars } from "@/components/ui/star-rating";
+import { ApiError } from "@/lib/api-client";
+import { DEMO_MODE } from "@/lib/config";
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { capabilityLabel } from "@/lib/constants";
 import { faDate, faNumber } from "@/lib/utils";
+import { portfolioImageSrc } from "../api";
 import { useSupplier } from "../hooks";
 import { TrustScoreBreakdown } from "./trust-score";
 
 export function SupplierProfile({ id }: { id: string }) {
-  const { data: supplier, isLoading } = useSupplier(id);
+  const { data: supplier, isLoading, isError, error, refetch } = useSupplier(id);
 
   if (isLoading) {
     return (
@@ -38,6 +45,10 @@ export function SupplierProfile({ id }: { id: string }) {
         <Skeleton className="h-64" />
       </div>
     );
+  }
+
+  if (isError && !(error instanceof ApiError && error.status === 404)) {
+    return <ErrorState error={error} onRetry={() => refetch()} />;
   }
 
   if (!supplier) {
@@ -55,10 +66,13 @@ export function SupplierProfile({ id }: { id: string }) {
         <CardContent className="flex flex-col gap-4 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex flex-col gap-2">
-              <h1 className="flex items-center gap-2 text-2xl font-bold">
+              <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
                 {supplier.companyName}
                 {supplier.verified && (
-                  <BadgeCheck className="h-6 w-6 text-primary" />
+                  <Badge variant="success">
+                    <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
+                    تأییدشده
+                  </Badge>
                 )}
               </h1>
               <StarRating value={scoreToStars(supplier.score.trust)} />
@@ -98,6 +112,39 @@ export function SupplierProfile({ id }: { id: string }) {
               <Package className="h-4 w-4" />
               {faNumber(supplier.completedJobs)} پروژه‌ی تکمیل‌شده
             </span>
+            {supplier.deliveredJobs !== undefined && (
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-4 w-4" />
+                {supplier.deliveredJobs
+                  ? `تحویل به‌موقع: ${faNumber(supplier.onTimeJobs ?? 0)} از ${faNumber(supplier.deliveredJobs)}`
+                  : "هنوز سفارشی در پارت‌ماشین تحویل نداده است"}
+              </span>
+            )}
+            {supplier.ratingCount !== undefined && (
+              <span className="inline-flex items-center gap-1.5">
+                <Star className="h-4 w-4" />
+                {supplier.ratingAverage != null && supplier.ratingCount
+                  ? `امتیاز کارفرماها: ${faNumber(Math.round(supplier.ratingAverage * 10) / 10)} از ۵ (${faNumber(supplier.ratingCount)} امتیاز)`
+                  : "هنوز امتیازی از کارفرماها ندارد"}
+              </span>
+            )}
+            {supplier.phone && (
+              <span className="inline-flex items-center gap-1.5">
+                <Phone className="h-4 w-4" />
+                <span dir="ltr">{supplier.phone}</span>
+              </span>
+            )}
+            {supplier.website && websiteHost(supplier.website) && (
+              <a
+                href={supplier.website}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="inline-flex items-center gap-1.5 hover:underline"
+              >
+                <Globe className="h-4 w-4" />
+                <span dir="ltr">{websiteHost(supplier.website)}</span>
+              </a>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -110,8 +157,34 @@ export function SupplierProfile({ id }: { id: string }) {
         </CardContent>
       </Card>
 
-      {/* گالری محصولات */}
-      {supplier.galleryTitles && supplier.galleryTitles.length > 0 && (
+      {/* گالری نمونه‌کار: تصاویر واقعی */}
+      {supplier.portfolio && supplier.portfolio.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5 text-primary" />
+              گالری محصولات و نمونه‌کارها
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {supplier.portfolio.map((image, index) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={image.id}
+                  src={portfolioImageSrc(image.url)}
+                  alt={`نمونه‌کار ${supplier.companyName} — ${faNumber(index + 1)}`}
+                  loading="lazy"
+                  className="aspect-square w-full rounded-xl border object-cover"
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* فقط نسخه‌ی نمایشی: عنوان نمونه‌کارها بدون تصویر */}
+      {DEMO_MODE && supplier.galleryTitles && supplier.galleryTitles.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -134,19 +207,19 @@ export function SupplierProfile({ id }: { id: string }) {
               ))}
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              تصاویر واقعی پس از اتصال فضای ذخیره‌سازی ابری نمایش داده می‌شوند.
+              نسخه‌ی نمایشی: در نسخه‌ی اصلی، تصاویر واقعی نمونه‌کار نمایش داده می‌شوند.
             </p>
           </CardContent>
         </Card>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* امتیاز اعتماد AI */}
+        {/* امتیاز اعتماد (فرمول شفاف سرور) */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BadgeCheck className="h-5 w-5 text-primary" />
-              امتیاز اعتماد (تحلیل هوش مصنوعی)
+              امتیاز اعتماد
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -240,4 +313,14 @@ export function SupplierProfile({ id }: { id: string }) {
       </div>
     </div>
   );
+}
+
+/** فقط نشانی‌های http(s) لینک می‌شوند (دفاع دوم؛ سرور هم فقط همین‌ها را می‌پذیرد) */
+function websiteHost(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.host : null;
+  } catch {
+    return null;
+  }
 }

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SuppliersList } from "@/features/suppliers/components/suppliers-list";
 
 export const metadata: Metadata = {
@@ -9,7 +11,10 @@ export default function SuppliersPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-bold">قطعه‌سازان و تأمین‌کنندگان</h1>
-      <SuppliersList />
+      {/* فیلترهای اولیه از آدرس صفحه خوانده می‌شوند */}
+      <Suspense fallback={<Skeleton className="h-48" />}>
+        <SuppliersList />
+      </Suspense>
     </div>
   );
 }

@@ -13,7 +13,7 @@ export function TrustScoreBadge({ score }: { score: TrustScore }) {
   return <StarRating value={scoreToStars(score.trust)} size="sm" />;
 }
 
-/** نمایش کامل و قابل‌توضیح امتیازها — همان خروجی explainable موتور AI */
+/** نمایش کامل و قابل‌توضیح امتیازها — خروجی فرمول شفاف امتیاز اعتماد سرور (نه هوش مصنوعی) */
 export function TrustScoreBreakdown({ score }: { score: TrustScore }) {
   const summary = [
     { label: "اعتماد", value: score.trust },
@@ -29,7 +29,7 @@ export function TrustScoreBreakdown({ score }: { score: TrustScore }) {
         <StarRating value={scoreToStars(score.trust)} size="lg" />
         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5 text-success" />
-          امتیاز اعتماد محاسبه‌شده توسط هوش مصنوعی
+          امتیاز اعتماد بر اساس سابقه‌ی کار در پارت‌ماشین
         </span>
       </div>
 

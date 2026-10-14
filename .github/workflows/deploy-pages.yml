@@ -28,10 +28,13 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # نسخه‌ی GitHub Pages فقط دموی برچسب‌دار است (D9): داده‌ی نمونه، بدون سرور و بدون ثبت اطلاعات
       - run: npm run build
         env:
           NEXT_OUTPUT: export
+          NEXT_PUBLIC_DEMO_MODE: "true"
           NEXT_PUBLIC_BASE_PATH: /partmachine
+          NEXT_TELEMETRY_DISABLED: "1"
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
