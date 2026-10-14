@@ -1,31 +1,28 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncIterator
 
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
 
-engine = create_async_engine(settings.database_url, echo=False, future=True)
-
-SessionLocal = async_sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
+engine = create_async_engine(
+    settings.database_url,
+    pool_size=settings.db_pool_size,
+    max_overflow=settings.db_max_overflow,
+    pool_pre_ping=True,
+    connect_args={
+        "server_settings": {
+            "application_name": "partmachine-api",
+            # هیچ کوئری‌ای نباید یک اتصال را بی‌نهایت نگه دارد
+            "statement_timeout": str(settings.db_statement_timeout_ms),
+        }
+    },
 )
 
+SessionLocal = async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """وابستگی FastAPI: یک session دیتابیس برای هر درخواست."""
+
+async def get_db() -> AsyncIterator[AsyncSession]:
+    """وابستگی FastAPI: یک session برای هر درخواست. تراکنش‌ها را سرویس‌ها commit می‌کنند؛
+    هر خطا قبل از commit با بسته‌شدن session خودبه‌خود rollback می‌شود."""
     async with SessionLocal() as session:
         yield session
-
-
-async def init_db() -> None:
-    """جدول‌ها را در صورت نبود می‌سازد (برای توسعه؛ در تولید از Alembic)."""
-    # اطمینان از import شدن همه‌ی مدل‌ها پیش از create_all
-    from app import models  # noqa: F401
-    from app.db.base import Base
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
