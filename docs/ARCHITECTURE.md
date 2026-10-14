@@ -1,6 +1,6 @@
 # گزارش معماری — PartMachine
 
-> نسخه ۱.۱ — به‌روزرسانی: ۲۰۲۶/۱۰/۱۴ (پایان فاز ۱) — این سند **طراحی هدف** است؛ آنچه واقعاً پیاده شده در بخش ۴ و [SECURITY_MODEL.md](SECURITY_MODEL.md) آمده است.
+> نسخه ۱.۲ — به‌روزرسانی: ۲۰۲۶/۱۰/۱۴ (پایان فاز ۲) — این سند **طراحی هدف** است؛ آنچه واقعاً پیاده شده در بخش ۴ و [SECURITY_MODEL.md](SECURITY_MODEL.md) آمده است.
 
 ## ۱. نمای کلی
 
@@ -60,14 +60,16 @@ PartMachine یک بازار صنعتی B2B است که پنج نقش اصلی د
 /orders            → سفارش‌ها و قرارداد (فعلاً فقط در نسخه‌ی نمایشی؛ در تولید «به‌زودی»)
 ```
 
-## ۴. بک‌اند (پیاده‌شده در فاز ۱)
+## ۴. بک‌اند (پیاده‌شده در فاز ۱ و ۲)
 
 - FastAPI + Python 3.13، SQLAlchemy 2.x async + asyncpg، Pydantic v2، Alembic، Redis.
-- **مونولیت ماژولار:** `app/modules/{identity, organizations, suppliers, rfqs, quotations, pricing, audit}`، هر ماژول با `models`، `schemas`، `router` و `service` (و `policies` برای قواعد دسترسی). زیرساخت مشترک در `app/core` (تنظیمات، خطاها، لاگ، middleware، محدودیت نرخ، امنیت).
+- **مونولیت ماژولار:** `app/modules/{identity, organizations, agreements, files, suppliers, verification, rfqs, quotations, pricing, audit, admin}`، هر ماژول با `models`، `schemas`، `router` و `service` (و `policies`/`lifecycle` برای قواعد دسترسی و وضعیت). زیرساخت مشترک در `app/core` (تنظیمات، خطاها، لاگ، middleware، محدودیت نرخ، امنیت، ذخیره‌ی فایل و ارسال کد).
+- **فایل‌ها:** رابط `Storage` با پیاده‌سازی دیسک محلی (P6)؛ نسخه‌ی S3-سازگار با انتخاب سرویس در فاز ۴ اضافه می‌شود. بارگذاری مستقیم از API با بررسی محتوای واقعی؛ دانلود با لینک امضاشده‌ی کوتاه‌عمر.
+- **ارسال کد:** رابط `CodeSender` (`console` در توسعه، `disabled` در تولید تا انتخاب سرویس پیامک/ایمیل؛ P8).
 - **داده:** فقط PostgreSQL؛ schema با Alembic (`create_all` حذف شده). بدون relationship ضمنی در ORM (کوئری صریح). قیود یکپارچگی در خود پایگاه داده.
 - **امنیت:** Argon2id، نشست کوکی‌دار با چرخش و تشخیص سرقت، CSRF برای endpointهای کوکی‌محور، محدودیت نرخ در Redis، audit برای رویدادهای مهم، و اعتبارسنجی پیکربندی هنگام شروع. جزئیات در [SECURITY_MODEL.md](SECURITY_MODEL.md).
 - **عملیات:** لاگ JSON با request-id، `/health` (liveness) و `/ready` (DB و Redis)، TrustedHost، سقف حجم درخواست، و `statement_timeout` روی اتصال‌ها. `/metrics` و Sentry در فاز ۴.
-- **هنوز پیاده نشده:** آپلود فایل (Presigned URL)، سفارش و escrow، موتورهای AI. موتور Trust Score و برآورد قیمت به‌صورت تابع قطعی (deterministic) موجودند.
+- **هنوز پیاده نشده:** سفارش، قرارداد، پرداخت و escrow (فاز ۳)، ذخیره‌ی S3 و اسکن ویروس (فاز ۴)، موتورهای AI (فاز ۵). موتور Trust Score، برآورد قیمت و «امتیاز ترکیبی» پیشنهادها فرمول‌های قطعی و شفاف‌اند، نه هوش مصنوعی.
 
 ## ۵. طرح دیتابیس (ERD خلاصه)
 
@@ -99,7 +101,7 @@ erDiagram
     users ||--o{ audit_logs : acted
 ```
 
-> این ERD طرح هدف است. جداول پیاده‌شده در فاز ۱: `organizations`، `users`، `refresh_tokens`، `suppliers` (توانمندی‌ها، ماشین‌آلات و گواهی‌ها فعلاً JSONB)، `rfqs` (فایل‌ها فعلاً متادیتای JSONB)، `quotations` و `audit_events`. شناسه‌ها فعلاً UUIDv4 هستند.
+> این ERD طرح هدف است. جداول پیاده‌شده تا پایان فاز ۲: `organizations`، `organization_invites`، `users`، `refresh_tokens`، `agreement_acceptances`، `suppliers` (توانمندی‌ها، ماشین‌آلات و گواهی‌ها فعلاً JSONB)، `verification_requests`، `files`، `rfqs`، `quotations` و `audit_events`. ستون قدیمی `rfqs.files` (متادیتای JSONB فاز ۱) دیگر استفاده نمی‌شود و حذفش migration مخرب است که تأیید مالک را لازم دارد. شناسه‌ها فعلاً UUIDv4 هستند.
 
 ### نکات مقیاس‌پذیری
 

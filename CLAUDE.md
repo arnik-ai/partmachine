@@ -357,15 +357,16 @@ At the end, present the exact proposed Phase 1 changes, risks, test commands and
 | Phase | Status | Report |
 |---|---|---|
 | 0 — Read-only assessment | **done 2026-10-13** | `docs/PHASE0_ASSESSMENT.md` (findings F01–F38, Phase 1 proposal §9, decisions D1–D9) |
-| 1 — Stabilization | **done — approved by the owner 2026-10-14**. Committed locally on branch `phase-1-stabilization` (five commits after baseline `0ed70a2`); **not pushed**. Still open: push approval, explicit D8 confirmation | `docs/PHASE1_REPORT.md` (acceptance §2, recorded results §3, decisions §9) |
-| 2–5 | not started | — |
+| 1 — Stabilization | **done — approved by the owner 2026-10-14**. Committed locally on branch `phase-1-stabilization` (five commits after baseline `0ed70a2`); **not pushed**. D8 ("no database with real data exists") confirmed by the owner 2026-10-14. Still open: push approval | `docs/PHASE1_REPORT.md` (acceptance §2, recorded results §3, decisions §9) |
+| 2 — Real MVP | **done — approved by the owner 2026-10-14** (steps 2a–2f; migrations up to `0006`). Committed locally on branch `phase-2-mvp` (branched from `phase-1-stabilization`); **not pushed**. Real SMS/email provider for one-time codes deliberately not connected (P8). Still open: push approval, provider choice, legal review of terms/NDA | `docs/PHASE2_PLAN.md` (scope, decisions P1–P10), `docs/PHASE2_REPORT.md` (results, owner decisions §9, limits, next steps) |
+| 3–5 | not started | — |
 
 ### Environment notes (verified 2026-10-14)
 
-- `HANDOFF.md` was rewritten at the end of Phase 1; start from `docs/PHASE1_REPORT.md`, `docs/DEVELOPMENT.md` and `docs/SECURITY_MODEL.md`.
-- Work lives on local branch `phase-1-stabilization` (baseline `0ed70a2` + Phase 1 commits, not pushed). Never reset, drop or `git clean` uncommitted work; every commit/push needs the owner's explicit approval.
+- `HANDOFF.md` is current as of the end of Phase 2; start from `docs/PHASE2_REPORT.md`, `docs/DEVELOPMENT.md` and `docs/SECURITY_MODEL.md`.
+- Phase 1 lives on local branch `phase-1-stabilization` (baseline `0ed70a2` + five commits) and Phase 2 on `phase-2-mvp` (Phase 2 commits on top); neither is pushed. Never reset, drop or `git clean` uncommitted work; every commit/push needs the owner's explicit approval.
 - This Windows dev machine is shared: ports **5432/6379** belong to the `pooyesh-postgres` / `pooyesh-redis` containers of another project, and port 3000 may be used by other projects. PartMachine uses Postgres **5433**, Redis **6380**, API **8100**, frontend **3100**. Never stop other containers or processes; stop only PIDs you started (check the command line first).
-- RAM (~7.6 GB) and free space on drive C: (~2 GB) are tight. The owner may switch Docker Desktop off; data survives in the named volumes. Docker Desktop is installed at `C:\Users\user\AppData\Local\Programs\DockerDesktop\Docker Desktop.exe` — ask before starting it, and when asked to stop it use `docker desktop stop` (then `wsl --shutdown` only if no other WSL distro is running).
+- RAM (~7.6 GB) and free space on drive C: (~12 GB) are tight. Per decision P10, Docker Desktop is started only for test runs (`docker desktop start`) and stopped right after (`docker desktop stop`, then `wsl --shutdown` only if no other WSL distro is running); data survives in the named volumes.
 - Backend tests need `docker compose up -d db redis`; they use the database `partmachine_test` (guarded: the name must end in `_test`).
 - Git Bash converts env values such as `/partmachine` into Windows paths; run the Pages demo build from PowerShell.
-- The browser end-to-end smoke test used Playwright 1.64 + Chromium borrowed read-only from `E:\ai_turbo\saas_lead_demo\rahyab-next\node_modules` (script kept outside the repo). Delete leftover temp browser profiles after such runs.
+- Browser tests live in `frontend/e2e` (Playwright is a dev dependency; `npm run test:e2e` against API :8100 + standalone frontend :3100). Admin tests need `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD` (create the admin with `python -m app.create_admin`). Delete `frontend/test-results` and leftover temp browser profiles after runs.
