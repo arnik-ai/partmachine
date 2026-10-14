@@ -1,0 +1,110 @@
+# کنترل کیفیت هر push و pull request: بک‌اند روی PostgreSQL 17 و Redis واقعی، و فرانت با هر دو build.
+name: CI
+
+on:
+  push:
+    branches: [master, "phase-*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: partmachine
+          POSTGRES_PASSWORD: partmachine
+          POSTGRES_DB: partmachine
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U partmachine -d partmachine"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6380:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      ENVIRONMENT: test
+      DATABASE_URL: postgresql+asyncpg://partmachine:partmachine@localhost:5433/partmachine
+      REDIS_URL: redis://localhost:6380/0
+      TEST_DATABASE_URL: postgresql+asyncpg://partmachine:partmachine@localhost:5433/partmachine_test
+      TEST_REDIS_URL: redis://localhost:6380/15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Type check
+        run: mypy app
+      - name: Migrations round-trip on a clean database
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+          alembic check
+      - name: Tests (PostgreSQL + Redis)
+        run: pytest -q
+      - name: OpenAPI contract is committed and up to date
+        run: |
+          python -m app.export_openapi
+          git diff --exit-code -- openapi.json
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Generated API types match the backend contract
+        run: |
+          npm run gen:api
+          git diff --exit-code -- src/lib/api/schema.ts
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Server build (demo mode off)
+        run: npm run build
+      - name: Server build refuses demo mode
+        run: |
+          if NEXT_PUBLIC_DEMO_MODE=true npx next build; then
+            echo "The server build must fail when NEXT_PUBLIC_DEMO_MODE=true" >&2
+            exit 1
+          fi
+      - name: Demo build (GitHub Pages)
+        run: npm run build
+        env:
+          NEXT_OUTPUT: export
+          NEXT_PUBLIC_DEMO_MODE: "true"
+          NEXT_PUBLIC_BASE_PATH: /partmachine
+      - name: Runtime dependencies have no high/critical advisories
+        run: npm audit --omit=dev --audit-level=high

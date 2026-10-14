@@ -357,12 +357,15 @@ At the end, present the exact proposed Phase 1 changes, risks, test commands and
 | Phase | Status | Report |
 |---|---|---|
 | 0 — Read-only assessment | **done 2026-10-13** | `docs/PHASE0_ASSESSMENT.md` (findings F01–F38, Phase 1 proposal §9, decisions D1–D9) |
-| 1 — Stabilization | **awaiting explicit approval** of the §9 proposal and decisions D1–D9 | — |
+| 1 — Stabilization | **done — approved by the owner 2026-10-14**. Committed locally on branch `phase-1-stabilization` (five commits after baseline `0ed70a2`); **not pushed**. Still open: push approval, explicit D8 confirmation | `docs/PHASE1_REPORT.md` (acceptance §2, recorded results §3, decisions §9) |
 | 2–5 | not started | — |
 
-### Environment notes (verified 2026-10-13)
+### Environment notes (verified 2026-10-14)
 
-- `HANDOFF.md` is outdated (written before the backend routers existed). Trust `docs/PHASE0_ASSESSMENT.md` over it.
-- `backend/` and `HANDOFF.md` are **untracked** in git — never delete, reset or `git clean` them.
-- This Windows dev machine is shared: ports **5432/6379** belong to the `pooyesh-postgres` / `pooyesh-redis` Docker containers of another project, and port 3000 may be used by other projects. Use different ports for PartMachine (proposed: Postgres 5433, Redis 6380) and never stop other containers or processes.
-- The current backend cannot start as-is (F01); PostgreSQL-specific behaviour must be tested on PostgreSQL, not SQLite (F02, F09).
+- `HANDOFF.md` was rewritten at the end of Phase 1; start from `docs/PHASE1_REPORT.md`, `docs/DEVELOPMENT.md` and `docs/SECURITY_MODEL.md`.
+- Work lives on local branch `phase-1-stabilization` (baseline `0ed70a2` + Phase 1 commits, not pushed). Never reset, drop or `git clean` uncommitted work; every commit/push needs the owner's explicit approval.
+- This Windows dev machine is shared: ports **5432/6379** belong to the `pooyesh-postgres` / `pooyesh-redis` containers of another project, and port 3000 may be used by other projects. PartMachine uses Postgres **5433**, Redis **6380**, API **8100**, frontend **3100**. Never stop other containers or processes; stop only PIDs you started (check the command line first).
+- RAM (~7.6 GB) and free space on drive C: (~2 GB) are tight. The owner may switch Docker Desktop off; data survives in the named volumes. Docker Desktop is installed at `C:\Users\user\AppData\Local\Programs\DockerDesktop\Docker Desktop.exe` — ask before starting it, and when asked to stop it use `docker desktop stop` (then `wsl --shutdown` only if no other WSL distro is running).
+- Backend tests need `docker compose up -d db redis`; they use the database `partmachine_test` (guarded: the name must end in `_test`).
+- Git Bash converts env values such as `/partmachine` into Windows paths; run the Pages demo build from PowerShell.
+- The browser end-to-end smoke test used Playwright 1.64 + Chromium borrowed read-only from `E:\ai_turbo\saas_lead_demo\rahyab-next\node_modules` (script kept outside the repo). Delete leftover temp browser profiles after such runs.

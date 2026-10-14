@@ -1,0 +1,193 @@
+# راهنمای توسعه‌ی محلی — PartMachine
+
+این سند برای توسعه‌دهنده‌ها و ایجنت‌هایی است که روی این مخزن کار می‌کنند. دستورها برای PowerShell ویندوز نوشته شده‌اند؛ در لینوکس و مک به‌جای `.venv\Scripts\` از `.venv/bin/` استفاده کنید.
+
+## پیش‌نیازها
+
+| ابزار | نسخه | کاربرد |
+|---|---|---|
+| Docker Desktop یا Docker Engine با Compose | — | PostgreSQL 17 و Redis 7 |
+| Python | 3.13 (حداقل 3.12) | بک‌اند |
+| Node.js | 22.12 یا جدیدتر | فرانت |
+
+## راه‌اندازی سریع
+
+### ۱. پایگاه داده و Redis
+
+```bash
+docker compose up -d db redis
+```
+
+- پورت‌ها عمداً غیرپیش‌فرض‌اند تا با پروژه‌های دیگرِ همین ماشین تداخل نکنند: PostgreSQL روی `127.0.0.1:5433` و Redis روی `127.0.0.1:6380`.
+- با متغیرهای `PM_DB_PORT` و `PM_REDIS_PORT` قابل تغییرند.
+- داده در volumeهای نام‌دار (`pm_db_data`، `pm_redis_data`) می‌ماند؛ خاموش کردن Docker چیزی را پاک نمی‌کند.
+
+### ۲. بک‌اند (پورت 8100)
+
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\pip install -r requirements-dev.txt
+.venv\Scripts\alembic upgrade head
+.venv\Scripts\python -m app.seed      # اختیاری: داده‌ی نمونه
+.venv\Scripts\uvicorn app.main:app --reload --port 8100
+```
+
+- برای توسعه‌ی محلی فایل `.env` لازم نیست؛ پیش‌فرض‌ها با `docker-compose.yml` هم‌خوان‌اند.
+- بررسی سلامت: `http://localhost:8100/health` (زنده بودن پروسه) و `http://localhost:8100/ready` (وضعیت DB و Redis).
+- مستندات تعاملی API: `http://localhost:8100/docs` (فقط در development و test).
+
+### ۳. فرانت (پورت 3100)
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+سپس `http://localhost:3100` را باز کنید. آدرس API به‌طور پیش‌فرض `http://localhost:8100/api/v1` است.
+
+### حساب‌های نمونه (پس از seed)
+
+| نقش | ایمیل | رمز |
+|---|---|---|
+| کارفرما | `buyer@partmachine.ir` | `PartMachine-dev-1234` |
+| قطعه‌ساز | `supplier@partmachine.ir` | `PartMachine-dev-1234` |
+
+- قطعه‌سازهای نمونه‌ی دیگر `supplier2@` تا `supplier5@partmachine.ir` با همان رمزند. یک RFQ نمونه با چهار پیشنهاد قیمت هم ساخته می‌شود.
+- seed فقط در `development` و `test` اجرا می‌شود و در محیط‌های دیگر متوقف می‌شود.
+- رمز را با متغیر `SEED_PASSWORD` تغییر دهید. اگر داده‌ای موجود باشد، seed کاری نمی‌کند.
+
+## متغیرهای محیطی
+
+### بک‌اند
+
+از متغیر محیطی یا `backend/.env` خوانده می‌شوند (نمونه: `backend/.env.example`). در `staging` و `production` هر تنظیم ناامن باعث می‌شود برنامه با پیام خطای روشن **شروع نشود**.
+
+| متغیر | پیش‌فرض (توسعه) | در تولید |
+|---|---|---|
+| `ENVIRONMENT` | `development` | `production` (یا `staging`) |
+| `DATABASE_URL` | `postgresql+asyncpg://partmachine:partmachine@localhost:5433/partmachine` | الزامی؛ فقط PostgreSQL |
+| `REDIS_URL` | `redis://localhost:6380/0` | الزامی |
+| `SECRET_KEY` | مقدار ناامن توسعه | الزامی؛ تصادفی و حداقل ۳۲ بایت (`python -c "import secrets; print(secrets.token_urlsafe(48))"`) |
+| `CORS_ORIGINS` | `http://localhost:3100` | فقط originهای صریح `https://`، جداشده با کاما |
+| `ALLOWED_HOSTS` | `*` | نام‌های صریح دامنه‌ی API |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `15` | — |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | `14` | — |
+| `COOKIE_SECURE` | بر اساس محیط (خاموش در توسعه) | باید روشن بماند |
+| `DOCS_ENABLED` | بر اساس محیط (روشن در توسعه) | پیش‌فرض خاموش |
+| `RATE_LIMIT_ENABLED` | `true` | `true` |
+| `RATE_LIMIT_FAIL_OPEN` | بر اساس محیط (`true` در توسعه) | پیش‌فرض `false`: اگر Redis قطع باشد، ورود رد می‌شود |
+| `LOG_JSON` | بر اساس محیط | پیش‌فرض `true` |
+| `LOG_LEVEL` | `INFO` | — |
+| `MAX_BODY_BYTES` | `1000000` | — |
+| `DB_POOL_SIZE` / `DB_MAX_OVERFLOW` | `10` / `10` | بر اساس ظرفیت PostgreSQL |
+| `DB_STATEMENT_TIMEOUT_MS` | `15000` | — |
+| `BUSINESS_TIMEZONE` | `Asia/Tehran` | مبنای «امروز» برای مهلت‌ها |
+| `SEED_PASSWORD` | `PartMachine-dev-1234` | — (seed در تولید اجرا نمی‌شود) |
+
+### فرانت
+
+این متغیرها در زمان build در کد جاسازی می‌شوند (نمونه: `frontend/.env.example`).
+
+| متغیر | پیش‌فرض | توضیح |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8100/api/v1` | در تولید الزامی. فرانت و API باید **هم‌سایت** باشند (مثلاً `app.` و `api.` زیر یک دامنه) تا کوکی نشست کار کند. |
+| `NEXT_PUBLIC_DEMO_MODE` | خاموش | فقط برای نسخه‌ی نمایشی GitHub Pages. |
+| `NEXT_OUTPUT` | — | `export` فقط برای نسخه‌ی نمایشی. |
+| `NEXT_PUBLIC_BASE_PATH` | — | `/partmachine` برای GitHub Pages. |
+
+## migrationها (Alembic)
+
+```powershell
+cd backend
+.venv\Scripts\alembic upgrade head                            # اعمال
+.venv\Scripts\alembic revision --autogenerate -m "توضیح"      # ساخت migration جدید
+.venv\Scripts\alembic check                                   # هم‌خوانی مدل‌ها و migrationها
+.venv\Scripts\alembic downgrade -1                            # بازگشت یک مرحله
+```
+
+- خروجی autogenerate را همیشه بازبینی کنید؛ قیود حلقوی، داده‌ها و تغییر نام‌ها را خودش درست تشخیص نمی‌دهد. نمونه: `0001_initial_schema.py`.
+- migration اعمال‌شده را ویرایش نکنید؛ migration جدید بسازید.
+- migration مخرب (حذف جدول یا ستون، یا تغییر نوعی که داده از دست می‌رود) روی داده‌ی واقعی فقط با تأیید صریح و پس از پشتیبان‌گیری اجرا می‌شود.
+- برنامه هنگام شروع `create_all` اجرا نمی‌کند؛ schema فقط با Alembic تغییر می‌کند.
+
+## تست‌ها و کیفیت کد
+
+### بک‌اند
+
+```powershell
+cd backend
+.venv\Scripts\ruff check .
+.venv\Scripts\ruff format --check .
+.venv\Scripts\mypy app
+.venv\Scripts\pytest -q
+```
+
+- تست‌ها روی PostgreSQL واقعی اجرا می‌شوند (پایگاه `partmachine_test` که خودکار ساخته می‌شود) و از Redis هم استفاده می‌کنند (db 15). پیش‌نیاز: `docker compose up -d db redis`.
+- **حفاظ:** تست‌ها جدول‌ها را خالی می‌کنند؛ نام پایگاهی که در `TEST_DATABASE_URL` می‌آید باید به `_test` ختم شود، وگرنه تست‌ها اجرا نمی‌شوند.
+- هر اجرا از schema تمیز شروع می‌شود (`downgrade base` و سپس `upgrade head`). یک تست جداگانه هم upgrade، downgrade و دوباره upgrade را روی یک پایگاه خالی می‌آزماید.
+- سناریوهای بازتولید گزارش فاز ۰ (پیوست الف) به تست دائمی تبدیل شده‌اند؛ شناسه‌ی سناریو در docstring تست‌ها آمده است.
+
+### فرانت
+
+```bash
+cd frontend
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
+
+### قرارداد API (OpenAPI به TypeScript)
+
+بعد از هر تغییر در schemaهای بک‌اند:
+
+```powershell
+cd backend; .venv\Scripts\python -m app.export_openapi   # → backend/openapi.json
+cd ..\frontend; npm run gen:api                           # → src/lib/api/schema.ts
+npm run typecheck                                         # contract.ts ناسازگاری را می‌گیرد
+```
+
+- `src/lib/api/contract.ts` در زمان typecheck بررسی می‌کند که پاسخ‌های سرور در تایپ‌های فرانت جا شوند و ورودی‌های فرانت برای سرور معتبر باشند.
+- CI بررسی می‌کند که `openapi.json` و `schema.ts` commit شده و به‌روز باشند.
+
+## buildها
+
+| build | دستور | کاربرد |
+|---|---|---|
+| سروری | `npm run build` | تولید؛ اجرا با `node .next/standalone/server.js` |
+| نمایشی | `NEXT_OUTPUT=export NEXT_PUBLIC_DEMO_MODE=true NEXT_PUBLIC_BASE_PATH=/partmachine npm run build` | فقط GitHub Pages |
+| Docker | `docker build --build-arg NEXT_PUBLIC_API_URL=https://…/api/v1 -t partmachine-frontend frontend` | تولید |
+
+- **حفاظ‌ها:** build سروری با `NEXT_PUBLIC_DEMO_MODE=true`، و خروجی استاتیک بدون آن، هر دو عمداً شکست می‌خورند.
+- **ویندوز:** Git Bash مقدار `/partmachine` را به مسیر ویندوزی تبدیل می‌کند. build نمایشی را در PowerShell اجرا کنید یا `MSYS_NO_PATHCONV=1` بگذارید.
+
+## CI
+
+- **`ci.yml`:** روی push به `master` و شاخه‌های `phase-*` و روی هر PR اجرا می‌شود.
+  - بک‌اند: ruff، mypy، round-trip کامل Alembic و pytest روی سرویس‌های PostgreSQL 17 و Redis.
+  - فرانت: به‌روز بودن تایپ‌های API، tsc، eslint، vitest، build سروری، رد build سروری با حالت دمو، build نمایشی و `npm audit` وابستگی‌های runtime.
+- **`deploy-pages.yml`:** با push به `master` نسخه‌ی نمایشی را روی GitHub Pages منتشر می‌کند.
+
+## پشتیبان‌گیری و بازگشت (محیط محلی)
+
+```bash
+# پشتیبان
+docker compose exec -T db pg_dump -U partmachine -Fc partmachine > partmachine.dump
+# بازگردانی (داده‌ی فعلی جایگزین می‌شود)
+docker compose exec -T db pg_restore -U partmachine -d partmachine --clean --if-exists < partmachine.dump
+```
+
+- **بازگشت نسخه:** نسخه‌ی قبلی برنامه را مستقر کنید و فقط اگر migration برگشت‌پذیر بوده، `alembic downgrade <revision>` اجرا کنید.
+- پیش از هر migration در تولید پشتیبان بگیرید.
+- مستندات کامل استقرار، پشتیبان‌گیری خودکار و آزمون بازگردانی در فاز ۴ تهیه می‌شود.
+
+## رفع اشکال
+
+| نشانه | علت و راه‌حل |
+|---|---|
+| `/ready` پاسخ 503 می‌دهد، یا تست‌ها خطای `OSError: Multiple exceptions … 5433` می‌دهند | Docker یا کانتینرها خاموش‌اند ⇒ `docker compose up -d db redis` |
+| 429 در توسعه پس از تلاش‌های زیاد | فقط در محیط محلی: `docker compose exec redis redis-cli FLUSHDB` |
+| پورت اشغال است | `PM_DB_PORT` و `PM_REDIS_PORT` و `--port` را تغییر دهید؛ `CORS_ORIGINS` را هم هم‌خوان کنید |
+| کمبود RAM | پس از کار، Docker Desktop را خاموش کنید؛ داده‌ها در volumeها می‌مانند |

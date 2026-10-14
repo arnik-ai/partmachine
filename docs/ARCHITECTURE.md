@@ -1,6 +1,6 @@
 # گزارش معماری — PartMachine
 
-> نسخه ۱.۰ — تاریخ: ۲۰۲۶/۰۶/۱۲ — وضعیت: مصوب برای افزایش ۱
+> نسخه ۱.۱ — به‌روزرسانی: ۲۰۲۶/۱۰/۱۴ (پایان فاز ۱) — این سند **طراحی هدف** است؛ آنچه واقعاً پیاده شده در بخش ۴ و [SECURITY_MODEL.md](SECURITY_MODEL.md) آمده است.
 
 ## ۱. نمای کلی
 
@@ -25,12 +25,15 @@ PartMachine یک بازار صنعتی B2B است که پنج نقش اصلی د
 |---|---|---|
 | 1 | Monorepo با `frontend/` و `backend/` | استقرار هماهنگ، CI ساده‌تر، قرارداد API مشترک |
 | 2 | REST نسخه‌دار (`/api/v1`) با OpenAPI | پایداری قرارداد برای کلاینت‌های آینده (موبایل) |
-| 3 | JWT کوتاه‌عمر (۱۵ دقیقه) + Refresh Token چرخشی در DB | امنیت + امکان ابطال + تشخیص استفاده مجدد (reuse detection) |
+| 3 | JWT کوتاه‌عمر (۱۵ دقیقه، فقط در حافظه‌ی مرورگر) + Refresh Token مات و چرخشی در کوکی HttpOnly (فقط هش آن در DB) | امنیت + امکان ابطال + تشخیص استفاده مجدد (reuse detection)؛ پیش‌نیاز: استقرار هم‌سایت فرانت و API |
 | 4 | RBAC با نقش پایه + مجوزهای ریز در لایه‌ی سرویس | پنج نقش مشخص با مرز روشن |
 | 5 | پول به‌صورت `BIGINT` به ریال (IRR) | جلوگیری از خطای اعشاری؛ درگاه‌های ایرانی ریالی‌اند |
 | 6 | موتورهای AI به‌صورت سرویس ماژولار با اینترفیس مشترک | تعویض‌پذیری مدل/Provider بدون تغییر API |
 | 7 | آپلود فایل با Presigned URL مستقیم به S3 | عدم عبور فایل سنگین CAD از API server |
 | 8 | فرانت RTL-first با Tailwind v4 و توکن‌های تم | بازار ایران، فارسی‌زبان |
+| 9 | مرز مستاجر = `organizations`؛ مالکیت داده با `organization_id` | یک شرکت چند کاربر خواهد داشت؛ مجوزدهی از ابتدا روی tenant |
+| 10 | قرارداد API: JSON با camelCase، خطای یکسان `{detail, code, errors?, requestId}` با پیام فارسی، لیست‌ها `{items,total,limit,offset}` | فرانت و کلاینت‌های آینده با یک قالب کار می‌کنند؛ تایپ‌های فرانت از OpenAPI تولید می‌شوند |
+| 11 | داده‌ی نمونه فقط در build نمایشی (`NEXT_PUBLIC_DEMO_MODE`) | تولید هرگز داده‌ی ساختگی یا موفقیت جعلی نشان نمی‌دهد |
 
 ## ۳. فرانت‌اند
 
@@ -39,7 +42,9 @@ PartMachine یک بازار صنعتی B2B است که پنج نقش اصلی د
 - **shadcn/ui-style** — کامپوننت‌های ui داخل `src/components/ui` با CVA.
 - **React Query v5** — داده‌ی سرور (لیست تأمین‌کننده‌ها، RFQها)؛ کش و revalidate.
 - **Zustand v5** — وضعیت کلاینت (سشن کاربر، UI state).
-- **لایه‌ی API** (`src/lib/api.ts`) — کلاینت fetch با مدیریت توکن و refresh خودکار؛ تا آماده‌شدن بک‌اند، روی Mock Data به‌صورت fallback کار می‌کند.
+- **لایه‌ی API** (`src/lib/api-client.ts`) — کلاینت fetch که توکن را خودکار می‌فرستد، روی 401 یک‌بار نشست را تازه می‌کند و خطاها را با پیام فارسی و خطای هر فیلد برمی‌گرداند. داده‌ی نمونه **فقط** در build نمایشی استفاده می‌شود؛ در غیر آن خطا با دکمه‌ی «تلاش دوباره» نمایش داده می‌شود.
+- **نشست** (`src/features/auth`) — access token فقط در حافظه؛ بازیابی بی‌صدای نشست با کوکی HttpOnly هنگام باز شدن سایت؛ محافظ صفحات خصوصی (`RequireAuth`) فقط برای تجربه‌ی کاربری.
+- **قرارداد API** — `src/lib/api/schema.ts` از `backend/openapi.json` تولید می‌شود (`npm run gen:api`) و `src/lib/api/contract.ts` سازگاری را در typecheck می‌سنجد.
 
 ### ساختار مسیرها
 
@@ -49,16 +54,20 @@ PartMachine یک بازار صنعتی B2B است که پنج نقش اصلی د
 /suppliers         → جستجو و فیلتر تأمین‌کننده‌ها
 /suppliers/[id]    → پروفایل تأمین‌کننده (توانمندی، ماشین‌آلات، گواهی، امتیاز اعتماد)
 /rfqs              → لیست RFQهای من
-/rfqs/new          → ثبت RFQ (آپلود CAD/PDF، متریال، تعداد، مهلت)
+/rfqs/new          → ثبت RFQ (متریال، تعداد، مهلت؛ فعلاً فقط متادیتای فایل‌ها)
+/rfqs/[id]         → جزئیات RFQ (مالک: کامل؛ قطعه‌ساز: خلاصه)
 /dashboard         → داشبورد نقش‌محور
+/orders            → سفارش‌ها و قرارداد (فعلاً فقط در نسخه‌ی نمایشی؛ در تولید «به‌زودی»)
 ```
 
-## ۴. بک‌اند (افزایش ۲ — طراحی‌شده)
+## ۴. بک‌اند (پیاده‌شده در فاز ۱)
 
-- FastAPI + Python 3.13، SQLAlchemy 2.x async + asyncpg، Pydantic v2، Alembic.
-- ساختار لایه‌ای: `api/v1` (روتر) → `services` (منطق دامنه) → `models` (ORM).
-- امنیت: Argon2 برای هش رمز، Rate limit مبتنی بر Redis، Audit Log برای تمام اکشن‌های حساس، اعتبارسنجی MIME و امضای فایل در آپلود.
-- Observability: structlog (JSON)، `/health` و `/metrics` (Prometheus)، Request-ID middleware.
+- FastAPI + Python 3.13، SQLAlchemy 2.x async + asyncpg، Pydantic v2، Alembic، Redis.
+- **مونولیت ماژولار:** `app/modules/{identity, organizations, suppliers, rfqs, quotations, pricing, audit}`، هر ماژول با `models`، `schemas`، `router` و `service` (و `policies` برای قواعد دسترسی). زیرساخت مشترک در `app/core` (تنظیمات، خطاها، لاگ، middleware، محدودیت نرخ، امنیت).
+- **داده:** فقط PostgreSQL؛ schema با Alembic (`create_all` حذف شده). بدون relationship ضمنی در ORM (کوئری صریح). قیود یکپارچگی در خود پایگاه داده.
+- **امنیت:** Argon2id، نشست کوکی‌دار با چرخش و تشخیص سرقت، CSRF برای endpointهای کوکی‌محور، محدودیت نرخ در Redis، audit برای رویدادهای مهم، و اعتبارسنجی پیکربندی هنگام شروع. جزئیات در [SECURITY_MODEL.md](SECURITY_MODEL.md).
+- **عملیات:** لاگ JSON با request-id، `/health` (liveness) و `/ready` (DB و Redis)، TrustedHost، سقف حجم درخواست، و `statement_timeout` روی اتصال‌ها. `/metrics` و Sentry در فاز ۴.
+- **هنوز پیاده نشده:** آپلود فایل (Presigned URL)، سفارش و escrow، موتورهای AI. موتور Trust Score و برآورد قیمت به‌صورت تابع قطعی (deterministic) موجودند.
 
 ## ۵. طرح دیتابیس (ERD خلاصه)
 
@@ -89,6 +98,8 @@ erDiagram
     users ||--o{ files : uploads
     users ||--o{ audit_logs : acted
 ```
+
+> این ERD طرح هدف است. جداول پیاده‌شده در فاز ۱: `organizations`، `users`، `refresh_tokens`، `suppliers` (توانمندی‌ها، ماشین‌آلات و گواهی‌ها فعلاً JSONB)، `rfqs` (فایل‌ها فعلاً متادیتای JSONB)، `quotations` و `audit_events`. شناسه‌ها فعلاً UUIDv4 هستند.
 
 ### نکات مقیاس‌پذیری
 
