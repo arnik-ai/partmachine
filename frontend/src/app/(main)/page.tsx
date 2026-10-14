@@ -24,9 +24,9 @@ const STEPS = [
   },
   {
     icon: Wallet,
-    title: "۳. پرداخت امن (Escrow)",
+    title: "۳. قرارداد و پیگیری سفارش",
     description:
-      "مبلغ نزد پلتفرم امانت می‌ماند و فقط پس از تأیید کنترل کیفیت و شما آزاد می‌شود.",
+      "قرارداد را مدیر دو طرف امضا می‌کنند؛ پرداخت مستقیم به قطعه‌ساز در پلتفرم اعلام و تأیید می‌شود و در صورت نیاز آزمایشگاه تأییدشده کیفیت را بازرسی می‌کند.",
   },
 ] as const;
 
@@ -40,7 +40,7 @@ export default function LandingPage() {
         </h1>
         <p className="max-w-2xl text-white/70">
           کارفرمایان را به بهترین قطعه‌سازان و آزمایشگاه‌های کنترل کیفیت متصل
-          می‌کنیم — با امتیاز اعتماد هوش مصنوعی و پرداخت امن امانی.
+          می‌کنیم — با امتیاز اعتماد هوش مصنوعی، قرارداد امضاشده و پیگیری شفاف هر سفارش.
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link href="/rfqs/new" className={buttonVariants({ size: "lg" })}>
@@ -55,7 +55,7 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-2 text-sm text-white/70">
           <ShieldCheck className="h-4 w-4 text-success" />
-          پرداخت امانی + بازرسی کیفیت مستقل روی تمام سفارش‌ها
+          قرارداد امضاشده + بازرسی کیفیت اختیاری توسط آزمایشگاه تأییدشده
         </div>
       </section>
 
