@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useAuthOptions } from "@/features/account/api";
 import { ApiError, errorMessage } from "@/lib/api-client";
 import { DEMO_MODE } from "@/lib/config";
 import { login, startDemoSession } from "../api";
@@ -21,6 +22,7 @@ import { safeNextPath } from "../next-path";
 
 export function LoginForm() {
   const router = useRouter();
+  const canReset = useAuthOptions().data?.passwordReset ?? false;
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -75,7 +77,14 @@ export function LoginForm() {
             <FieldError message={fieldErrors.email} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="password">رمز عبور</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="password">رمز عبور</Label>
+              {canReset && (
+                <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                  رمز را فراموش کرده‌اید؟
+                </Link>
+              )}
+            </div>
             <Input
               id="password"
               name="password"

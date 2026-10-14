@@ -27,6 +27,12 @@ export interface TrustScore {
   }>;
 }
 
+/** تصویر نمونه‌کار؛ `url` نسبی به آدرس API است و بدون ورود نمایش داده می‌شود */
+export interface PortfolioImage {
+  id: string;
+  url: string;
+}
+
 export interface Supplier {
   id: string;
   companyName: string;
@@ -47,14 +53,43 @@ export interface Supplier {
   responseTimeHours: number;
   verified: boolean;
   score: TrustScore;
-  /** عناوین نمونه‌کارهای گالری (تا اتصال S3، به‌صورت placeholder نمایش داده می‌شود) */
+  /** فقط داده‌ی نمونه‌ی نسخه‌ی نمایشی: عنوان نمونه‌کارها بدون تصویر */
   galleryTitles?: string[];
+  /** تصاویر واقعی نمونه‌کار */
+  portfolio?: PortfolioImage[];
+}
+
+/** پروفایل سازمان خود قطعه‌ساز، با وضعیت‌هایی که فقط خودش می‌بیند */
+export interface MySupplier extends Supplier {
+  /** در فهرست عمومی دیده می‌شود؟ (شهر و حداقل یک خدمت لازم است) */
+  listed: boolean;
+  /** فقط مدیر سازمان ویرایش می‌کند */
+  canEdit: boolean;
+}
+
+/** کل پروفایل عمومی، همان‌طور که فرم ویرایش می‌فرستد */
+export interface SupplierProfileInput {
+  companyName: string;
+  description: string;
+  city: string;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  foundedYear: number | null;
+  employeeCount: number | null;
+  capabilities: CapabilityValue[];
+  machines: SupplierMachine[];
+  certifications: Array<{ title: string; issuer: string; validUntil: string | null }>;
+  productionCapacityPerMonth: number | null;
+  leadTimeDays: number;
 }
 
 export interface SupplierFilters {
   q?: string;
   capability?: string;
   city?: string;
+  /** فقط قطعه‌سازهای تأییدشده */
+  verified?: boolean;
   limit?: number;
   offset?: number;
 }

@@ -13,6 +13,8 @@ const STATUS_VARIANT: Record<
   draft: "outline",
   published: "secondary",
   quoting: "warning",
+  evaluating: "warning",
+  expired: "outline",
   awarded: "success",
   closed: "outline",
   cancelled: "destructive",

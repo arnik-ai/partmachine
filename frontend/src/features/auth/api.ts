@@ -3,7 +3,15 @@
 import { ApiError, CSRF_HEADERS, apiFetch, configureAuth } from "@/lib/api-client";
 import { DEMO_MODE } from "@/lib/config";
 import { useAuthStore } from "./store";
-import type { AuthSession, LoginInput, RegisterInput, User } from "./types";
+import type {
+  AuthOptions,
+  AuthSession,
+  ChangePasswordInput,
+  LoginInput,
+  PasswordResetConfirmInput,
+  RegisterInput,
+  User,
+} from "./types";
 
 /**
  * نشانه‌ی غیرحساس «احتمالاً نشست داریم» — فقط برای اینکه بازدیدکننده‌ی ناشناس با هر
@@ -55,6 +63,40 @@ export async function login(input: LoginInput): Promise<AuthSession> {
 
 export async function register(input: RegisterInput): Promise<AuthSession> {
   const session = await apiFetch<AuthSession>("/auth/register", {
+    method: "POST",
+    body: input,
+    auth: false,
+    credentials: "include",
+  });
+  return applySession(session);
+}
+
+/** رمز را عوض می‌کند؛ سرور نشست‌های دیگر را می‌بندد و برای همین مرورگر نشست تازه می‌دهد */
+export async function changePassword(input: ChangePasswordInput): Promise<AuthSession> {
+  const session = await apiFetch<AuthSession>("/auth/change-password", {
+    method: "POST",
+    body: input,
+    credentials: "include",
+  });
+  return applySession(session);
+}
+
+export function getAuthOptions(): Promise<AuthOptions> {
+  if (DEMO_MODE) return Promise.resolve({ passwordReset: false, phoneVerification: false });
+  return apiFetch<AuthOptions>("/auth/options", { auth: false });
+}
+
+export function requestPasswordReset(email: string): Promise<{ detail: string }> {
+  return apiFetch<{ detail: string }>("/auth/password-reset/request", {
+    method: "POST",
+    body: { email },
+    auth: false,
+  });
+}
+
+/** کد درست ⇒ رمز تازه و ورود مستقیم (همه‌ی نشست‌های قبلی بسته می‌شوند) */
+export async function confirmPasswordReset(input: PasswordResetConfirmInput): Promise<AuthSession> {
+  const session = await apiFetch<AuthSession>("/auth/password-reset/confirm", {
     method: "POST",
     body: input,
     auth: false,

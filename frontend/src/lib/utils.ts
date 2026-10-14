@@ -23,3 +23,14 @@ export function faDate(date: string | Date): string {
     day: "numeric",
   }).format(new Date(date));
 }
+
+/** تاریخ و ساعت به تقویم جلالی فارسی */
+export function faDateTime(date: string | Date): string {
+  return new Intl.DateTimeFormat("fa-IR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(date));
+}

@@ -19,6 +19,7 @@ export function SuppliersList() {
     capability: searchParams.get("capability") ?? undefined,
     city: searchParams.get("city") ?? undefined,
     q: searchParams.get("q") ?? undefined,
+    verified: searchParams.get("verified") === "true" || undefined,
   }));
   const [page, setPage] = useState(0);
   const { data, isLoading, isError, error, refetch, isFetching } = useSuppliers({

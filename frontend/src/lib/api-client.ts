@@ -49,6 +49,15 @@ export function configureAuth(hooks: AuthHooks) {
   authHooks = hooks;
 }
 
+/** برای آپلود با XMLHttpRequest (نمایش پیشرفت): همان توکن و همان تازه‌سازی نشست */
+export function currentAccessToken(): string | null {
+  return authHooks.getToken();
+}
+
+export function refreshAccessToken(): Promise<string | null> {
+  return authHooks.refresh();
+}
+
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
   /** پیش‌فرض true: توکن دسترسی اضافه شود و در صورت انقضا نشست تازه شود */
@@ -68,7 +77,7 @@ async function send(path: string, init: RequestInit): Promise<Response> {
   }
 }
 
-async function toApiError(response: Response): Promise<ApiError> {
+export async function toApiError(response: Response): Promise<ApiError> {
   let detail = `خطایی رخ داد (کد ${faNumber(response.status)}). لطفاً دوباره تلاش کنید.`;
   let code: string | undefined;
   let requestId: string | undefined;

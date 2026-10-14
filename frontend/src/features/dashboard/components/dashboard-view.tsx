@@ -14,9 +14,11 @@ import {
   Plus,
   Search,
   ShieldAlert,
+  UserPlus,
   ShieldCheck,
   Sparkles,
   TrendingUp,
+  Users,
   Wallet,
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
@@ -29,6 +31,8 @@ import {
 } from "@/components/ui/card";
 import { StarRating, scoreToStars } from "@/components/ui/star-rating";
 import { ProductGallery } from "@/features/suppliers/components/product-gallery";
+import { useMySupplier } from "@/features/suppliers/hooks";
+import { useMyVerification } from "@/features/verification/api";
 import { useAuthStore } from "@/features/auth/store";
 import { DEMO_MODE } from "@/lib/config";
 import { roleLabel, type RoleValue } from "@/lib/constants";
@@ -106,6 +110,14 @@ interface QuickAction {
   demoOnly?: boolean;
 }
 
+/** برای همه‌ی نقش‌ها: مدیر سازمان همکارانش را با لینک دعوت اضافه می‌کند */
+const ORGANIZATION_ACTION: QuickAction = {
+  href: "/organization",
+  label: "اعضای سازمان",
+  description: "دعوت همکاران با لینک و مدیریت اعضا",
+  icon: UserPlus,
+};
+
 const QUICK_ACTIONS: Record<string, QuickAction[]> = {
   buyer: [
     {
@@ -136,11 +148,16 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
   ],
   supplier: [
     {
-      href: "/rfqs",
-      label: "RFQهای باز",
-      description: "درخواست‌های منطبق با توانمندی شما",
+      href: "/rfqs/open",
+      label: "درخواست‌های باز",
+      description: "درخواست‌هایی که هنوز پیشنهاد قیمت می‌پذیرند",
       icon: FileSearch,
-      demoOnly: true,
+    },
+    {
+      href: "/quotations",
+      label: "پیشنهادهای من",
+      description: "وضعیت پیشنهادها و نتیجه‌ی هر کدام",
+      icon: MessageSquareQuote,
     },
     {
       href: "/orders",
@@ -150,9 +167,9 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
       demoOnly: true,
     },
     {
-      href: "/suppliers",
-      label: "پروفایل عمومی من",
-      description: "نمایش توانمندی‌ها و ماشین‌آلات",
+      href: "/profile",
+      label: "پروفایل و تأیید شرکت",
+      description: "اطلاعات شرکت، گالری نمونه‌کار و مدارک تأیید",
       icon: Factory,
     },
   ],
@@ -168,6 +185,26 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
       label: "ثبت RFQ برای کارفرما",
       description: "مدیریت فرآیند خرید",
       icon: Plus,
+    },
+  ],
+  admin: [
+    {
+      href: "/admin",
+      label: "صف تأیید مدارک",
+      description: "بررسی مدارک قطعه‌سازها و تأیید یا رد با ذکر دلیل",
+      icon: ShieldCheck,
+    },
+    {
+      href: "/admin/users",
+      label: "کاربران",
+      description: "جستجو، فعال یا غیرفعال کردن و تأیید حساب‌ها",
+      icon: Users,
+    },
+    {
+      href: "/admin/audit",
+      label: "رویدادها",
+      description: "گزارش اقدام‌های مهم و امنیتی",
+      icon: ClipboardList,
     },
   ],
   qc: [
@@ -280,9 +317,11 @@ export function DashboardView() {
 
   const role: RoleValue = user.role;
   const stats = ROLE_STATS[role] ?? ROLE_STATS.buyer;
-  const actions = (QUICK_ACTIONS[role] ?? QUICK_ACTIONS.buyer).filter(
-    (action) => DEMO_MODE || !action.demoOnly,
-  );
+  const actions = [
+    ...(QUICK_ACTIONS[role] ?? QUICK_ACTIONS.buyer),
+    // ادمین سازمان مشتری ندارد؛ بقیه همکارانشان را دعوت می‌کنند
+    ...(role === "admin" ? [] : [ORGANIZATION_ACTION]),
+  ].filter((action) => DEMO_MODE || !action.demoOnly);
   const activity = RECENT_ACTIVITY[role] ?? RECENT_ACTIVITY.buyer;
   // ثبت‌نام مأمور خرید و آزمایشگاه آزاد است ولی تا تأیید پلتفرم «تأییدنشده» نمایش داده می‌شود (D4)
   const unverified =
@@ -304,7 +343,7 @@ export function DashboardView() {
             </p>
             {unverified && (
               <p className="text-xs text-primary-foreground/75">
-                حساب شما هنوز توسط پارت‌ماشین تأیید نشده است؛ فرایند تأیید به‌زودی فعال می‌شود.
+                حساب شما هنوز توسط پارت‌ماشین تأیید نشده است؛ کارشناسان ما پس از بررسی، آن را تأیید می‌کنند.
               </p>
             )}
             <div className="mt-1 h-1 w-16 rounded-full bg-gold" />
@@ -329,6 +368,8 @@ export function DashboardView() {
         <div className="absolute -top-20 -right-20 h-56 w-56 rounded-full bg-gold/15 blur-3xl" />
         <div className="absolute -bottom-24 left-1/3 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
       </div>
+
+      {role === "supplier" && !DEMO_MODE && <SupplierProfileReminder />}
 
       {/* کارت‌های آمار — داده‌ی نمونه؛ فقط در نسخه‌ی نمایشی */}
       {DEMO_MODE && (
@@ -457,13 +498,43 @@ export function DashboardView() {
             {DEMO_MODE ? (
               <ProductGallery />
             ) : (
-              <p className="text-sm text-muted-foreground">
-                بارگذاری عکس محصولات به‌زودی فعال می‌شود.
-              </p>
+              <Link href="/profile" className={buttonVariants({ variant: "outline" })}>
+                <Images className="h-4 w-4" aria-hidden />
+                مدیریت گالری در پروفایل شرکت
+              </Link>
             )}
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+/** یادآوری قدم بعدی قطعه‌ساز: تکمیل پروفایل (برای دیده شدن)، سپس ارسال مدارک (برای نشان تأیید) */
+function SupplierProfileReminder() {
+  const { data: supplier } = useMySupplier();
+  const { data: verification } = useMyVerification(Boolean(supplier?.listed && !supplier.verified));
+  if (!supplier || supplier.verified) return null;
+  const [message, action] = !supplier.listed
+    ? ["پروفایل شرکت شما کامل نیست و در فهرست قطعه‌سازها دیده نمی‌شود.", "تکمیل پروفایل"]
+    : verification?.status === "pending"
+      ? ["مدارک شرکت شما در حال بررسی است.", "مشاهده‌ی وضعیت"]
+      : [
+          "برای جلب اعتماد کارفرماها، مدارک شرکت را برای دریافت نشان «تأییدشده» بفرستید.",
+          "ارسال مدارک",
+        ];
+  return (
+    <div
+      role="status"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold/50 bg-card p-4 text-sm text-card-foreground"
+    >
+      <span className="flex items-center gap-2">
+        <ShieldAlert className="h-5 w-5 shrink-0 text-gold" aria-hidden />
+        {message}
+      </span>
+      <Link href="/profile" className={buttonVariants({ size: "sm" })}>
+        {action}
+      </Link>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
@@ -20,16 +21,13 @@ import { DEMO_MODE } from "@/lib/config";
 import { useHydrated } from "@/lib/use-hydrated";
 import { CAPABILITIES, CITIES, MATERIALS } from "@/lib/constants";
 import type { CapabilityValue } from "@/lib/constants";
-import { BUYER_ORDER_TERMS } from "@/features/agreements/terms";
-import {
-  TermsChecklist,
-  allTermsAccepted,
-} from "@/features/agreements/components/terms-checklist";
+import { acceptanceOf, useAgreement } from "@/features/agreements/api";
+import { AgreementChecklist } from "@/features/agreements/components/agreement-checklist";
+import { allTermsAccepted } from "@/features/agreements/components/terms-checklist";
 import { PriceEstimator } from "@/features/pricing/components/price-estimator";
 import type { ComplexityValue } from "@/features/pricing/data";
 import { useCreateRfq } from "../hooks";
-import type { RfqFile } from "../types";
-import { RfqFileUpload } from "./file-upload";
+import { RfqFileUpload, type UploadState } from "./file-upload";
 
 /** تاریخ امروز به وقت محلی مرورگر، به قالب YYYY-MM-DD */
 function localToday(): string {
@@ -38,8 +36,14 @@ function localToday(): string {
 
 export function RfqForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const createRfq = useCreateRfq();
-  const [files, setFiles] = useState<RfqFile[]>([]);
+  const agreement = useAgreement("buyer_order").data;
+  const [uploads, setUploads] = useState<UploadState>({
+    fileIds: [],
+    busy: false,
+    failed: false,
+  });
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -54,8 +58,12 @@ export function RfqForm() {
   const [material, setMaterial] = useState<string>(MATERIALS[0]);
   const [quantity, setQuantity] = useState<number>(0);
   const [complexity, setComplexity] = useState<ComplexityValue>("normal");
+  const [deadline, setDeadline] = useState("");
+  // اختیاری: اگر خالی بماند سرور ۷ روز بعد (و نه دیرتر از مهلت تحویل) را می‌گذارد
+  const [quotesDue, setQuotesDue] = useState("");
 
-  const termsOk = allTermsAccepted(BUYER_ORDER_TERMS, accepted);
+  const terms = agreement?.items ?? [];
+  const termsOk = terms.length > 0 && allTermsAccepted(terms, accepted);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -71,14 +79,22 @@ export function RfqForm() {
         material,
         quantity,
         deliveryCity: String(form.get("deliveryCity") ?? ""),
-        deadline: String(form.get("deadline") ?? ""),
-        files,
+        deadline,
+        quotesDue: quotesDue || undefined,
+        fileIds: uploads.fileIds,
+        acceptedAgreements: acceptanceOf(agreement),
       });
       // موفقیت فقط پس از تأیید سرور نمایش داده می‌شود
       router.push(DEMO_MODE ? "/rfqs" : `/rfqs/${rfq.id}?created=1`);
     } catch (err) {
       setError(errorMessage(err, "ثبت درخواست انجام نشد. لطفاً دوباره تلاش کنید."));
-      if (err instanceof ApiError) setFieldErrors(err.fieldErrors);
+      if (err instanceof ApiError) {
+        setFieldErrors(err.fieldErrors);
+        if (err.fieldErrors.acceptedAgreements) {
+          setAccepted({});
+          void queryClient.invalidateQueries({ queryKey: ["agreements"] });
+        }
+      }
     }
   }
 
@@ -176,8 +192,32 @@ export function RfqForm() {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="deadline">مهلت تحویل</Label>
-              <Input id="deadline" name="deadline" type="date" required min={today} />
+              <Input
+                id="deadline"
+                name="deadline"
+                type="date"
+                required
+                min={today}
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+              />
               <FieldError message={fieldErrors.deadline} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="quotesDue">مهلت دریافت پیشنهاد (اختیاری)</Label>
+              <Input
+                id="quotesDue"
+                name="quotesDue"
+                type="date"
+                min={today}
+                max={deadline || undefined}
+                value={quotesDue}
+                onChange={(e) => setQuotesDue(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                تا این روز قطعه‌سازها می‌توانند قیمت بدهند. اگر خالی بماند، ۷ روز بعد در نظر گرفته می‌شود.
+              </p>
+              <FieldError message={fieldErrors.quotesDue} />
             </div>
           </div>
 
@@ -191,18 +231,20 @@ export function RfqForm() {
 
           <div className="flex flex-col gap-2">
             <Label>فایل‌های فنی (نقشه، CAD، PDF)</Label>
-            <RfqFileUpload files={files} onChange={setFiles} />
+            <RfqFileUpload onChange={setUploads} />
             <p className="text-xs text-muted-foreground">
-              فعلاً فقط نام و مشخصات فایل‌ها ثبت می‌شود؛ ارسال خود فایل‌ها به‌زودی فعال می‌شود.
+              فایل‌ها خصوصی‌اند: فقط سازمان شما و قطعه‌سازهایی که تعهد عدم افشا را بپذیرند
+              می‌توانند آن‌ها را دانلود کنند.
             </p>
+            <FieldError message={fieldErrors.fileIds} />
           </div>
 
-          <TermsChecklist
-            title="قوانین و تعهدات کارفرما"
-            terms={BUYER_ORDER_TERMS}
+          <AgreementChecklist
+            agreementKey="buyer_order"
             accepted={accepted}
             onChange={setAccepted}
           />
+          <FieldError message={fieldErrors.acceptedAgreements} />
 
           {error && (
             <p role="alert" className="text-sm text-destructive">
@@ -220,8 +262,16 @@ export function RfqForm() {
             </Button>
             <Button
               type="submit"
-              disabled={createRfq.isPending || !termsOk}
-              title={!termsOk ? "ابتدا همه‌ی قوانین را تیک بزنید" : undefined}
+              disabled={createRfq.isPending || !termsOk || uploads.busy || uploads.failed}
+              title={
+                uploads.busy
+                  ? "صبر کنید تا بارگذاری فایل‌ها تمام شود"
+                  : uploads.failed
+                    ? "فایل‌های ناموفق را حذف کنید یا دوباره بارگذاری کنید"
+                    : !termsOk
+                      ? "ابتدا همه‌ی قوانین را تیک بزنید"
+                      : undefined
+              }
             >
               {createRfq.isPending ? "در حال ثبت..." : "انتشار درخواست"}
             </Button>

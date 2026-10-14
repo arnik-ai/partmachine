@@ -29,6 +29,7 @@ export function SupplierFiltersBar({
   }, [query, filters, onChange]);
 
   return (
+    <div className="flex flex-col gap-3">
     <div className="grid gap-3 sm:grid-cols-[1fr_220px_180px]">
       <div className="relative">
         <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -68,6 +69,16 @@ export function SupplierFiltersBar({
           </option>
         ))}
       </Select>
+    </div>
+    <label className="flex cursor-pointer items-center gap-2 self-start text-sm text-white/85">
+      <input
+        type="checkbox"
+        className="h-4 w-4 accent-primary"
+        checked={filters.verified ?? false}
+        onChange={(e) => onChange({ ...filters, verified: e.target.checked || undefined })}
+      />
+      فقط قطعه‌سازهای تأییدشده
+    </label>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Factory, LogOut } from "lucide-react";
+import { Factory, LogOut, UserRound } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { logout } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
@@ -11,12 +11,28 @@ import { DEMO_MODE } from "@/lib/config";
 import { roleLabel } from "@/lib/constants";
 import { useHydrated } from "@/lib/use-hydrated";
 
-const NAV_LINKS = [
-  { href: "/suppliers", label: "قطعه‌سازان", demoOnly: false },
-  { href: "/rfqs", label: "درخواست‌های من", demoOnly: false },
+type NavLink = { href: string; label: string; roles?: readonly string[]; demoOnly?: boolean };
+
+/** منو بر اساس نقش: هر کس فقط کارهایی را می‌بیند که برایش معنی دارد */
+const NAV_LINKS: readonly NavLink[] = [
+  { href: "/admin", label: "مدیریت", roles: ["admin"] },
+  { href: "/rfqs/open", label: "درخواست‌های باز", roles: ["supplier"] },
+  { href: "/quotations", label: "پیشنهادهای من", roles: ["supplier"] },
+  { href: "/profile", label: "پروفایل شرکت", roles: ["supplier"] },
+  { href: "/suppliers", label: "قطعه‌سازان" },
+  { href: "/rfqs", label: "درخواست‌های من", roles: ["buyer", "agent"] },
+  { href: "/organization", label: "سازمان من", roles: ["buyer", "supplier", "agent", "qc"] },
   // سفارش‌ها هنوز به سرور وصل نشده‌اند (فاز ۳)؛ فقط در نسخه‌ی نمایشی دیده می‌شوند
   { href: "/orders", label: "سفارش‌ها", demoOnly: true },
-] as const;
+];
+
+function linksFor(role: string | undefined): NavLink[] {
+  return NAV_LINKS.filter(
+    (link) =>
+      (DEMO_MODE || !link.demoOnly) &&
+      (!link.roles || (role !== undefined && link.roles.includes(role))),
+  );
+}
 
 export function Header() {
   const router = useRouter();
@@ -24,7 +40,7 @@ export function Header() {
   const user = useAuthStore((s) => s.user);
   const status = useAuthStore((s) => s.status);
   const hydrated = useHydrated();
-  const links = NAV_LINKS.filter((link) => DEMO_MODE || !link.demoOnly);
+  const links = linksFor(user?.role);
 
   async function handleLogout() {
     await logout();
@@ -66,6 +82,14 @@ export function Header() {
                 <span className="text-xs text-muted-foreground">
                   {roleLabel(user.role)}
                 </span>
+              </Link>
+              <Link
+                href="/account"
+                aria-label="حساب کاربری"
+                title="حساب کاربری"
+                className={buttonVariants({ variant: "ghost", size: "icon" })}
+              >
+                <UserRound className="h-4 w-4" />
               </Link>
               <Button
                 variant="ghost"
