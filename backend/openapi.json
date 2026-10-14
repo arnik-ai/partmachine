@@ -1985,7 +1985,8 @@
               "enum": [
                 "rfq_attachment",
                 "verification_document",
-                "portfolio_image"
+                "portfolio_image",
+                "order_document"
               ],
               "type": "string",
               "title": "Purpose"
@@ -5035,6 +5036,657 @@
         }
       }
     },
+    "/api/v1/orders": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "List Orders",
+        "operationId": "list_orders_api_v1_orders_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "active",
+                "completed",
+                "cancelled",
+                "all"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10000,
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}": {
+      "get": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Get Order",
+        "operationId": "get_order_api_v1_orders__order_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/cancel": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Cancel Order",
+        "description": "پیش از امضای قرارداد، هر طرف با ذکر دلیل (O11).",
+        "operationId": "cancel_order_api_v1_orders__order_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelOrderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/ship": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Ship Order",
+        "operationId": "ship_order_api_v1_orders__order_id__ship_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShipOrderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/confirm-delivery": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Confirm Delivery",
+        "operationId": "confirm_delivery_api_v1_orders__order_id__confirm_delivery_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmDeliveryInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
     "/api/v1/pricing/estimate": {
       "post": {
         "tags": [
@@ -7250,6 +7902,21 @@
         "title": "AuthSession",
         "description": "پاسخ ورود/ثبت‌نام/تازه‌سازی. refresh token در کوکی HttpOnly است، نه در بدنه."
       },
+      "CancelOrderInput": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "CancelOrderInput"
+      },
       "CancelRfqInput": {
         "properties": {
           "reason": {
@@ -7289,6 +7956,18 @@
           "newPassword"
         ],
         "title": "ChangePasswordInput"
+      },
+      "ConfirmDeliveryInput": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "ConfirmDeliveryInput"
       },
       "CostComponent": {
         "properties": {
@@ -7641,7 +8320,8 @@
             "enum": [
               "rfq_attachment",
               "verification_document",
-              "portfolio_image"
+              "portfolio_image",
+              "order_document"
             ],
             "title": "Purpose"
           },
@@ -7959,6 +8639,18 @@
               "cancelled"
             ],
             "title": "Outcome"
+          },
+          "orderId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orderid"
           }
         },
         "type": "object",
@@ -8224,6 +8916,616 @@
         ],
         "title": "MySupplierOut",
         "description": "پروفایل سازمان خود قطعه‌ساز، با وضعیت‌هایی که فقط خودش می‌بیند."
+      },
+      "OrderDetailOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_contract",
+              "awaiting_prepayment",
+              "in_production",
+              "in_inspection",
+              "shipped",
+              "delivered",
+              "completed",
+              "cancelled",
+              "disputed"
+            ],
+            "title": "Status"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "material": {
+            "type": "string",
+            "title": "Material"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "deliveryCity": {
+            "type": "string",
+            "title": "Deliverycity"
+          },
+          "amountRials": {
+            "type": "integer",
+            "title": "Amountrials"
+          },
+          "leadTimeDays": {
+            "type": "integer",
+            "title": "Leadtimedays"
+          },
+          "deliveryDue": {
+            "type": "string",
+            "format": "date",
+            "title": "Deliverydue"
+          },
+          "isOverdue": {
+            "type": "boolean",
+            "title": "Isoverdue"
+          },
+          "rfqId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Rfqid"
+          },
+          "quotationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Quotationid"
+          },
+          "buyer": {
+            "$ref": "#/components/schemas/OrderPartyOut"
+          },
+          "supplier": {
+            "$ref": "#/components/schemas/OrderSupplierOut"
+          },
+          "mySide": {
+            "type": "string",
+            "enum": [
+              "buyer",
+              "supplier",
+              "admin"
+            ],
+            "title": "Myside"
+          },
+          "nextActions": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "cancel",
+                "ship",
+                "confirm_delivery"
+              ]
+            },
+            "type": "array",
+            "title": "Nextactions"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          },
+          "shippedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shippedat"
+          },
+          "deliveredAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deliveredat"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelledat"
+          },
+          "cancelReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelreason"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/OrderEventOut"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "title",
+          "material",
+          "quantity",
+          "deliveryCity",
+          "amountRials",
+          "leadTimeDays",
+          "deliveryDue",
+          "isOverdue",
+          "rfqId",
+          "quotationId",
+          "buyer",
+          "supplier",
+          "mySide",
+          "nextActions",
+          "createdAt",
+          "updatedAt",
+          "events"
+        ],
+        "title": "OrderDetailOut"
+      },
+      "OrderEventOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "fromStatus": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "awaiting_contract",
+                  "awaiting_prepayment",
+                  "in_production",
+                  "in_inspection",
+                  "shipped",
+                  "delivered",
+                  "completed",
+                  "cancelled",
+                  "disputed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fromstatus"
+          },
+          "toStatus": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "awaiting_contract",
+                  "awaiting_prepayment",
+                  "in_production",
+                  "in_inspection",
+                  "shipped",
+                  "delivered",
+                  "completed",
+                  "cancelled",
+                  "disputed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tostatus"
+          },
+          "actorName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actorname"
+          },
+          "actorSide": {
+            "type": "string",
+            "enum": [
+              "buyer",
+              "supplier",
+              "qc",
+              "admin",
+              "system"
+            ],
+            "title": "Actorside"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrderFileOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "action",
+          "actorSide",
+          "note",
+          "createdAt"
+        ],
+        "title": "OrderEventOut"
+      },
+      "OrderFileOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "pdf",
+              "cad",
+              "drawing",
+              "image"
+            ],
+            "title": "Kind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "size",
+          "kind"
+        ],
+        "title": "OrderFileOut"
+      },
+      "OrderOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_contract",
+              "awaiting_prepayment",
+              "in_production",
+              "in_inspection",
+              "shipped",
+              "delivered",
+              "completed",
+              "cancelled",
+              "disputed"
+            ],
+            "title": "Status"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "material": {
+            "type": "string",
+            "title": "Material"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "deliveryCity": {
+            "type": "string",
+            "title": "Deliverycity"
+          },
+          "amountRials": {
+            "type": "integer",
+            "title": "Amountrials"
+          },
+          "leadTimeDays": {
+            "type": "integer",
+            "title": "Leadtimedays"
+          },
+          "deliveryDue": {
+            "type": "string",
+            "format": "date",
+            "title": "Deliverydue"
+          },
+          "isOverdue": {
+            "type": "boolean",
+            "title": "Isoverdue"
+          },
+          "rfqId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Rfqid"
+          },
+          "quotationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Quotationid"
+          },
+          "buyer": {
+            "$ref": "#/components/schemas/OrderPartyOut"
+          },
+          "supplier": {
+            "$ref": "#/components/schemas/OrderSupplierOut"
+          },
+          "mySide": {
+            "type": "string",
+            "enum": [
+              "buyer",
+              "supplier",
+              "admin"
+            ],
+            "title": "Myside"
+          },
+          "nextActions": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "cancel",
+                "ship",
+                "confirm_delivery"
+              ]
+            },
+            "type": "array",
+            "title": "Nextactions"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          },
+          "shippedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shippedat"
+          },
+          "deliveredAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deliveredat"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelledat"
+          },
+          "cancelReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelreason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "number",
+          "status",
+          "title",
+          "material",
+          "quantity",
+          "deliveryCity",
+          "amountRials",
+          "leadTimeDays",
+          "deliveryDue",
+          "isOverdue",
+          "rfqId",
+          "quotationId",
+          "buyer",
+          "supplier",
+          "mySide",
+          "nextActions",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "OrderOut"
+      },
+      "OrderPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "OrderPage"
+      },
+      "OrderPartyOut": {
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organizationid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organizationId",
+          "name"
+        ],
+        "title": "OrderPartyOut"
+      },
+      "OrderSupplierOut": {
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organizationid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Supplierid"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organizationId",
+          "name",
+          "supplierId",
+          "verified"
+        ],
+        "title": "OrderSupplierOut"
       },
       "OrganizationOut": {
         "properties": {
@@ -8899,6 +10201,18 @@
                 "type": "null"
               }
             ]
+          },
+          "orderId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orderid"
           }
         },
         "type": "object",
@@ -8951,6 +10265,31 @@
           "offset"
         ],
         "title": "RfqPage"
+      },
+      "ShipOrderInput": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          },
+          "fileId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fileid"
+          }
+        },
+        "type": "object",
+        "title": "ShipOrderInput",
+        "description": "اطلاعات ارسال (مثلاً نام باربری و شماره‌ی بارنامه) و سند اختیاری."
       },
       "SubmitVerificationInput": {
         "properties": {

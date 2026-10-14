@@ -32,6 +32,7 @@ from app.modules.files.content import (
 from app.modules.files.models import StoredFile
 from app.modules.files.schemas import DownloadLinkOut, FileOut
 from app.modules.identity.deps import CurrentUser
+from app.modules.orders import service as orders
 from app.modules.rfqs import service as rfq_service
 from app.modules.rfqs.policies import RfqView
 from app.modules.suppliers.models import Supplier
@@ -43,6 +44,7 @@ OWNER_ONLY = "فقط مدیر سازمان می‌تواند مدارک و تص�
 ATTACHED = {
     "rfq_attachment": "فایل پیوستِ یک درخواست ثبت‌شده را نمی‌توان حذف کرد.",
     "verification_document": "مدرکی که برای بررسی ارسال شده است را نمی‌توان حذف کرد.",
+    "order_document": "سندی که در تاریخچه‌ی سفارش ثبت شده است را نمی‌توان حذف کرد.",
 }
 
 
@@ -197,6 +199,14 @@ async def _authorize_download(db: AsyncSession, user: CurrentUser, stored: Store
     if stored.purpose == "verification_document":
         if not (user.is_admin or stored.organization_id == user.organization_id):
             raise NotFound(FILE_NOT_FOUND)
+        return
+    if stored.purpose == "order_document":
+        if stored.order_id is None:
+            if stored.organization_id != user.organization_id:
+                raise NotFound(FILE_NOT_FOUND)
+            return
+        # فقط طرف‌های همان سفارش (و ادمین)؛ بقیه 404
+        await orders.load(db, user, stored.order_id)
         return
     # portfolio_image: تصویر عمومی پروفایل قطعه‌ساز
 

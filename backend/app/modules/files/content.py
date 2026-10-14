@@ -8,7 +8,9 @@ from typing import Literal
 
 from app.core.text import normalize_text
 
-FilePurpose = Literal["rfq_attachment", "verification_document", "portfolio_image"]
+FilePurpose = Literal[
+    "rfq_attachment", "verification_document", "portfolio_image", "order_document"
+]
 FileKind = Literal["pdf", "cad", "drawing", "image"]
 
 MB = 1024 * 1024
@@ -34,6 +36,12 @@ PURPOSES: dict[str, PurposeRule] = {
     ),
     "portfolio_image": PurposeRule(
         frozenset({"png", "jpg", "jpeg", "webp"}), 5 * MB, frozenset({"supplier"}), owner_only=True
+    ),
+    # اسناد سفارش: بارنامه، رسید پرداخت، گزارش بازرسی و…؛ فقط طرف‌های همان سفارش می‌بینند
+    "order_document": PurposeRule(
+        frozenset({"pdf", "png", "jpg", "jpeg"}),
+        10 * MB,
+        frozenset({"buyer", "agent", "supplier", "qc"}),
     ),
 }
 

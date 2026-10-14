@@ -18,6 +18,7 @@ from app.modules.agreements.schemas import AcceptedAgreementIn
 from app.modules.audit import service as audit
 from app.modules.files.models import StoredFile
 from app.modules.identity.deps import ClientInfo, CurrentUser
+from app.modules.orders import service as orders
 from app.modules.quotations.models import Quotation
 from app.modules.rfqs import lifecycle
 from app.modules.rfqs.models import OPEN_STATUSES, Rfq
@@ -48,6 +49,7 @@ class ViewerExtras:
     file_count: int = 0
     # فهرست فایل‌ها فقط برای مالک، یا قطعه‌سازی که NDA همین RFQ را پذیرفته است
     files: list[RfqFileOut] = field(default_factory=list)
+    order_id: uuid.UUID | None = None
 
 
 def to_out(rfq: Rfq, user: CurrentUser, view: RfqView, extras: ViewerExtras, today: date) -> RfqOut:
@@ -76,6 +78,7 @@ def to_out(rfq: Rfq, user: CurrentUser, view: RfqView, extras: ViewerExtras, tod
             "cancel_reason": rfq.cancel_reason if full else None,
             "nda_accepted": extras.nda_accepted,
             "my_quotation": extras.my_quotation,
+            "order_id": extras.order_id,
         }
     )
 
@@ -349,6 +352,9 @@ async def get_rfq(db: AsyncSession, user: CurrentUser, rfq_id: uuid.UUID) -> Rfq
         )
     if view is RfqView.FULL or extras.nda_accepted:
         extras.files = files
+    is_winner = mine is not None and mine.id == rfq.awarded_quotation_id
+    if rfq.status == "awarded" and (view is RfqView.FULL or is_winner):
+        extras.order_id = await orders.order_id_for_rfq(db, rfq.id)
     return to_out(rfq, user, view, extras, business_today())
 
 

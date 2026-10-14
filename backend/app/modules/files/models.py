@@ -17,7 +17,8 @@ class StoredFile(Base, UUIDPrimaryKey):
     __tablename__ = "files"
     __table_args__ = (
         CheckConstraint(
-            "purpose IN ('rfq_attachment', 'verification_document', 'portfolio_image')",
+            "purpose IN ('rfq_attachment', 'verification_document', 'portfolio_image', "
+            "'order_document')",
             name="purpose_valid",
         ),
         CheckConstraint("kind IN ('pdf', 'cad', 'drawing', 'image')", name="kind_valid"),
@@ -43,10 +44,18 @@ class StoredFile(Base, UUIDPrimaryKey):
     verification_request_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("verification_requests.id", ondelete="RESTRICT"), nullable=True, index=True
     )
+    # سند یک سفارش (بارنامه، رسید، گزارش بازرسی)
+    order_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("orders.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, server_default=func.now()
     )
 
     @property
     def is_attached(self) -> bool:
-        return self.rfq_id is not None or self.verification_request_id is not None
+        return (
+            self.rfq_id is not None
+            or self.verification_request_id is not None
+            or self.order_id is not None
+        )

@@ -11,7 +11,11 @@ import {
 } from "./api-client";
 import { API_URL } from "./config";
 
-export type FilePurpose = "rfq_attachment" | "verification_document" | "portfolio_image";
+export type FilePurpose =
+  | "rfq_attachment"
+  | "verification_document"
+  | "portfolio_image"
+  | "order_document";
 
 export interface UploadedFile {
   id: string;

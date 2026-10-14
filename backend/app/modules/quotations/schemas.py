@@ -78,6 +78,8 @@ class RfqBrief(CamelModel):
 class MyQuotationOut(QuotationOut):
     rfq: RfqBrief
     outcome: QuotationOutcome
+    # پیشنهاد برنده سفارش دارد
+    order_id: uuid.UUID | None = None
 
 
 class MyQuotationPage(CamelModel):

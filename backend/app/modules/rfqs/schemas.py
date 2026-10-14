@@ -137,6 +137,8 @@ class RfqOut(CamelModel):
     # فقط در نمای قطعه‌ساز
     nda_accepted: bool | None = None
     my_quotation: MyQuotationRef | None = None
+    # سفارش ساخته‌شده پس از انتخاب برنده؛ فقط برای کارفرما و قطعه‌ساز برنده
+    order_id: uuid.UUID | None = None
 
 
 class RfqPage(CamelModel):

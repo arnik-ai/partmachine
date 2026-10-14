@@ -18,6 +18,7 @@ from app.core.text import fa_digits
 from app.core.time import business_today, utcnow
 from app.modules.audit import service as audit
 from app.modules.identity.deps import CurrentUser
+from app.modules.orders import service as orders
 from app.modules.pricing.engine import estimate_price, judge_quote_price
 from app.modules.quotations.models import Quotation
 from app.modules.quotations.schemas import (
@@ -180,8 +181,10 @@ async def list_mine(
         .limit(limit)
         .offset(offset)
     )
+    rows_list = rows.all()
+    order_ids = await orders.orders_for_quotations(db, [q.id for q, _, _ in rows_list])
     items = []
-    for quotation, rfq, active in rows.all():
+    for quotation, rfq, active in rows_list:
         brief = RfqBrief(
             id=rfq.id,
             title=rfq.title,
@@ -194,7 +197,14 @@ async def list_mine(
             deadline=rfq.deadline,
         )
         base = to_out(quotation, supplier, rfq).model_dump()
-        items.append(MyQuotationOut(**base, rfq=brief, outcome=_outcome(quotation, rfq)))
+        items.append(
+            MyQuotationOut(
+                **base,
+                rfq=brief,
+                outcome=_outcome(quotation, rfq),
+                order_id=order_ids.get(quotation.id),
+            )
+        )
     return items, total
 
 
@@ -353,5 +363,7 @@ async def award(db: AsyncSession, user: CurrentUser, quotation_id: uuid.UUID) ->
         organization_id=user.organization_id,
         data={"quotation_id": str(quotation.id), "supplier_id": str(supplier.id)},
     )
+    # سفارش در همین تراکنش ساخته می‌شود (O1): برنده بدون سفارش یا سفارش بدون برنده نداریم
+    await orders.create_for_award(db, rfq=rfq, quotation=quotation, supplier=supplier, actor=user)
     await db.commit()
     return to_out(quotation, supplier, rfq)

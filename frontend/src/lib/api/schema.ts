@@ -669,6 +669,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Orders */
+        get: operations["list_orders_api_v1_orders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Order */
+        get: operations["get_order_api_v1_orders__order_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Order
+         * @description پیش از امضای قرارداد، هر طرف با ذکر دلیل (O11).
+         */
+        post: operations["cancel_order_api_v1_orders__order_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}/ship": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ship Order */
+        post: operations["ship_order_api_v1_orders__order_id__ship_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}/confirm-delivery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Delivery */
+        post: operations["confirm_delivery_api_v1_orders__order_id__confirm_delivery_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pricing/estimate": {
         parameters: {
             query?: never;
@@ -1125,6 +1213,11 @@ export interface components {
              */
             expiresIn: number;
         };
+        /** CancelOrderInput */
+        CancelOrderInput: {
+            /** Reason */
+            reason: string;
+        };
         /** CancelRfqInput */
         CancelRfqInput: {
             /** Reason */
@@ -1136,6 +1229,14 @@ export interface components {
             currentPassword: string;
             /** Newpassword */
             newPassword: string;
+        };
+        /** ConfirmDeliveryInput */
+        ConfirmDeliveryInput: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
         };
         /** CostComponent */
         CostComponent: {
@@ -1285,7 +1386,7 @@ export interface components {
              * Purpose
              * @enum {string}
              */
-            purpose: "rfq_attachment" | "verification_document" | "portfolio_image";
+            purpose: "rfq_attachment" | "verification_document" | "portfolio_image" | "order_document";
             /**
              * Createdat
              * Format: date-time
@@ -1464,6 +1565,8 @@ export interface components {
              * @enum {string}
              */
             outcome: "pending" | "won" | "lost" | "withdrawn" | "cancelled";
+            /** Orderid */
+            orderId?: string | null;
         };
         /** MyQuotationPage */
         MyQuotationPage: {
@@ -1551,6 +1654,238 @@ export interface components {
             listed: boolean;
             /** Canedit */
             canEdit: boolean;
+        };
+        /** OrderDetailOut */
+        OrderDetailOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
+            /** Title */
+            title: string;
+            /** Material */
+            material: string;
+            /** Quantity */
+            quantity: number;
+            /** Deliverycity */
+            deliveryCity: string;
+            /** Amountrials */
+            amountRials: number;
+            /** Leadtimedays */
+            leadTimeDays: number;
+            /**
+             * Deliverydue
+             * Format: date
+             */
+            deliveryDue: string;
+            /** Isoverdue */
+            isOverdue: boolean;
+            /**
+             * Rfqid
+             * Format: uuid
+             */
+            rfqId: string;
+            /**
+             * Quotationid
+             * Format: uuid
+             */
+            quotationId: string;
+            buyer: components["schemas"]["OrderPartyOut"];
+            supplier: components["schemas"]["OrderSupplierOut"];
+            /**
+             * Myside
+             * @enum {string}
+             */
+            mySide: "buyer" | "supplier" | "admin";
+            /** Nextactions */
+            nextActions: ("cancel" | "ship" | "confirm_delivery")[];
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            /** Shippedat */
+            shippedAt?: string | null;
+            /** Deliveredat */
+            deliveredAt?: string | null;
+            /** Completedat */
+            completedAt?: string | null;
+            /** Cancelledat */
+            cancelledAt?: string | null;
+            /** Cancelreason */
+            cancelReason?: string | null;
+            /** Events */
+            events: components["schemas"]["OrderEventOut"][];
+        };
+        /** OrderEventOut */
+        OrderEventOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Action */
+            action: string;
+            /** Fromstatus */
+            fromStatus?: ("awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed") | null;
+            /** Tostatus */
+            toStatus?: ("awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed") | null;
+            /** Actorname */
+            actorName?: string | null;
+            /**
+             * Actorside
+             * @enum {string}
+             */
+            actorSide: "buyer" | "supplier" | "qc" | "admin" | "system";
+            /** Note */
+            note: string;
+            file?: components["schemas"]["OrderFileOut"] | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /** OrderFileOut */
+        OrderFileOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Size */
+            size: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "pdf" | "cad" | "drawing" | "image";
+        };
+        /** OrderOut */
+        OrderOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
+            /** Title */
+            title: string;
+            /** Material */
+            material: string;
+            /** Quantity */
+            quantity: number;
+            /** Deliverycity */
+            deliveryCity: string;
+            /** Amountrials */
+            amountRials: number;
+            /** Leadtimedays */
+            leadTimeDays: number;
+            /**
+             * Deliverydue
+             * Format: date
+             */
+            deliveryDue: string;
+            /** Isoverdue */
+            isOverdue: boolean;
+            /**
+             * Rfqid
+             * Format: uuid
+             */
+            rfqId: string;
+            /**
+             * Quotationid
+             * Format: uuid
+             */
+            quotationId: string;
+            buyer: components["schemas"]["OrderPartyOut"];
+            supplier: components["schemas"]["OrderSupplierOut"];
+            /**
+             * Myside
+             * @enum {string}
+             */
+            mySide: "buyer" | "supplier" | "admin";
+            /** Nextactions */
+            nextActions: ("cancel" | "ship" | "confirm_delivery")[];
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            /** Shippedat */
+            shippedAt?: string | null;
+            /** Deliveredat */
+            deliveredAt?: string | null;
+            /** Completedat */
+            completedAt?: string | null;
+            /** Cancelledat */
+            cancelledAt?: string | null;
+            /** Cancelreason */
+            cancelReason?: string | null;
+        };
+        /** OrderPage */
+        OrderPage: {
+            /** Items */
+            items: components["schemas"]["OrderOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /** OrderPartyOut */
+        OrderPartyOut: {
+            /**
+             * Organizationid
+             * Format: uuid
+             */
+            organizationId: string;
+            /** Name */
+            name: string;
+        };
+        /** OrderSupplierOut */
+        OrderSupplierOut: {
+            /**
+             * Organizationid
+             * Format: uuid
+             */
+            organizationId: string;
+            /** Name */
+            name: string;
+            /**
+             * Supplierid
+             * Format: uuid
+             */
+            supplierId: string;
+            /** Verified */
+            verified: boolean;
         };
         /** OrganizationOut */
         OrganizationOut: {
@@ -1845,6 +2180,8 @@ export interface components {
             /** Ndaaccepted */
             ndaAccepted?: boolean | null;
             myQuotation?: components["schemas"]["MyQuotationRef"] | null;
+            /** Orderid */
+            orderId?: string | null;
         };
         /** RfqPage */
         RfqPage: {
@@ -1856,6 +2193,19 @@ export interface components {
             limit: number;
             /** Offset */
             offset: number;
+        };
+        /**
+         * ShipOrderInput
+         * @description اطلاعات ارسال (مثلاً نام باربری و شماره‌ی بارنامه) و سند اختیاری.
+         */
+        ShipOrderInput: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Fileid */
+            fileId?: string | null;
         };
         /** SubmitVerificationInput */
         SubmitVerificationInput: {
@@ -3819,7 +4169,7 @@ export interface operations {
     upload_file_api_v1_files_post: {
         parameters: {
             query: {
-                purpose: "rfq_attachment" | "verification_document" | "portfolio_image";
+                purpose: "rfq_attachment" | "verification_document" | "portfolio_image" | "order_document";
                 name: string;
             };
             header?: never;
@@ -6033,6 +6383,490 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuotationOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_orders_api_v1_orders_get: {
+        parameters: {
+            query?: {
+                status?: "active" | "completed" | "cancelled" | "all";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderPage"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_order_api_v1_orders__order_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    cancel_order_api_v1_orders__order_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelOrderInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ship_order_api_v1_orders__order_id__ship_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShipOrderInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirm_delivery_api_v1_orders__order_id__confirm_delivery_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmDeliveryInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailOut"];
                 };
             };
             /** @description Bad Request */
