@@ -9,6 +9,7 @@ import {
   Hourglass,
   Microscope,
   MessageSquareQuote,
+  Scale,
   ShieldAlert,
   ShieldCheck,
   Users,
@@ -40,6 +41,7 @@ const STAT_META: Record<
   inspections_ready: { label: "آماده‌ی بازرسی", icon: Microscope, href: "/orders" },
   inspections_passed: { label: "بازرسی‌های قبول‌شده", icon: CheckCircle2, href: "/orders" },
   pending_verifications: { label: "مدارک در انتظار بررسی", icon: ShieldCheck, href: "/admin" },
+  open_disputes: { label: "اختلاف‌های در انتظار تصمیم", icon: Scale, href: "/admin/disputes" },
   unverified_accounts: {
     label: "حساب‌های در انتظار تأیید",
     icon: ShieldAlert,

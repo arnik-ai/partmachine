@@ -30,6 +30,18 @@ export function shipOrder(
   return apiFetch<OrderDetail>(`/orders/${id}/ship`, { method: "POST", body: input });
 }
 
+/** ادامه‌ی سفارش: پس گرفتن درخواست لغو خود یا نپذیرفتن درخواست لغو طرف مقابل */
+export function keepOrder(id: string, note: string): Promise<OrderDetail> {
+  return apiFetch<OrderDetail>(`/orders/${id}/keep`, { method: "POST", body: { note } });
+}
+
+export function openDispute(
+  id: string,
+  input: { reason: string; fileId?: string | null },
+): Promise<OrderDetail> {
+  return apiFetch<OrderDetail>(`/orders/${id}/dispute`, { method: "POST", body: input });
+}
+
 export function confirmDelivery(id: string, note: string): Promise<OrderDetail> {
   return apiFetch<OrderDetail>(`/orders/${id}/confirm-delivery`, {
     method: "POST",

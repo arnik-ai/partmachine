@@ -11,6 +11,7 @@ import {
   FileText,
   Hourglass,
   Microscope,
+  ShieldAlert,
   Truck,
   XCircle,
 } from "lucide-react";
@@ -29,7 +30,15 @@ import { InspectionCard } from "@/features/inspections/components/inspection-car
 import { PaymentsCard } from "@/features/payments/components/payments-card";
 import { ApiError, errorMessage } from "@/lib/api-client";
 import { faDate, faDateTime, faNumber, faToman } from "@/lib/utils";
-import { cancelOrder, confirmDelivery, shipOrder, useOrder, useOrderAction } from "../api";
+import {
+  cancelOrder,
+  confirmDelivery,
+  keepOrder,
+  openDispute,
+  shipOrder,
+  useOrder,
+  useOrderAction,
+} from "../api";
 import { ORDER_STATUS_LABELS, orderNumber, type OrderDetail, type OrderEvent } from "../types";
 import { OrderFlow } from "./order-flow";
 
@@ -58,6 +67,10 @@ const EVENT_LABELS: Record<string, string> = {
   inspection_ready: "اعلام آمادگی برای بازرسی",
   inspection_passed: "قبولی بازرسی",
   inspection_failed: "رد بازرسی",
+  cancel_requested: "درخواست لغو",
+  cancel_request_closed: "بسته شدن درخواست لغو",
+  dispute: "اعلام مشکل",
+  dispute_resolved: "تصمیم پشتیبانی",
   completed: "تکمیل سفارش",
 };
 
@@ -186,19 +199,26 @@ function OrderHeader({ order }: { order: OrderDetail }) {
   );
 }
 
-type Dialog = "cancel" | "ship" | "confirm_delivery" | null;
+type Dialog = "cancel" | "ship" | "confirm_delivery" | "dispute" | "agree_cancel" | "keep" | null;
+
+const EMPTY_UPLOAD: UploadState = { fileIds: [], busy: false, failed: false };
 
 function NextStep({ order }: { order: OrderDetail }) {
   const action = useOrderAction(order.id);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [text, setText] = useState("");
-  const [upload, setUpload] = useState<UploadState>({ fileIds: [], busy: false, failed: false });
+  const [upload, setUpload] = useState<UploadState>(EMPTY_UPLOAD);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const can = (name: OrderDetail["nextActions"][number]) => order.nextActions.includes(name);
   const otherSide = order.mySide === "buyer" ? "قطعه‌ساز" : "کارفرما";
+  const signed = order.status !== "awaiting_contract";
+  const request = order.cancelRequest;
+  const requestedByMe = request ? request.side === order.mySide : false;
 
   function open(next: Dialog) {
     setText("");
+    setUpload(EMPTY_UPLOAD);
     setError(null);
     setDialog(next);
   }
@@ -209,17 +229,39 @@ function NextStep({ order }: { order: OrderDetail }) {
       setError("دلیل لغو را بنویسید؛ طرف مقابل آن را می‌بیند.");
       return;
     }
+    if (dialog === "dispute" && text.trim().length < 10) {
+      setError("مشکل را کمی دقیق‌تر شرح دهید (دست‌کم ۱۰ نویسه).");
+      return;
+    }
+    if ((dialog === "ship" || dialog === "dispute") && (upload.busy || upload.failed)) {
+      setError("صبر کنید تا بارگذاری سند تمام شود، یا سند ناموفق را حذف کنید.");
+      return;
+    }
     try {
       await action.mutateAsync(() => {
         if (dialog === "cancel") return cancelOrder(order.id, text);
+        if (dialog === "agree_cancel") return cancelOrder(order.id, "");
+        if (dialog === "keep") return keepOrder(order.id, text);
         if (dialog === "ship") {
           return shipOrder(order.id, { note: text, fileId: upload.fileIds[0] ?? null });
+        }
+        if (dialog === "dispute") {
+          return openDispute(order.id, { reason: text, fileId: upload.fileIds[0] ?? null });
         }
         return confirmDelivery(order.id, text);
       });
       setDialog(null);
     } catch (err) {
       setError(errorMessage(err));
+    }
+  }
+
+  async function downloadEvidence(fileId: string) {
+    setDownloading(true);
+    try {
+      await downloadFile(fileId);
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -231,6 +273,19 @@ function NextStep({ order }: { order: OrderDetail }) {
         <span>
           این سفارش لغو شده است.
           {order.cancelReason ? ` دلیل: ${order.cancelReason}` : ""}
+        </span>
+      </span>
+    );
+  } else if (order.status === "disputed") {
+    message = (
+      <span className="flex items-start gap-2">
+        <ShieldAlert className="h-5 w-5 shrink-0 text-destructive" aria-hidden />
+        <span>
+          {order.dispute
+            ? `${SIDE_LABELS[order.dispute.openedSide]} برای این سفارش مشکل اعلام کرده است: ${order.dispute.reason}`
+            : "برای این سفارش مشکل اعلام شده است."}{" "}
+          تا تصمیم پشتیبانی پارت‌ماشین، سفارش متوقف است. پشتیبانی با هر دو طرف تماس می‌گیرد و
+          تصمیم را با دلیل ثبت می‌کند: ادامه‌ی سفارش، تکمیل یا لغو.
         </span>
       </span>
     );
@@ -287,7 +342,10 @@ function NextStep({ order }: { order: OrderDetail }) {
     message = (
       <span className="flex items-start gap-2">
         <Truck className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-        <span>سفارش ارسال شده است. پس از دریافت و بررسی، تحویل را تأیید کنید.</span>
+        <span>
+          سفارش ارسال شده است. پس از دریافت و بررسی، تحویل را تأیید کنید؛ اگر کالا مشکل دارد،
+          «اعلام مشکل» کنید.
+        </span>
       </span>
     );
   } else if (order.status === "delivered" || order.status === "completed") {
@@ -319,27 +377,69 @@ function NextStep({ order }: { order: OrderDetail }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-4 text-sm">
         {message}
-        {(order.nextActions.length > 0 || order.status !== "cancelled") && (
+        {order.status === "disputed" && order.dispute?.file && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="self-start"
+            disabled={downloading}
+            onClick={() => order.dispute?.file && downloadEvidence(order.dispute.file.id)}
+            aria-label={`دانلود ${order.dispute.file.name}`}
+          >
+            <Download className="h-4 w-4" aria-hidden />
+            سند مشکل
+          </Button>
+        )}
+
+        {request && (
+          <div className="flex flex-col gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-3">
+            <span className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" aria-hidden />
+              <span>
+                {requestedByMe
+                  ? `درخواست لغو شما منتظر پاسخ ${otherSide} است. دلیل: ${request.reason}`
+                  : `${otherSide} درخواست لغو این سفارش را داده است. دلیل: ${request.reason}. پس از امضای قرارداد، لغو فقط با موافقت شما انجام می‌شود.`}
+              </span>
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {!requestedByMe && can("cancel") && (
+                <Button variant="destructive" size="sm" onClick={() => open("agree_cancel")}>
+                  موافقت با لغو
+                </Button>
+              )}
+              {can("keep") && (
+                <Button variant="outline" size="sm" onClick={() => open("keep")}>
+                  {requestedByMe ? "پس گرفتن درخواست لغو" : "ادامه‌ی سفارش"}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {order.status !== "cancelled" && (
           <div className="flex flex-wrap gap-2">
-            {order.status !== "cancelled" && (
-              <Link
-                href={`/orders/${order.id}/contract`}
-                className={buttonVariants({
-                  variant: order.status === "awaiting_contract" ? "default" : "outline",
-                })}
-              >
-                {order.status === "awaiting_contract" && order.mySide !== "admin"
-                  ? "مشاهده و امضای قرارداد"
-                  : "مشاهده‌ی قرارداد"}
-              </Link>
-            )}
+            <Link
+              href={`/orders/${order.id}/contract`}
+              className={buttonVariants({
+                variant: order.status === "awaiting_contract" ? "default" : "outline",
+              })}
+            >
+              {order.status === "awaiting_contract" && order.mySide !== "admin"
+                ? "مشاهده و امضای قرارداد"
+                : "مشاهده‌ی قرارداد"}
+            </Link>
             {can("ship") && <Button onClick={() => open("ship")}>ثبت ارسال</Button>}
             {can("confirm_delivery") && (
               <Button onClick={() => open("confirm_delivery")}>تأیید تحویل</Button>
             )}
-            {can("cancel") && (
+            {can("dispute") && (
+              <Button variant="outline" onClick={() => open("dispute")}>
+                اعلام مشکل
+              </Button>
+            )}
+            {can("cancel") && !request && (
               <Button variant="outline" onClick={() => open("cancel")}>
-                لغو سفارش
+                {signed ? "درخواست لغو" : "لغو سفارش"}
               </Button>
             )}
           </div>
@@ -353,9 +453,13 @@ function NextStep({ order }: { order: OrderDetail }) {
         pending={action.isPending}
         error={error}
         destructive
-        title="لغو سفارش"
-        confirmLabel="بله، سفارش لغو شود"
-        description="لغو قابل بازگشت نیست. دلیل شما برای طرف مقابل نمایش داده می‌شود."
+        title={signed ? "درخواست لغو سفارش" : "لغو سفارش"}
+        confirmLabel={signed ? "ثبت درخواست لغو" : "بله، سفارش لغو شود"}
+        description={
+          signed
+            ? `پس از امضای قرارداد، سفارش فقط با موافقت ${otherSide} لغو می‌شود. دلیل شما برای او نمایش داده می‌شود و تا پاسخ او سفارش ادامه دارد.`
+            : "لغو قابل بازگشت نیست. دلیل شما برای طرف مقابل نمایش داده می‌شود."
+        }
       >
         <div className="flex flex-col gap-2">
           <Label htmlFor="cancel-reason">دلیل لغو</Label>
@@ -370,15 +474,83 @@ function NextStep({ order }: { order: OrderDetail }) {
       </ConfirmDialog>
 
       <ConfirmDialog
+        open={dialog === "agree_cancel"}
+        onClose={() => setDialog(null)}
+        onConfirm={confirm}
+        pending={action.isPending}
+        error={error}
+        destructive
+        title="موافقت با لغو سفارش"
+        confirmLabel="بله، سفارش لغو شود"
+        description={`سفارش با توافق دو طرف لغو می‌شود و قابل بازگشت نیست. دلیل ثبت‌شده: ${request?.reason ?? ""}`}
+      />
+
+      <ConfirmDialog
+        open={dialog === "keep"}
+        onClose={() => setDialog(null)}
+        onConfirm={confirm}
+        pending={action.isPending}
+        error={error}
+        title={requestedByMe ? "پس گرفتن درخواست لغو" : "ادامه‌ی سفارش"}
+        confirmLabel={requestedByMe ? "پس گرفتن درخواست" : "سفارش ادامه یابد"}
+        description={
+          requestedByMe
+            ? "درخواست لغو بسته می‌شود و سفارش مثل قبل ادامه دارد."
+            : `با لغو موافقت نمی‌کنید و سفارش ادامه دارد. ${otherSide} باخبر می‌شود؛ اگر مشکلی هست، «اعلام مشکل» کنید.`
+        }
+      >
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="keep-note">توضیح (اختیاری)</Label>
+          <Input
+            id="keep-note"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            maxLength={500}
+          />
+        </div>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={dialog === "dispute"}
+        onClose={() => setDialog(null)}
+        onConfirm={confirm}
+        pending={action.isPending}
+        error={error}
+        destructive
+        title="اعلام مشکل"
+        confirmLabel="ثبت و ارسال برای پشتیبانی"
+        description="سفارش تا تصمیم پشتیبانی پارت‌ماشین متوقف می‌شود. پشتیبانی با هر دو طرف تماس می‌گیرد و تصمیم را با دلیل ثبت می‌کند: ادامه‌ی سفارش، تکمیل یا لغو. پول از پارت‌ماشین عبور نمی‌کند؛ این تصمیم فقط وضعیت سفارش در پلتفرم است."
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="dispute-reason">شرح مشکل</Label>
+            <Textarea
+              id="dispute-reason"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={1000}
+              className="min-h-20"
+            />
+          </div>
+          {dialog === "dispute" && (
+            <FileUploader
+              purpose="order_document"
+              extensions={["pdf", "png", "jpg", "jpeg"]}
+              maxSizeMb={10}
+              maxFiles={1}
+              prompt="عکس یا سند مشکل (اختیاری)"
+              formatsHint="PDF · JPG · PNG — max 10MB"
+              inputLabel="انتخاب سند مشکل"
+              onChange={setUpload}
+            />
+          )}
+        </div>
+      </ConfirmDialog>
+
+      <ConfirmDialog
         open={dialog === "ship"}
         onClose={() => setDialog(null)}
-        onConfirm={() => {
-          if (upload.busy || upload.failed) {
-            setError("صبر کنید تا بارگذاری سند تمام شود، یا سند ناموفق را حذف کنید.");
-            return;
-          }
-          void confirm();
-        }}
+        onConfirm={confirm}
         pending={action.isPending}
         error={error}
         title="ثبت ارسال"

@@ -3,6 +3,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api-client";
 import type {
+  AdminDispute,
+  AdminDisputePage,
   AdminUser,
   AdminUserFilters,
   AdminUserPage,
@@ -10,6 +12,8 @@ import type {
   AdminVerificationPage,
   AuditEventPage,
   AuditFilters,
+  DisputeFilter,
+  DisputeResolution,
   VerificationFilter,
 } from "./types";
 
@@ -58,6 +62,43 @@ export function listAuditEvents(filters: AuditFilters, page: number) {
   return apiFetch<AuditEventPage>(
     `/admin/audit-events?${query({ ...filters, limit: AUDIT_PAGE_SIZE, offset: page * AUDIT_PAGE_SIZE })}`,
   );
+}
+
+export function listDisputes(status: DisputeFilter, page: number) {
+  return apiFetch<AdminDisputePage>(
+    `/admin/disputes?${query({
+      status: status === "all" ? undefined : status,
+      limit: ADMIN_PAGE_SIZE,
+      offset: page * ADMIN_PAGE_SIZE,
+    })}`,
+  );
+}
+
+export function resolveDispute(id: string, resolution: DisputeResolution, reason: string) {
+  return apiFetch<AdminDispute>(`/admin/disputes/${id}/resolve`, {
+    method: "POST",
+    body: { resolution, reason },
+  });
+}
+
+export function useDisputes(status: DisputeFilter, page: number) {
+  return useQuery({
+    queryKey: ["admin", "disputes", status, page],
+    queryFn: () => listDisputes(status, page),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useResolveDispute() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { id: string; resolution: DisputeResolution; reason: string }) =>
+      resolveDispute(args.id, args.resolution, args.reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+      void queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
 }
 
 export function useVerifications(status: VerificationFilter, page: number) {

@@ -185,6 +185,12 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
       icon: ShieldCheck,
     },
     {
+      href: "/admin/disputes",
+      label: "اختلاف‌ها",
+      description: "بررسی مشکل‌های اعلام‌شده و تصمیم با ذکر دلیل",
+      icon: ShieldAlert,
+    },
+    {
       href: "/admin/users",
       label: "کاربران",
       description: "جستجو، فعال یا غیرفعال کردن و تأیید حساب‌ها",

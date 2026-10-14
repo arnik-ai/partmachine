@@ -714,9 +714,50 @@ export interface paths {
         put?: never;
         /**
          * Cancel Order
-         * @description پیش از امضای قرارداد، هر طرف با ذکر دلیل (O11).
+         * @description پیش از امضای قرارداد: لغو با ذکر دلیل. پس از امضا (O11): بار اول «درخواست لغو» یک طرف
+         *     است و همین درخواست از طرف دیگر یعنی موافقت، و سفارش لغو می‌شود.
          */
         post: operations["cancel_order_api_v1_orders__order_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}/keep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keep Order
+         * @description ادامه‌ی سفارش: پس گرفتن درخواست لغو خود، یا نپذیرفتن درخواست لغو طرف مقابل.
+         */
+        post: operations["keep_order_api_v1_orders__order_id__keep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open Dispute
+         * @description «اعلام مشکل»: سفارش تا تصمیم پشتیبانی متوقف می‌شود (O11).
+         */
+        post: operations["open_dispute_api_v1_orders__order_id__dispute_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1067,6 +1108,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/disputes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Disputes */
+        get: operations["list_disputes_api_v1_admin_disputes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/disputes/{dispute_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Dispute
+         * @description تصمیم با دلیل: ادامه‌ی سفارش، تکمیل یا لغو.
+         */
+        post: operations["resolve_dispute_api_v1_admin_disputes__dispute_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pricing/estimate": {
         parameters: {
             query?: never;
@@ -1319,6 +1397,78 @@ export interface components {
              */
             reason: string;
         };
+        /** AdminDisputeOut */
+        AdminDisputeOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Orderid
+             * Format: uuid
+             */
+            orderId: string;
+            /** Ordernumber */
+            orderNumber: number;
+            /** Ordertitle */
+            orderTitle: string;
+            /**
+             * Orderstatus
+             * @enum {string}
+             */
+            orderStatus: "awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
+            /** Amountrials */
+            amountRials: number;
+            /** Buyername */
+            buyerName: string;
+            /** Suppliername */
+            supplierName: string;
+            /**
+             * Openedside
+             * @enum {string}
+             */
+            openedSide: "buyer" | "supplier";
+            /** Openedbyname */
+            openedByName?: string | null;
+            /** Reason */
+            reason: string;
+            file?: components["schemas"]["OrderFileOut"] | null;
+            /**
+             * Previousstatus
+             * @enum {string}
+             */
+            previousStatus: "awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
+            /**
+             * Openedat
+             * Format: date-time
+             */
+            openedAt: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "resolved";
+            /** Resolution */
+            resolution?: ("resume" | "complete" | "cancel") | null;
+            /** Decisionreason */
+            decisionReason?: string | null;
+            /** Resolvedbyname */
+            resolvedByName?: string | null;
+            /** Resolvedat */
+            resolvedAt?: string | null;
+        };
+        /** AdminDisputePage */
+        AdminDisputePage: {
+            /** Items */
+            items: components["schemas"]["AdminDisputeOut"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /** AdminUserOut */
         AdminUserOut: {
             /**
@@ -1523,10 +1673,35 @@ export interface components {
              */
             expiresIn: number;
         };
-        /** CancelOrderInput */
+        /**
+         * CancelOrderInput
+         * @description دلیل برای لغو پیش از امضا و برای درخواست لغو پس از امضا لازم است (خطای فارسی همین فیلد
+         *     در سرویس داده می‌شود)؛ موافقت با درخواست لغو طرف مقابل دلیل نمی‌خواهد.
+         */
         CancelOrderInput: {
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /**
+         * CancelRequestOut
+         * @description درخواست لغو یک طرف پس از امضای قرارداد، در انتظار موافقت طرف دیگر (O11).
+         */
+        CancelRequestOut: {
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "buyer" | "supplier";
             /** Reason */
             reason: string;
+            /**
+             * Requestedat
+             * Format: date-time
+             */
+            requestedAt: string;
         };
         /** CancelRfqInput */
         CancelRfqInput: {
@@ -1965,6 +2140,14 @@ export interface components {
             /** Createdbyname */
             createdByName: string;
         };
+        /** KeepOrderInput */
+        KeepOrderInput: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** LoginInput */
         LoginInput: {
             /**
@@ -2209,6 +2392,13 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /** OpenDisputeInput */
+        OpenDisputeInput: {
+            /** Reason */
+            reason: string;
+            /** Fileid */
+            fileId?: string | null;
+        };
         /** OrderDetailOut */
         OrderDetailOut: {
             /**
@@ -2260,8 +2450,9 @@ export interface components {
              */
             mySide: "buyer" | "supplier" | "qc" | "admin";
             /** Nextactions */
-            nextActions: ("cancel" | "ship" | "confirm_delivery")[];
+            nextActions: ("cancel" | "ship" | "confirm_delivery" | "dispute" | "keep")[];
             inspection?: components["schemas"]["OrderInspectionSummaryOut"] | null;
+            cancelRequest?: components["schemas"]["CancelRequestOut"] | null;
             /**
              * Createdat
              * Format: date-time
@@ -2284,6 +2475,38 @@ export interface components {
             cancelReason?: string | null;
             /** Events */
             events: components["schemas"]["OrderEventOut"][];
+            dispute?: components["schemas"]["OrderDisputeOut"] | null;
+        };
+        /**
+         * OrderDisputeOut
+         * @description اختلاف باز سفارش (مشکلی که یکی از دو طرف اعلام کرده و پشتیبانی بررسی می‌کند).
+         */
+        OrderDisputeOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Openedside
+             * @enum {string}
+             */
+            openedSide: "buyer" | "supplier";
+            /** Openedbyname */
+            openedByName?: string | null;
+            /** Reason */
+            reason: string;
+            file?: components["schemas"]["OrderFileOut"] | null;
+            /**
+             * Previousstatus
+             * @enum {string}
+             */
+            previousStatus: "awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
+            /**
+             * Openedat
+             * Format: date-time
+             */
+            openedAt: string;
         };
         /** OrderEventOut */
         OrderEventOut: {
@@ -2394,8 +2617,9 @@ export interface components {
              */
             mySide: "buyer" | "supplier" | "qc" | "admin";
             /** Nextactions */
-            nextActions: ("cancel" | "ship" | "confirm_delivery")[];
+            nextActions: ("cancel" | "ship" | "confirm_delivery" | "dispute" | "keep")[];
             inspection?: components["schemas"]["OrderInspectionSummaryOut"] | null;
+            cancelRequest?: components["schemas"]["CancelRequestOut"] | null;
             /**
              * Createdat
              * Format: date-time
@@ -2730,6 +2954,16 @@ export interface components {
             /** Deadline */
             deadline?: string | null;
         };
+        /** ResolveDisputeInput */
+        ResolveDisputeInput: {
+            /**
+             * Resolution
+             * @enum {string}
+             */
+            resolution: "resume" | "complete" | "cancel";
+            /** Reason */
+            reason: string;
+        };
         /** RfqBrief */
         RfqBrief: {
             /**
@@ -2881,7 +3115,7 @@ export interface components {
              * Key
              * @enum {string}
              */
-            key: "open_rfqs" | "quotes_received" | "open_market_rfqs" | "active_quotes" | "active_orders" | "completed_orders" | "inspections_waiting" | "inspections_ready" | "inspections_passed" | "pending_verifications" | "unverified_accounts" | "active_users";
+            key: "open_rfqs" | "quotes_received" | "open_market_rfqs" | "active_quotes" | "active_orders" | "completed_orders" | "inspections_waiting" | "inspections_ready" | "inspections_passed" | "pending_verifications" | "open_disputes" | "unverified_accounts" | "active_users";
             /** Value */
             value: number;
         };
@@ -7449,6 +7683,202 @@ export interface operations {
             };
         };
     };
+    keep_order_api_v1_orders__order_id__keep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeepOrderInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    open_dispute_api_v1_orders__order_id__dispute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenDisputeInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     ship_order_api_v1_orders__order_id__ship_post: {
         parameters: {
             query?: never;
@@ -9483,6 +9913,200 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DashboardOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_disputes_api_v1_admin_disputes_get: {
+        parameters: {
+            query?: {
+                status?: ("open" | "resolved") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDisputePage"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    resolve_dispute_api_v1_admin_disputes__dispute_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dispute_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveDisputeInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDisputeOut"];
                 };
             };
             /** @description Bad Request */

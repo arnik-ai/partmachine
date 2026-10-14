@@ -5,6 +5,8 @@
  * ورودی‌های سرور تغییر کند و تایپ‌های فرانت هم‌خوان نماند، `npm run typecheck` شکست می‌خورد.
  */
 import type {
+  AdminDispute,
+  AdminDisputePage,
   AdminUser,
   AdminUserPage,
   AdminVerification,
@@ -92,6 +94,8 @@ export type ResponseContract = [
   Check<Assignable<Schemas["NotificationPage"], NotificationPage>>,
   Check<Assignable<Schemas["UnreadCountOut"], UnreadCount>>,
   Check<Assignable<Schemas["DashboardOut"], Dashboard>>,
+  Check<Assignable<Schemas["AdminDisputeOut"], AdminDispute>>,
+  Check<Assignable<Schemas["AdminDisputePage"], AdminDisputePage>>,
 ];
 
 /** ورودی‌هایی که فرانت می‌فرستد باید برای سرور معتبر باشند */
@@ -121,6 +125,14 @@ export type RequestContract = [
   Check<Assignable<{ labOrganizationId: string }, Schemas["ChooseLabInput"]>>,
   Check<Assignable<{ note: string }, Schemas["MarkReadyInput"]>>,
   Check<Assignable<InspectionResultInput, Schemas["InspectionResultInput"]>>,
+  Check<Assignable<{ reason: string; fileId?: string | null }, Schemas["OpenDisputeInput"]>>,
+  Check<Assignable<{ note: string }, Schemas["KeepOrderInput"]>>,
+  Check<
+    Assignable<
+      { resolution: "resume" | "complete" | "cancel"; reason: string },
+      Schemas["ResolveDisputeInput"]
+    >
+  >,
 ];
 
 /**

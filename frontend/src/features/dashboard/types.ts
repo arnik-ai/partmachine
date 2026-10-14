@@ -9,6 +9,7 @@ export type StatKey =
   | "inspections_ready"
   | "inspections_passed"
   | "pending_verifications"
+  | "open_disputes"
   | "unverified_accounts"
   | "active_users";
 

@@ -103,6 +103,15 @@ export function OrdersView() {
   );
 }
 
+/** «نوبت شما»: کاری که سفارش منتظر آن است، نه کارهای همیشه‌در‌دسترس مثل لغو یا اعلام مشکل */
+function myTurn(order: OrderSummary): boolean {
+  return (
+    order.nextActions.includes("ship") ||
+    order.nextActions.includes("confirm_delivery") ||
+    (Boolean(order.cancelRequest) && order.cancelRequest?.side !== order.mySide)
+  );
+}
+
 function OrderRow({ order }: { order: OrderSummary }) {
   // آزمایشگاه هر دو طرف را می‌بیند؛ هر طرف، طرف مقابلش را
   const parties =
@@ -144,9 +153,7 @@ function OrderRow({ order }: { order: OrderSummary }) {
                 دیرکرد
               </Badge>
             )}
-            {order.nextActions.some((action) => action !== "cancel") && (
-              <Badge variant="warning">نوبت شماست</Badge>
-            )}
+            {myTurn(order) && <Badge variant="warning">نوبت شماست</Badge>}
           </div>
         </CardContent>
       </Card>

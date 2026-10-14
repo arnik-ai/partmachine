@@ -7,6 +7,7 @@ import { useAuthStore } from "@/features/auth/store";
 
 const TABS = [
   { href: "/admin", label: "صف تأیید مدارک" },
+  { href: "/admin/disputes", label: "اختلاف‌ها" },
   { href: "/admin/users", label: "کاربران" },
   { href: "/admin/audit", label: "رویدادها" },
 ] as const;

@@ -83,7 +83,12 @@ export type OrderStatus =
   | "cancelled"
   | "disputed";
 
-export type OrderAction = "cancel" | "ship" | "confirm_delivery";
+/**
+ * cancel: پیش از امضا لغو؛ پس از امضا «درخواست لغو» یا موافقت با درخواست طرف مقابل.
+ * dispute: «اعلام مشکل». keep: «ادامه‌ی سفارش» (پس گرفتن یا نپذیرفتن درخواست لغو).
+ */
+export type OrderAction = "cancel" | "ship" | "confirm_delivery" | "dispute" | "keep";
+export type PartySide = "buyer" | "supplier";
 export type InspectionStatus = "requested" | "ready" | "passed" | "failed";
 /** qc: آزمایشگاهی که کارفرما برای بازرسی همین سفارش انتخاب کرده است */
 export type OrderSide = "buyer" | "supplier" | "qc" | "admin";
@@ -131,6 +136,8 @@ export interface OrderSummary {
   nextActions: OrderAction[];
   /** اگر کارفرما آزمایشگاه بازرسی انتخاب کرده باشد */
   inspection?: { status: InspectionStatus; lab: { organizationId: string; name: string } } | null;
+  /** درخواست لغو یک طرف پس از امضا، در انتظار موافقت طرف دیگر */
+  cancelRequest?: { side: PartySide; reason: string; requestedAt: string } | null;
   createdAt: string;
   updatedAt: string;
   shippedAt?: string | null;
@@ -140,8 +147,20 @@ export interface OrderSummary {
   cancelReason?: string | null;
 }
 
+/** مشکلی که یکی از دو طرف اعلام کرده و پشتیبانی بررسی می‌کند */
+export interface OrderDispute {
+  id: string;
+  openedSide: PartySide;
+  openedByName?: string | null;
+  reason: string;
+  file?: OrderFile | null;
+  previousStatus: OrderStatus;
+  openedAt: string;
+}
+
 export interface OrderDetail extends OrderSummary {
   events: OrderEvent[];
+  dispute?: OrderDispute | null;
 }
 
 export interface OrderPage {

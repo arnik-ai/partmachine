@@ -1,4 +1,5 @@
 import type { RoleValue } from "@/lib/constants";
+import type { OrderFile, OrderStatus, PartySide } from "@/features/orders/types";
 import type { Verification, VerificationStatus } from "@/features/verification/types";
 
 export interface AdminVerification extends Verification {
@@ -19,6 +20,39 @@ export interface AdminVerificationPage {
 }
 
 export type VerificationFilter = VerificationStatus | "all";
+
+export type DisputeResolution = "resume" | "complete" | "cancel";
+export type DisputeFilter = "open" | "resolved" | "all";
+
+/** اختلاف یک سفارش در صف پشتیبانی */
+export interface AdminDispute {
+  id: string;
+  orderId: string;
+  orderNumber: number;
+  orderTitle: string;
+  orderStatus: OrderStatus;
+  amountRials: number;
+  buyerName: string;
+  supplierName: string;
+  openedSide: PartySide;
+  openedByName?: string | null;
+  reason: string;
+  file?: OrderFile | null;
+  previousStatus: OrderStatus;
+  openedAt: string;
+  status: "open" | "resolved";
+  resolution?: DisputeResolution | null;
+  decisionReason?: string | null;
+  resolvedByName?: string | null;
+  resolvedAt?: string | null;
+}
+
+export interface AdminDisputePage {
+  items: AdminDispute[];
+  total: number;
+  limit: number;
+  offset: number;
+}
 
 export interface AdminUser {
   id: string;
