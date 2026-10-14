@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadFile } from "@/features/files/api";
 import { FileUploader, type UploadState } from "@/features/files/components/file-uploader";
+import { PaymentsCard } from "@/features/payments/components/payments-card";
 import { ApiError, errorMessage } from "@/lib/api-client";
 import { faDate, faDateTime, faNumber, faToman } from "@/lib/utils";
 import { cancelOrder, confirmDelivery, shipOrder, useOrder, useOrderAction } from "../api";
@@ -46,6 +47,10 @@ const EVENT_LABELS: Record<string, string> = {
   contract_revised: "نسخه‌ی تازه‌ی قرارداد",
   contract_signed: "امضای قرارداد",
   contract_change_requested: "درخواست اصلاح قرارداد",
+  payment_reported: "اعلام پرداخت",
+  payment_confirmed: "تأیید دریافت پرداخت",
+  payment_rejected: "رد اعلام پرداخت",
+  completed: "تکمیل سفارش",
 };
 
 export function OrderDetailView({ orderId }: { orderId: string }) {
@@ -85,6 +90,7 @@ export function OrderDetailView({ orderId }: { orderId: string }) {
       </Link>
       <OrderHeader order={order} />
       <NextStep order={order} />
+      <PaymentsCard order={order} />
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -232,8 +238,11 @@ function NextStep({ order }: { order: OrderDetail }) {
       <span className="flex items-start gap-2">
         <Hourglass className="h-5 w-5 shrink-0 text-primary" aria-hidden />
         <span>
-          قرارداد امضا شد. تولید پس از پرداخت و تأیید پیش‌پرداخت شروع می‌شود؛ ثبت پرداخت به‌زودی
-          از همین صفحه فعال می‌شود.
+          {order.mySide === "buyer"
+            ? "قرارداد امضا شد. پیش‌پرداخت را طبق قرارداد به قطعه‌ساز بپردازید و در بخش «پرداخت‌ها» اعلام کنید."
+            : order.mySide === "supplier"
+              ? "قرارداد امضا شد. پس از دریافت پیش‌پرداخت، آن را در بخش «پرداخت‌ها» تأیید کنید تا تولید شروع شود."
+              : "منتظر پیش‌پرداخت کارفرما و تأیید قطعه‌ساز هستیم."}
         </span>
       </span>
     );
@@ -258,7 +267,9 @@ function NextStep({ order }: { order: OrderDetail }) {
         <span>
           {order.status === "completed"
             ? "این سفارش با موفقیت تکمیل شده است."
-            : "کالا تحویل شده است. تسویه‌ی نهایی به‌زودی از همین‌جا پیگیری می‌شود."}
+            : order.mySide === "buyer"
+              ? "کالا تحویل شد. تسویه‌ی پایانی را بپردازید و در بخش «پرداخت‌ها» اعلام کنید."
+              : "کالا تحویل شد. پس از دریافت تسویه‌ی پایانی، آن را در بخش «پرداخت‌ها» تأیید کنید."}
         </span>
       </span>
     );

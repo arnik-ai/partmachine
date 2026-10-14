@@ -47,7 +47,7 @@ test("the winning order is shared by both sides and can be cancelled before the 
   await expect(outsider.getByText("سفارش موردنظر پیدا نشد")).toBeVisible();
 });
 
-test("both owners sign the contract, then the order is shipped and delivered", async ({
+test("both owners sign the contract, the order is shipped, delivered and paid", async ({
   browser,
 }) => {
   const title = `قرارداد آزمون ${stamp}`;
@@ -110,4 +110,21 @@ test("both owners sign the contract, then the order is shipped and delivered", a
     .click();
   await expect(buyer.getByText("تحویل‌شده").first()).toBeVisible();
   await expect(buyer.getByText("باربری نمونه، بارنامه ۵۵۵")).toBeVisible();
+
+  // پرداخت بیرون از پلتفرم انجام می‌شود؛ کارفرما اعلام و قطعه‌ساز تأیید می‌کند ⇒ سفارش تکمیل
+  await expect(buyer.getByText("پول از پارت‌ماشین عبور نمی‌کند")).toBeVisible();
+  await buyer.getByRole("button", { name: "اعلام پرداخت کامل پس از تحویل" }).click();
+  const payDialog = buyer.getByRole("dialog", { name: "اعلام پرداخت" });
+  await payDialog.getByLabel("شماره‌ی پیگیری یا حواله").fill("778899");
+  await payDialog.getByRole("button", { name: "ثبت اعلام پرداخت" }).click();
+  await expect(buyer.getByText("اعلام‌شده — منتظر تأیید قطعه‌ساز")).toBeVisible();
+
+  await supplier.goto(orderUrl);
+  await supplier.getByRole("button", { name: "تأیید دریافت پرداخت کامل پس از تحویل" }).click();
+  await supplier
+    .getByRole("dialog", { name: "تأیید دریافت پرداخت" })
+    .getByRole("button", { name: "بله، مبلغ را دریافت کردم" })
+    .click();
+  await expect(supplier.getByText("تکمیل‌شده").first()).toBeVisible();
+  await expect(supplier.getByText("این سفارش با موفقیت تکمیل شده است.")).toBeVisible();
 });
