@@ -37,6 +37,7 @@ from app.modules.identity.schemas import (
     RegisterInput,
     UserOut,
 )
+from app.modules.notifications import service as notifications
 from app.modules.organizations import service as organizations
 from app.modules.organizations.models import Organization
 from app.modules.suppliers.models import Supplier
@@ -179,6 +180,15 @@ async def _register_with_invite(
         invite.accepted_by_id = user.id
         agreements.record(
             db, agreement=agreement, user_id=user.id, organization_id=organization.id, client=client
+        )
+        await notifications.notify(
+            db,
+            organization_id=organization.id,
+            kind="member_joined",
+            title=f"{user.full_name} به سازمان پیوست",
+            body="عضو تازه با لینک دعوت ثبت‌نام کرد.",
+            link="/organization",
+            exclude_user_id=user.id,
         )
         audit.record(
             db,

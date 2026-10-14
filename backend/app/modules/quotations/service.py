@@ -18,6 +18,7 @@ from app.core.text import fa_digits
 from app.core.time import business_today, utcnow
 from app.modules.audit import service as audit
 from app.modules.identity.deps import CurrentUser
+from app.modules.notifications import service as notifications
 from app.modules.orders import service as orders
 from app.modules.pricing.engine import estimate_price, judge_quote_price
 from app.modules.quotations.models import Quotation
@@ -254,6 +255,14 @@ async def submit(
         action = "quotation.submitted"
     if rfq.status == "published":
         rfq.status = "quoting"
+    await notifications.notify(
+        db,
+        organization_id=rfq.organization_id,
+        kind="quote_received",
+        title=f"پیشنهاد تازه برای «{rfq.title}»",
+        body=f"{supplier.company_name} پیشنهاد قیمت ثبت کرد.",
+        link=f"/rfqs/{rfq.id}",
+    )
     audit.record(
         db,
         action=action,
@@ -289,6 +298,13 @@ async def update(
     }
     _apply(quotation, data)
     quotation.revision += 1
+    await notifications.notify(
+        db,
+        organization_id=rfq.organization_id,
+        kind="quote_revised",
+        title=f"پیشنهاد «{supplier.company_name}» برای «{rfq.title}» به‌روز شد",
+        link=f"/rfqs/{rfq.id}",
+    )
     audit.record(
         db,
         action="quotation.revised",
@@ -364,6 +380,35 @@ async def award(db: AsyncSession, user: CurrentUser, quotation_id: uuid.UUID) ->
         data={"quotation_id": str(quotation.id), "supplier_id": str(supplier.id)},
     )
     # سفارش در همین تراکنش ساخته می‌شود (O1): برنده بدون سفارش یا سفارش بدون برنده نداریم
-    await orders.create_for_award(db, rfq=rfq, quotation=quotation, supplier=supplier, actor=user)
+    order = await orders.create_for_award(
+        db, rfq=rfq, quotation=quotation, supplier=supplier, actor=user
+    )
+    await notifications.notify(
+        db,
+        organization_id=supplier.organization_id,
+        kind="quote_won",
+        title=f"پیشنهاد شما برای «{rfq.title}» برنده شد",
+        body="سفارش ساخته شد؛ قدم بعدی تنظیم و امضای قرارداد است.",
+        link=f"/orders/{order.id}",
+    )
+    # بقیه‌ی پیشنهاددهنده‌ها نتیجه را می‌دانند، بی‌آنکه نام یا قیمت برنده را ببینند
+    others = await db.scalars(
+        select(Supplier.organization_id)
+        .join(Quotation, Quotation.supplier_id == Supplier.id)
+        .where(
+            Quotation.rfq_id == rfq.id,
+            Quotation.status == "active",
+            Quotation.id != quotation.id,
+        )
+    )
+    for organization_id in set(others):
+        await notifications.notify(
+            db,
+            organization_id=organization_id,
+            kind="quote_lost",
+            title=f"درخواست «{rfq.title}» به پیشنهاد دیگری واگذار شد",
+            body="از شرکت شما برای پیشنهادتان سپاسگزاریم.",
+            link="/quotations",
+        )
     await db.commit()
     return to_out(quotation, supplier, rfq)

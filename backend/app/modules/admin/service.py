@@ -25,6 +25,7 @@ from app.modules.audit import service as audit
 from app.modules.audit.models import AuditEvent
 from app.modules.identity.deps import CurrentUser
 from app.modules.identity.models import RefreshToken, User
+from app.modules.notifications import service as notifications
 from app.modules.organizations.models import Organization
 from app.modules.suppliers.models import Supplier
 
@@ -149,6 +150,27 @@ async def set_verified(
         )
     if user.is_verified != verified:
         user.is_verified = verified
+        lab_owner = user.role == "qc" and user.org_role == "owner"
+        if verified:
+            title = "حساب آزمایشگاه شما تأیید شد" if lab_owner else "حساب شما تأیید شد"
+            body = (
+                "از این پس کارفرماها می‌توانند آزمایشگاه شما را برای بازرسی کیفیت سفارش‌هایشان "
+                "انتخاب کنند."
+                if lab_owner
+                else "حساب شما توسط پارت‌ماشین تأیید شد."
+            )
+        else:
+            title = "تأیید حساب شما لغو شد"
+            body = reason or "برای اطلاعات بیشتر با پشتیبانی پارت‌ماشین تماس بگیرید."
+        notifications.notify_user(
+            db,
+            user_id=user.id,
+            organization_id=user.organization_id,
+            kind="account_verified" if verified else "account_unverified",
+            title=title,
+            body=body,
+            link="/dashboard",
+        )
         audit.record(
             db,
             action="admin.user_verified" if verified else "admin.user_unverified",

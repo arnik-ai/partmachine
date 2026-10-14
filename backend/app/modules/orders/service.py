@@ -21,6 +21,7 @@ from app.modules.files.models import StoredFile
 from app.modules.identity.deps import CurrentUser
 from app.modules.identity.models import User
 from app.modules.inspections.models import OrderInspection
+from app.modules.notifications import service as notifications
 from app.modules.orders import lifecycle
 from app.modules.orders.lifecycle import Action, Side
 from app.modules.orders.models import Order, OrderEvent
@@ -133,6 +134,40 @@ def record_event(
             file_id=file_id,
             created_at=utcnow(),
         )
+    )
+
+
+def ref(order: Order) -> str:
+    """شماره‌ی خوانای سفارش، همان که کاربران می‌بینند (PM-1001)."""
+    return f"PM-{order.number}"
+
+
+def other_side(side: Side) -> Side:
+    return "supplier" if side == "buyer" else "buyer"
+
+
+async def notify_side(
+    db: AsyncSession,
+    order: Order,
+    side: Side,
+    actor: CurrentUser | None,
+    *,
+    kind: str,
+    title: str,
+    body: str = "",
+    link_suffix: str = "",
+) -> None:
+    """اعلان برای اعضای یکی از دو طرف سفارش (در تراکنش فراخواننده)."""
+    await notifications.notify(
+        db,
+        organization_id=order.buyer_organization_id
+        if side == "buyer"
+        else order.supplier_organization_id,
+        kind=kind,
+        title=title,
+        body=body,
+        link=f"/orders/{order.id}{link_suffix}",
+        exclude_user_id=actor.id if actor else None,
     )
 
 
@@ -408,6 +443,7 @@ async def transition(
         order.status = "completed"
         order.completed_at = now
         record_event(db, order, "completed", rule.to_status, "completed", None, "system")
+    await _notify_transition(db, order, action, side, user, note)
     audit.record(
         db,
         action=f"order.{action}",
@@ -419,6 +455,23 @@ async def transition(
     )
     await db.commit()
     return await get_order(db, user, order.id)
+
+
+async def _notify_transition(
+    db: AsyncSession, order: Order, action: Action, side: Side, user: CurrentUser, note: str
+) -> None:
+    other = other_side(side)
+    if action == "cancel":
+        title, body = f"سفارش {ref(order)} لغو شد", f"دلیل: {note}"
+    elif action == "ship":
+        title = f"سفارش {ref(order)} ارسال شد"
+        body = note or "پس از دریافت و بررسی کالا، تحویل را تأیید کنید."
+    elif order.status == "completed":
+        title, body = f"سفارش {ref(order)} تحویل و تکمیل شد", note
+    else:
+        title = f"کارفرما تحویل سفارش {ref(order)} را تأیید کرد"
+        body = note or "پس از دریافت تسویه‌ی پایانی، آن را در بخش «پرداخت‌ها» تأیید کنید."
+    await notify_side(db, order, other, user, kind=f"order_{action}", title=title, body=body)
 
 
 async def all_paid(db: AsyncSession, order_id: uuid.UUID, *, also: uuid.UUID | None = None) -> bool:

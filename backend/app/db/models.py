@@ -7,6 +7,7 @@ from app.modules.contracts.models import Contract, ContractSignature, ContractVe
 from app.modules.files.models import StoredFile
 from app.modules.identity.models import RefreshToken, User
 from app.modules.inspections.models import OrderInspection
+from app.modules.notifications.models import Notification
 from app.modules.orders.models import Order, OrderEvent
 from app.modules.organizations.models import Organization, OrganizationInvite
 from app.modules.payments.models import OrderPayment
@@ -26,6 +27,7 @@ __all__ = [
     "OrderInspection",
     "OrderPayment",
     "OrderEvent",
+    "Notification",
     "Organization",
     "OrganizationInvite",
     "Quotation",

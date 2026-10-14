@@ -230,6 +230,15 @@ async def report(
         else _label(payment),
         payment.receipt_file_id,
     )
+    await orders.notify_side(
+        db,
+        order,
+        "supplier",
+        user,
+        kind="payment_reported",
+        title=f"کارفرما {_label(payment)} سفارش {orders.ref(order)} را اعلام کرد",
+        body="پس از بررسی حساب، دریافت را تأیید یا رد کنید.",
+    )
     audit.record(
         db,
         action="payment.reported",
@@ -285,6 +294,19 @@ async def confirm(
         side,
         _label(payment),
     )
+    await orders.notify_side(
+        db,
+        order,
+        "buyer",
+        user,
+        kind="payment_confirmed",
+        title=f"قطعه‌ساز دریافت {_label(payment)} سفارش {orders.ref(order)} را تأیید کرد",
+        body="سفارش تکمیل شد."
+        if order.status == "completed"
+        else "تولید شروع شد."
+        if changed and order.status == "in_production"
+        else "",
+    )
     audit.record(
         db,
         action="payment.confirmed",
@@ -315,6 +337,15 @@ async def reject(
     payment.rejection_reason = data.reason
     orders.record_event(
         db, order, "payment_rejected", None, None, user, side, f"{_label(payment)}: {data.reason}"
+    )
+    await orders.notify_side(
+        db,
+        order,
+        "buyer",
+        user,
+        kind="payment_rejected",
+        title=f"قطعه‌ساز اعلام {_label(payment)} سفارش {orders.ref(order)} را رد کرد",
+        body=f"دلیل: {data.reason}",
     )
     audit.record(
         db,

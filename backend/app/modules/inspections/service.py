@@ -32,6 +32,7 @@ from app.modules.inspections.schemas import (
     MarkReadyInput,
     QcLabList,
 )
+from app.modules.notifications import service as notifications
 from app.modules.orders import service as orders
 from app.modules.orders.lifecycle import Side
 from app.modules.orders.models import Order
@@ -172,6 +173,26 @@ async def get_inspection(db: AsyncSession, user: CurrentUser, order_id: uuid.UUI
     return await _out(db, user, order, side, await _current(db, order.id))
 
 
+async def _notify_lab(
+    db: AsyncSession,
+    order: Order,
+    lab_organization_id: uuid.UUID,
+    *,
+    kind: str,
+    title: str,
+    body: str = "",
+    link: str | None = None,
+) -> None:
+    await notifications.notify(
+        db,
+        organization_id=lab_organization_id,
+        kind=kind,
+        title=title,
+        body=body,
+        link=f"/orders/{order.id}" if link is None else link,
+    )
+
+
 def _audit(db: AsyncSession, user: CurrentUser, order: Order, action: str, **data: object) -> None:
     audit.record(
         db,
@@ -202,6 +223,7 @@ async def choose_lab(
     ):
         raise field_error("labOrganizationId", LAB_NOT_AVAILABLE)
 
+    ref = orders.ref(order)
     if inspection is None:
         inspection = OrderInspection(
             id=uuid.uuid4(),
@@ -214,10 +236,44 @@ async def choose_lab(
         )
         db.add(inspection)
         action = "requested"
+        await orders.notify_side(
+            db,
+            order,
+            "supplier",
+            user,
+            kind="inspection_requested",
+            title=f"کارفرما بازرسی کیفیت سفارش {ref} را خواست",
+            body=f"آزمایشگاه: {lab.name}. ارسال پس از قبولی بازرسی ممکن است.",
+        )
     else:
         # دور جاری (اگر قطعه‌ساز آمادگی را اعلام کرده باشد) با آزمایشگاه تازه ادامه می‌یابد
+        await _notify_lab(
+            db,
+            order,
+            inspection.lab_organization_id,
+            kind="inspection_unassigned",
+            title=f"بازرسی سفارش {ref} به آزمایشگاه دیگری سپرده شد",
+            link="/orders",
+        )
         inspection.lab_organization_id = lab.organization_id
         action = "lab_changed"
+        await orders.notify_side(
+            db,
+            order,
+            "supplier",
+            user,
+            kind="inspection_lab_changed",
+            title=f"آزمایشگاه بازرسی سفارش {ref} تغییر کرد",
+            body=f"آزمایشگاه تازه: {lab.name}",
+        )
+    await _notify_lab(
+        db,
+        order,
+        lab.organization_id,
+        kind="inspection_assigned",
+        title=f"برای بازرسی سفارش {ref} انتخاب شدید",
+        body=f"«{order.title}» — برای دیدن نقشه‌ها، تعهد عدم افشای این سفارش را بپذیرید.",
+    )
     orders.record_event(db, order, f"inspection_{action}", None, None, user, side, lab.name)
     _audit(db, user, order, action, lab_organization_id=lab.organization_id)
     await db.commit()
@@ -251,6 +307,24 @@ async def remove(db: AsyncSession, user: CurrentUser, order_id: uuid.UUID) -> In
         side,
         lab_name or "",
     )
+    await _notify_lab(
+        db,
+        order,
+        inspection.lab_organization_id,
+        kind="inspection_unassigned",
+        title=f"بازرسی سفارش {orders.ref(order)} لغو شد",
+        body="کارفرما بازرسی کیفیت این سفارش را حذف کرد.",
+        link="/orders",
+    )
+    await orders.notify_side(
+        db,
+        order,
+        "supplier",
+        user,
+        kind="inspection_removed",
+        title=f"کارفرما بازرسی کیفیت سفارش {orders.ref(order)} را حذف کرد",
+        body="پس از آماده شدن، ارسال را مستقیم ثبت کنید.",
+    )
     _audit(db, user, order, "removed", lab_organization_id=inspection.lab_organization_id)
     await db.commit()
     return await _out(db, user, order, side, None)
@@ -281,6 +355,22 @@ async def mark_ready(
     order.status = "in_inspection"
     orders.record_event(
         db, order, "inspection_ready", "in_production", "in_inspection", user, side, data.note
+    )
+    await _notify_lab(
+        db,
+        order,
+        inspection.lab_organization_id,
+        kind="inspection_ready",
+        title=f"سفارش {orders.ref(order)} آماده‌ی بازرسی است",
+        body=data.note or f"دور {inspection.attempt} بازرسی",
+    )
+    await orders.notify_side(
+        db,
+        order,
+        "buyer",
+        user,
+        kind="inspection_ready",
+        title=f"قطعه‌ساز سفارش {orders.ref(order)} را آماده‌ی بازرسی اعلام کرد",
     )
     _audit(db, user, order, "ready", attempt=inspection.attempt)
     await db.commit()
@@ -360,6 +450,17 @@ async def record_result(
         data.note,
         report,
     )
+    verdict = "قبول" if data.passed else "رد"
+    for party in ("buyer", "supplier"):
+        await orders.notify_side(
+            db,
+            order,
+            party,
+            user,
+            kind=f"inspection_{inspection.status}",
+            title=f"بازرسی سفارش {orders.ref(order)} {verdict} شد",
+            body=data.note,
+        )
     _audit(db, user, order, inspection.status, attempt=inspection.attempt)
     await db.commit()
     return await _out(db, user, order, side, inspection)

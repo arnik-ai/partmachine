@@ -276,6 +276,17 @@ async def update_contract(
     # تاریخ تحویل سفارش همان تاریخ قرارداد است
     order.delivery_due = data.delivery_due
     orders.record_event(db, order, "contract_revised", None, None, user, side, data.change_note)
+    await orders.notify_side(
+        db,
+        order,
+        "supplier",
+        user,
+        kind="contract_revised",
+        title=f"نسخه‌ی تازه‌ی قرارداد سفارش {orders.ref(order)}",
+        body=data.change_note
+        or "کارفرما شرایط قرارداد را تغییر داد؛ نسخه‌ی تازه را بخوانید و امضا کنید.",
+        link_suffix="/contract",
+    )
     audit.record(
         db,
         action="contract.revised",
@@ -364,6 +375,28 @@ async def sign_contract(
         side,
         f"نسخه‌ی {current.number}",
     )
+    if to_status:
+        for party in ("buyer", "supplier"):
+            await orders.notify_side(
+                db,
+                order,
+                party,
+                user,
+                kind="contract_effective",
+                title=f"قرارداد سفارش {orders.ref(order)} نافذ شد",
+                body="هر دو طرف امضا کردند و سفارش وارد مرحله‌ی بعد شد.",
+            )
+    else:
+        await orders.notify_side(
+            db,
+            order,
+            orders.other_side(side),
+            user,
+            kind="contract_signed",
+            title=f"طرف مقابل قرارداد سفارش {orders.ref(order)} را امضا کرد",
+            body="نوبت امضای مدیر سازمان شماست.",
+            link_suffix="/contract",
+        )
     audit.record(
         db,
         action="contract.signed",
@@ -387,6 +420,16 @@ async def request_change(
     if not _editable(order, contract):
         raise Conflict(LOCKED, code="contract_locked")
     orders.record_event(db, order, "contract_change_requested", None, None, user, side, data.note)
+    await orders.notify_side(
+        db,
+        order,
+        "buyer",
+        user,
+        kind="contract_change_requested",
+        title=f"قطعه‌ساز اصلاح قرارداد سفارش {orders.ref(order)} را درخواست کرد",
+        body=data.note,
+        link_suffix="/contract",
+    )
     audit.record(
         db,
         action="contract.change_requested",

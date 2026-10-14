@@ -20,6 +20,7 @@ from app.modules.audit import service as audit
 from app.modules.files.models import StoredFile
 from app.modules.identity.deps import CurrentUser
 from app.modules.identity.models import User
+from app.modules.notifications import service as notifications
 from app.modules.organizations.models import Organization
 from app.modules.suppliers import service as suppliers
 from app.modules.suppliers.models import Supplier
@@ -266,6 +267,16 @@ async def decide(
     if approve:
         supplier.verified = True
         supplier.verified_at = now
+    await notifications.notify(
+        db,
+        organization_id=request.organization_id,
+        kind="verification_approved" if approve else "verification_rejected",
+        title="شرکت شما تأیید شد" if approve else "درخواست تأیید هویت شرکت رد شد",
+        body="نشان «تأییدشده» حالا در پروفایل عمومی شما نمایش داده می‌شود."
+        if approve
+        else f"دلیل: {reason}. می‌توانید مدارک را اصلاح کنید و دوباره بفرستید.",
+        link="/profile",
+    )
     audit.record(
         db,
         action="verification.approved" if approve else "verification.rejected",
@@ -293,6 +304,14 @@ async def revoke(
     request.revoke_reason = reason
     supplier.verified = False
     supplier.verified_at = None
+    await notifications.notify(
+        db,
+        organization_id=request.organization_id,
+        kind="verification_revoked",
+        title="تأیید شرکت شما لغو شد",
+        body=f"دلیل: {reason}",
+        link="/profile",
+    )
     audit.record(
         db,
         action="verification.revoked",
