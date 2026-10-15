@@ -236,6 +236,17 @@ npm run typecheck                                         # contract.ts ناسا
 - فونت وزیرمتن داخل پروژه است (`src/fonts`، مجوز OFL)، پس build به Google وابسته نیست.
 - **آیفون واقعی:** نصب در Safari دستی است (Share و بعد «Add to Home Screen») و پیش از هر انتشار مهم یک‌بار روی دستگاه واقعی امتحان می‌شود.
 
+## پشته‌ی تولیدی روی همین کامپیوتر
+
+ایمیج‌های تولیدی و راه‌اندازی یک‌دستوری در پوشه‌ی `deploy/` هستند. راهنمای آن‌ها در [deploy/README.md](../deploy/README.md) است.
+
+- برای آزمون محلی، یک فایل `deploy/.env.prod.local` بسازید. این فایل commit نمی‌شود.
+- مقدارها: `APP_DOMAIN=localhost`، پورت‌های ۸۰۸۰ و ۸۴۴۳ و `PUBLIC_PORT_SUFFIX=:8443`.
+- با `-p partmachine-prodtest` بالا بیاورید تا volumeهای آن از محیط توسعه جدا بماند.
+- آزمون مرورگر روی آن: `E2E_BASE_URL=https://localhost:8443 E2E_IGNORE_HTTPS_ERRORS=true`.
+- محدودیت نرخ در این پشته روشن است، پس چند spec محدود اجرا کنید.
+- آزمون PWA روی گواهی محلی رد می‌شود، چون مرورگر service worker را بدون گواهی معتبر ثبت نمی‌کند.
+
 ## buildها
 
 | build | دستور | کاربرد |

@@ -191,3 +191,47 @@ jobs:
             ${{ runner.temp }}/api.log
             ${{ runner.temp }}/web.log
 
+
+  production-stack:
+    # ایمیج‌های تولیدی و راه‌اندازی یک‌دستوری (فاز ۴، گام 4b): ساخت، بالا آمدن پشت Caddy با تنظیمات
+    # production، و آزمون دود از بیرون. رمزها همین‌جا تصادفی ساخته می‌شوند و جایی ذخیره نمی‌شوند.
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    env:
+      COMPOSE: docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod.ci -p pmci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Throwaway production settings
+        run: |
+          {
+            echo "APP_DOMAIN=localhost"
+            echo "SECRET_KEY=$(openssl rand -hex 32)"
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
+            echo "REDIS_PASSWORD=$(openssl rand -hex 24)"
+            echo "HTTP_PORT=8080"
+            echo "HTTPS_PORT=8443"
+            echo "PUBLIC_PORT_SUFFIX=:8443"
+          } > deploy/.env.prod.ci
+      - name: Build and start everything with one command
+        run: $COMPOSE up -d --build
+      - name: Wait until the API is healthy and Caddy answers
+        run: |
+          for i in $(seq 1 60); do
+            if [ "$($COMPOSE ps api --format '{{.Health}}')" = "healthy" ] \
+              && curl -fsk -o /dev/null https://localhost:8443/; then exit 0; fi
+            sleep 3
+          done
+          $COMPOSE ps -a
+          exit 1
+      - name: Smoke test from outside
+        run: |
+          test "$($COMPOSE ps -a migrate --format '{{.ExitCode}}')" = "0"
+          curl -fsk https://localhost:8443/ | grep -q 'rel="manifest"'
+          curl -fsk https://localhost:8443/manifest.webmanifest | grep -q '"display":"standalone"'
+          curl -fsk https://localhost:8443/api/v1/agreements/buyer_signup | grep -q '"key":"buyer_signup"'
+          # مستندات API و سلامت داخلی از بیرون در دسترس نیستند؛ نام سرور هم لو نمی‌رود
+          test "$(curl -sk -o /dev/null -w '%{http_code}' https://localhost:8443/api/v1/docs)" = "404"
+          if curl -skI https://localhost:8443/ | grep -qi '^server:'; then echo "Server header leaked"; exit 1; fi
+      - name: Logs on failure
+        if: failure()
+        run: $COMPOSE logs --no-color --tail=200

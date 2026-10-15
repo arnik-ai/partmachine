@@ -21,6 +21,8 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3100",
     locale: "fa-IR",
     trace: "retain-on-failure",
+    // فقط برای آزمون پشته‌ی تولیدی محلی (Caddy با گواهی محلی): E2E_IGNORE_HTTPS_ERRORS=true
+    ignoreHTTPSErrors: process.env.E2E_IGNORE_HTTPS_ERRORS === "true",
   },
   projects: [
     // همه‌ی آزمون‌ها روی کروم دسکتاپ (همان موتور Edge در ویندوز)

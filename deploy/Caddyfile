@@ -1,0 +1,28 @@
+# پروکسی معکوس با HTTPS خودکار (Let's Encrypt برای دامنه‌ی واقعی، گواهی محلی برای localhost).
+# سایت و API زیر یک دامنه: /api/* به بک‌اند، بقیه به سایت.
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	handle /api/* {
+		# سقف بک‌اند برای بارگذاری فایل ۵۰ مگابایت است؛ این‌جا کمی بیشتر تا خطای فارسی خود API برسد
+		request_body {
+			max_size 60MB
+		}
+		reverse_proxy api:8000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	# HSTS فقط برای دامنه‌ی واقعی (روی localhost سایت‌های توسعه‌ی دیگر را خراب می‌کند)
+	@public not host localhost
+	header @public Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	header -Server
+
+	log {
+		output stdout
+		format json
+	}
+}
