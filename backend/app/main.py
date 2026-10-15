@@ -143,6 +143,7 @@ def create_app() -> FastAPI:
         max_body_bytes=settings.max_body_bytes,
         upload_paths=(f"{settings.api_v1_prefix}/files",),
         upload_max_bytes=settings.upload_max_bytes,
+        route_prefix=settings.api_v1_prefix,
     )
 
     app.include_router(build_api_router(), prefix=settings.api_v1_prefix)

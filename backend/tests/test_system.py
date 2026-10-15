@@ -6,8 +6,7 @@ import httpx
 import pytest
 from redis.asyncio import Redis
 
-from app import main
-from app.core import rate_limit
+from app.core import health, rate_limit
 from app.core.config import settings
 from app.modules.pricing import router as pricing_router
 from tests.helpers import API
@@ -27,7 +26,7 @@ async def test_ready_returns_503_when_database_is_down(
         def connect(self) -> NoReturn:
             raise OSError("connection refused")
 
-    monkeypatch.setattr(main, "engine", BrokenEngine())
+    monkeypatch.setattr(health, "engine", BrokenEngine())
     response = await client.get("/ready")
     assert response.status_code == 503
     assert response.json() == {
