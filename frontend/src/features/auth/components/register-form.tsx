@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ApiError, errorMessage } from "@/lib/api-client";
+import { useHydrated } from "@/lib/use-hydrated";
 import { DEMO_MODE } from "@/lib/config";
 import { ROLES, roleLabel } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,6 +31,8 @@ import { register, startDemoSession } from "../api";
 import type { RegisterInput } from "../types";
 
 export function RegisterForm() {
+  // تا آماده شدن صفحه قفل است؛ انتخاب زودهنگام گم نمی‌شود و رمز هرگز در آدرس صفحه نمی‌رود
+  const hydrated = useHydrated();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -124,109 +127,111 @@ export function RegisterForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {inviteToken && invite.isError && (
-            <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-              این لینک دعوت معتبر نیست، استفاده شده یا منقضی شده است. می‌توانید به‌صورت عادی
-              ثبت‌نام کنید یا از مدیر سازمان لینک تازه بخواهید.
-            </p>
-          )}
-          <FieldError message={fieldErrors.inviteToken} />
-          {invited ? (
-            <p className="rounded-lg border p-3 text-sm">
-              نقش شما در پارت‌ماشین: <strong>{roleLabel(invited.role)}</strong>
-            </p>
-          ) : (
+        <form onSubmit={handleSubmit} method="post">
+          <fieldset disabled={!hydrated} className="flex min-w-0 flex-col gap-4">
+            {inviteToken && invite.isError && (
+              <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                این لینک دعوت معتبر نیست، استفاده شده یا منقضی شده است. می‌توانید به‌صورت عادی
+                ثبت‌نام کنید یا از مدیر سازمان لینک تازه بخواهید.
+              </p>
+            )}
+            <FieldError message={fieldErrors.inviteToken} />
+            {invited ? (
+              <p className="rounded-lg border p-3 text-sm">
+                نقش شما در پارت‌ماشین: <strong>{roleLabel(invited.role)}</strong>
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="role">نقش شما</Label>
+                <Select
+                  id="role"
+                  name="role"
+                  value={role}
+                  onChange={(e) => {
+                    setRole(e.target.value as RegisterInput["role"]);
+                    // با تغییر نقش، قوانین عوض می‌شود و باید دوباره تیک بخورد
+                    setAccepted({});
+                  }}
+                >
+                  {ROLES.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
+                </Select>
+                <FieldError message={fieldErrors.role} />
+              </div>
+            )}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="role">نقش شما</Label>
-              <Select
-                id="role"
-                name="role"
-                value={role}
-                onChange={(e) => {
-                  setRole(e.target.value as RegisterInput["role"]);
-                  // با تغییر نقش، قوانین عوض می‌شود و باید دوباره تیک بخورد
-                  setAccepted({});
-                }}
-              >
-                {ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </Select>
-              <FieldError message={fieldErrors.role} />
+              <Label htmlFor="fullName">نام و نام خانوادگی</Label>
+              <Input id="fullName" name="fullName" required autoComplete="name" />
+              <FieldError message={fieldErrors.fullName} />
             </div>
-          )}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="fullName">نام و نام خانوادگی</Label>
-            <Input id="fullName" name="fullName" required autoComplete="name" />
-            <FieldError message={fieldErrors.fullName} />
-          </div>
-          {needsCompany && (
+            {needsCompany && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="companyName">
+                  {role === "qc" ? "نام آزمایشگاه" : "نام شرکت / کارگاه"}
+                </Label>
+                <Input
+                  id="companyName"
+                  name="companyName"
+                  required
+                  autoComplete="organization"
+                />
+                <FieldError message={fieldErrors.companyName} />
+              </div>
+            )}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="companyName">
-                {role === "qc" ? "نام آزمایشگاه" : "نام شرکت / کارگاه"}
-              </Label>
+              <Label htmlFor="email">ایمیل</Label>
               <Input
-                id="companyName"
-                name="companyName"
+                id="email"
+                name="email"
+                type="email"
+                dir="ltr"
                 required
-                autoComplete="organization"
+                autoComplete="email"
+                placeholder="you@company.com"
               />
-              <FieldError message={fieldErrors.companyName} />
+              <FieldError message={fieldErrors.email} />
             </div>
-          )}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">ایمیل</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              dir="ltr"
-              required
-              autoComplete="email"
-              placeholder="you@company.com"
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password">رمز عبور</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                dir="ltr"
+                required
+                minLength={8}
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-muted-foreground">حداقل ۸ کاراکتر</p>
+              <FieldError message={fieldErrors.password} />
+            </div>
+            <AgreementChecklist
+              agreementKey={signupAgreementKey(effectiveRole)}
+              accepted={accepted}
+              onChange={setAccepted}
             />
-            <FieldError message={fieldErrors.email} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="password">رمز عبور</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              dir="ltr"
-              required
-              minLength={8}
-              autoComplete="new-password"
-            />
-            <p className="text-xs text-muted-foreground">حداقل ۸ کاراکتر</p>
-            <FieldError message={fieldErrors.password} />
-          </div>
-          <AgreementChecklist
-            agreementKey={signupAgreementKey(effectiveRole)}
-            accepted={accepted}
-            onChange={setAccepted}
-          />
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+            <Button
+              type="submit"
+              disabled={loading || !termsOk}
+              title={!termsOk ? "ابتدا همه‌ی قوانین را تیک بزنید" : undefined}
+            >
+              {loading ? "در حال ثبت‌نام..." : "ایجاد حساب"}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              قبلاً ثبت‌نام کرده‌اید؟{" "}
+              <Link href="/login" className="text-primary hover:underline">
+                وارد شوید
+              </Link>
             </p>
-          )}
-          <Button
-            type="submit"
-            disabled={loading || !termsOk}
-            title={!termsOk ? "ابتدا همه‌ی قوانین را تیک بزنید" : undefined}
-          >
-            {loading ? "در حال ثبت‌نام..." : "ایجاد حساب"}
-          </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            قبلاً ثبت‌نام کرده‌اید؟{" "}
-            <Link href="/login" className="text-primary hover:underline">
-              وارد شوید
-            </Link>
-          </p>
+          </fieldset>
         </form>
       </CardContent>
     </Card>

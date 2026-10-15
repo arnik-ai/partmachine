@@ -16,11 +16,14 @@ import {
 } from "@/components/ui/card";
 import { useAuthOptions } from "@/features/account/api";
 import { ApiError, errorMessage } from "@/lib/api-client";
+import { useHydrated } from "@/lib/use-hydrated";
 import { DEMO_MODE } from "@/lib/config";
 import { login, startDemoSession } from "../api";
 import { safeNextPath } from "../next-path";
 
 export function LoginForm() {
+  // تا آماده شدن صفحه قفل است؛ انتخاب زودهنگام گم نمی‌شود و رمز هرگز در آدرس صفحه نمی‌رود
+  const hydrated = useHydrated();
   const router = useRouter();
   const canReset = useAuthOptions().data?.passwordReset ?? false;
   const [error, setError] = useState<string | null>(null);
@@ -62,58 +65,60 @@ export function LoginForm() {
         <CardDescription>به بازار صنعتی قطعه‌سازی خوش آمدید</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">ایمیل</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              dir="ltr"
-              required
-              autoComplete="email"
-              placeholder="you@company.com"
-            />
-            <FieldError message={fieldErrors.email} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="password">رمز عبور</Label>
-              {canReset && (
-                <Link href="/forgot-password" className="text-xs text-primary hover:underline">
-                  رمز را فراموش کرده‌اید؟
-                </Link>
-              )}
+        <form onSubmit={handleSubmit} method="post">
+          <fieldset disabled={!hydrated} className="flex min-w-0 flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email">ایمیل</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                dir="ltr"
+                required
+                autoComplete="email"
+                placeholder="you@company.com"
+              />
+              <FieldError message={fieldErrors.email} />
             </div>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              dir="ltr"
-              required
-              autoComplete="current-password"
-            />
-            <FieldError message={fieldErrors.password} />
-          </div>
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="password">رمز عبور</Label>
+                {canReset && (
+                  <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                    رمز را فراموش کرده‌اید؟
+                  </Link>
+                )}
+              </div>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                dir="ltr"
+                required
+                autoComplete="current-password"
+              />
+              <FieldError message={fieldErrors.password} />
+            </div>
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+            {DEMO_MODE && (
+              <p className="text-sm text-warning">
+                این نسخه‌ی نمایشی است؛ هر ایمیل و رمزی پذیرفته می‌شود و چیزی ذخیره نمی‌شود.
+              </p>
+            )}
+            <Button type="submit" disabled={loading}>
+              {loading ? "در حال ورود..." : "ورود"}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              حساب ندارید؟{" "}
+              <Link href="/register" className="text-primary hover:underline">
+                ثبت‌نام کنید
+              </Link>
             </p>
-          )}
-          {DEMO_MODE && (
-            <p className="text-sm text-warning">
-              این نسخه‌ی نمایشی است؛ هر ایمیل و رمزی پذیرفته می‌شود و چیزی ذخیره نمی‌شود.
-            </p>
-          )}
-          <Button type="submit" disabled={loading}>
-            {loading ? "در حال ورود..." : "ورود"}
-          </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            حساب ندارید؟{" "}
-            <Link href="/register" className="text-primary hover:underline">
-              ثبت‌نام کنید
-            </Link>
-          </p>
+          </fieldset>
         </form>
       </CardContent>
     </Card>
