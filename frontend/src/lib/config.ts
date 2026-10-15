@@ -12,3 +12,6 @@ export const API_URL =
 export const API_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_API_URL);
 
 export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+
+/** مسیر پایه (فقط نسخه‌ی نمایشی: /partmachine)؛ برای آدرس service worker */
+export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";

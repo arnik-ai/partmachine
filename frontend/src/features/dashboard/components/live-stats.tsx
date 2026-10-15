@@ -56,7 +56,7 @@ export function LiveStats() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-32 rounded-2xl" />
         ))}
@@ -68,7 +68,7 @@ export function LiveStats() {
   }
   if (!data || data.stats.length === 0) return null;
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {data.stats.map((stat) => {
         const meta = STAT_META[stat.key];
         return (

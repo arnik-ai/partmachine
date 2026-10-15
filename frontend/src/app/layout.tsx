@@ -1,13 +1,25 @@
-import type { Metadata } from "next";
-import { Vazirmatn } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import { DemoBanner } from "@/components/layout/demo-banner";
+import { PwaSetup } from "@/components/layout/pwa-setup";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic", "latin"],
+// فونت داخل خود سایت (مجوز OFL)؛ build و نمایش به سرور خارجی وابسته نیست
+const vazirmatn = localFont({
+  src: "../fonts/Vazirmatn-Variable.woff2",
+  weight: "100 900",
+  display: "swap",
   variable: "--font-vazirmatn",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // تا لبه‌ی صفحه در آیفون‌های با بریدگی؛ فاصله‌ها با safe-area در globals.css
+  viewportFit: "cover",
+  themeColor: "#212d48",
+};
 
 export const metadata: Metadata = {
   title: {
@@ -15,7 +27,13 @@ export const metadata: Metadata = {
     template: "%s | پارت‌ماشین",
   },
   description:
-    "پلتفرم اتصال قطعه‌سازان، کارفرمایان و آزمایشگاه‌های کنترل کیفیت. ثبت RFQ، دریافت استعلام قیمت و پرداخت امن.",
+    "پلتفرم اتصال قطعه‌سازان، کارفرمایان و آزمایشگاه‌های کنترل کیفیت: ثبت درخواست، دریافت پیشنهاد قیمت، قرارداد و پیگیری سفارش.",
+  applicationName: "پارت‌ماشین",
+  // نصب روی آیفون (Add to Home Screen): عنوان و نوار وضعیت؛ محتوا زیر نوار وضعیت شروع می‌شود
+  appleWebApp: { capable: true, title: "پارت‌ماشین", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
+  // نسخه‌های قدیمی‌تر iOS فقط نام قدیمی این تگ را می‌شناسند
+  other: { "apple-mobile-web-app-capable": "yes" },
 };
 
 export default function RootLayout({
@@ -24,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
       <body className="min-h-screen font-[family-name:var(--font-vazirmatn)] antialiased">
+        <PwaSetup />
         <DemoBanner />
         <Providers>{children}</Providers>
       </body>

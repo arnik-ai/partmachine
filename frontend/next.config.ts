@@ -38,7 +38,11 @@ export default function nextConfig(phase: string): NextConfig {
       ? {}
       : {
           async headers() {
-            return [{ source: "/:path*", headers: securityHeaders }];
+            return [
+              { source: "/:path*", headers: securityHeaders },
+              // نسخه‌ی تازه‌ی service worker بدون ماندن در کش مرورگر برسد
+              { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache" }] },
+            ];
           },
         }),
   };

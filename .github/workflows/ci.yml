@@ -148,7 +148,9 @@ jobs:
           pip install -r requirements.txt
           alembic upgrade head
           printf '%s' "$E2E_ADMIN_PASSWORD" | python -m app.create_admin --email "$E2E_ADMIN_EMAIL" --name "ادمین آزمون" --password-stdin
-          nohup uvicorn app.main:app --port 8100 > "$RUNNER_TEMP/api.log" 2>&1 &
+          # آزمون مرورگر در هر اجرا ده‌ها حساب تازه می‌سازد؛ محدودیت نرخ فقط برای همین API آزمایشی
+          # خاموش است (تست‌های بک‌اند خود محدودیت را می‌آزمایند و تولید اجازه‌ی خاموش کردنش را نمی‌دهد)
+          RATE_LIMIT_ENABLED=false nohup uvicorn app.main:app --port 8100 > "$RUNNER_TEMP/api.log" 2>&1 &
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -172,7 +174,8 @@ jobs:
           exit 1
       - name: Install the browser
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        # chromium برای همه‌ی آزمون‌ها؛ webkit (موتور Safari) برای آزمون نمایش روی آیفون و آیپد
+        run: npx playwright install --with-deps chromium webkit
       - name: Browser tests
         working-directory: frontend
         run: npm run test:e2e

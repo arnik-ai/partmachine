@@ -64,6 +64,10 @@ body {
   background-color: var(--background);
   /* متن مستقیم روی پس‌زمینه‌ی سورمه‌ای روشن است؛ کارت‌ها رنگ خود را ست می‌کنند */
   color: var(--shell-foreground);
+  /* آیفون‌های با بریدگی و نوار خانه (viewport-fit=cover)؛ در دستگاه‌های دیگر صفر است */
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
 }
 
 * {

@@ -56,7 +56,7 @@ export function Header() {
             <Factory className="h-6 w-6 text-primary" />
             پارت‌ماشین
           </Link>
-          <nav aria-label="منوی اصلی" className="hidden items-center gap-5 text-sm md:flex">
+          <nav aria-label="منوی اصلی" className="hidden items-center gap-5 text-sm lg:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -118,10 +118,10 @@ export function Header() {
           )}
         </div>
       </div>
-      {/* موبایل: همان لینک‌ها در یک ردیف ساده، بدون منوی کشویی */}
+      {/* موبایل و تبلت (زیر ۱۰۲۴ پیکسل): همان لینک‌ها در یک ردیف ساده‌ی قابل‌لغزش، بدون منوی کشویی */}
       <nav
         aria-label="منوی اصلی"
-        className="mx-auto flex max-w-6xl gap-5 overflow-x-auto px-4 pb-3 text-sm md:hidden"
+        className="mx-auto flex max-w-6xl gap-5 overflow-x-auto px-4 pb-3 text-sm lg:hidden"
       >
         {links.map((link) => (
           <Link
