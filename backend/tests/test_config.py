@@ -35,6 +35,7 @@ def test_safe_production_settings_have_no_problems() -> None:
         ({"database_url": "sqlite+aiosqlite:///./partmachine.db"}, "DATABASE_URL"),
         ({"storage_local_dir": "var/storage"}, "STORAGE_LOCAL_DIR"),
         ({"otp_sender": "console"}, "OTP_SENDER"),
+        ({"rate_limit_enabled": False}, "RATE_LIMIT_ENABLED"),
     ],
 )
 def test_unsafe_production_settings_are_reported(

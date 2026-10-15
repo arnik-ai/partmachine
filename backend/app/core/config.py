@@ -132,6 +132,9 @@ class Settings(BaseSettings):
             )
         if self.otp_sender_name == "console":
             found.append("OTP_SENDER=console writes one-time codes to the logs; not allowed here")
+        # فقط برای API آزمایشیِ آزمون مرورگر خاموش می‌شود؛ در staging و production هرگز
+        if not self.rate_limit_enabled:
+            found.append("RATE_LIMIT_ENABLED must not be disabled")
         return found
 
 
