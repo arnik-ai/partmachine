@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import { Fragment } from "react";
 import { CAPABILITIES } from "@/lib/constants";
@@ -25,8 +26,13 @@ function Words({ text }: { text: string }) {
   ));
 }
 
+// خروجی استاتیک نسخه‌ی نمایشی درخواستی ندارد و CSP هم ندارد
+const isStaticExport = process.env.NEXT_OUTPUT === "export";
+
 /** صفحه‌ی اول تراشینو؛ «/» فارسی و «/en» انگلیسی. ورود و ثبت‌نام به صفحه‌های خود پلتفرم می‌روند. */
-export function LandingPage({ lang }: { lang: Lang }) {
+export async function LandingPage({ lang }: { lang: Lang }) {
+  // هر تگ script صفحه، حتی داده‌ی ساختاریافته که اجرا نمی‌شود، nonce همین درخواست را دارد (proxy.ts)
+  const nonce = isStaticExport ? undefined : ((await headers()).get("x-nonce") ?? undefined);
   const c = LANDING[lang];
   const en = lang === "en";
   const arrow = en ? "→" : "←";
@@ -34,7 +40,11 @@ export function LandingPage({ lang }: { lang: Lang }) {
 
   return (
     <div className="lp" lang={en ? "en" : "fa"} dir={en ? "ltr" : "rtl"}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: landingJsonLd(lang) }} />
+      <script
+        type="application/ld+json"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{ __html: landingJsonLd(lang) }}
+      />
       <MarkDefs />
       <div className="grain" aria-hidden="true" />
 
