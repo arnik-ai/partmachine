@@ -7553,7 +7553,7 @@
           "inspections"
         ],
         "summary": "List Labs",
-        "description": "آزمایشگاه‌هایی که پارت‌ماشین تأیید کرده است (برای انتخاب کارفرما).",
+        "description": "آزمایشگاه‌هایی که تراشینو تأیید کرده است (برای انتخاب کارفرما).",
         "operationId": "list_labs_api_v1_qc_labs_get",
         "responses": {
           "200": {

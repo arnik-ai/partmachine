@@ -9,8 +9,8 @@ export const dynamic = "force-static";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "پارت‌ماشین — بازار صنعتی قطعه‌سازی",
-    short_name: "پارت‌ماشین",
+    name: "تراشینو — سفارش ساخت قطعات صنعتی",
+    short_name: "تراشینو",
     description:
       "ثبت درخواست ساخت قطعه، دریافت پیشنهاد قیمت، قرارداد و پیگیری سفارش با قطعه‌سازان و آزمایشگاه‌های کنترل کیفیت.",
     lang: "fa",

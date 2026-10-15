@@ -143,7 +143,7 @@ def main() -> None:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(errors="replace")
-    parser = argparse.ArgumentParser(description="انتقال فایل‌های پارت‌ماشین از دیسک به فضای S3")
+    parser = argparse.ArgumentParser(description="انتقال فایل‌های تراشینو از دیسک به فضای S3")
     parser.add_argument(
         "--from-dir",
         default=settings.storage_local_dir,

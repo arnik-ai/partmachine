@@ -36,7 +36,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <h1 className="text-xl font-bold">مدیریت پارت‌ماشین</h1>
+        <h1 className="text-xl font-bold">مدیریت تراشینو</h1>
         <nav aria-label="بخش‌های مدیریت" className="flex gap-2 overflow-x-auto pb-1">
           {TABS.map((tab) => {
             const active = pathname === tab.href;

@@ -45,7 +45,7 @@ function guidance(order: OrderDetail, inspection: Inspection): string {
   switch (inspection.status) {
     case "none":
       return (
-        "اختیاری: پیش از ارسال، یک آزمایشگاه تأییدشده‌ی پارت‌ماشین قطعات را بازرسی کند. در این " +
+        "اختیاری: پیش از ارسال، یک آزمایشگاه تأییدشده‌ی تراشینو قطعات را بازرسی کند. در این " +
         "صورت قطعه‌ساز فقط پس از قبولی بازرسی ارسال می‌کند. هزینه‌ی بازرسی را مستقیماً با " +
         "آزمایشگاه حساب می‌کنید."
       );
@@ -63,7 +63,7 @@ function guidance(order: OrderDetail, inspection: Inspection): string {
       if (side === "qc") {
         return inspection.canRecordResult
           ? "سفارش آماده‌ی بازرسی است. پس از بازرسی، نتیجه را همراه گزارش ثبت کنید."
-          : "حساب آزمایشگاه شما در حال حاضر تأییدشده نیست؛ برای ثبت نتیجه با پشتیبانی پارت‌ماشین تماس بگیرید.";
+          : "حساب آزمایشگاه شما در حال حاضر تأییدشده نیست؛ برای ثبت نتیجه با پشتیبانی تراشینو تماس بگیرید.";
       }
       return "آزمایشگاه در حال بازرسی است؛ نتیجه همین‌جا نمایش داده می‌شود.";
     case "failed":
@@ -289,7 +289,7 @@ export function InspectionCard({ order }: { order: OrderDetail }) {
           <ErrorState error={labs.error} onRetry={() => labs.refetch()} title="فهرست آزمایشگاه‌ها بارگذاری نشد" />
         ) : !labs.data || labs.data.items.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            هنوز آزمایشگاه تأییدشده‌ای در پارت‌ماشین ثبت نشده است.
+            هنوز آزمایشگاه تأییدشده‌ای در تراشینو ثبت نشده است.
           </p>
         ) : (
           <fieldset className="flex flex-col gap-2">

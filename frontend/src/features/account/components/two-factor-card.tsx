@@ -101,7 +101,7 @@ export function TwoFactorCard({ adminRequired }: { adminRequired: boolean }) {
   }
 
   function downloadCodes() {
-    const text = ["کدهای پشتیبان ورود دومرحله‌ای پارت‌ماشین", user?.email ?? "", "", ...codes].join("\n");
+    const text = ["کدهای پشتیبان ورود دومرحله‌ای تراشینو", user?.email ?? "", "", ...codes].join("\n");
     const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;

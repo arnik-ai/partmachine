@@ -49,7 +49,7 @@ export interface Supplier {
   productionCapacityPerMonth?: number | null;
   leadTimeDays: number;
   completedJobs: number;
-  /** سابقه‌ی واقعی در پارت‌ماشین (نسخه‌ی نمایشی ندارد) */
+  /** سابقه‌ی واقعی در تراشینو (نسخه‌ی نمایشی ندارد) */
   deliveredJobs?: number;
   onTimeJobs?: number;
   ratingCount?: number;

@@ -1,4 +1,4 @@
-"""کارهای پس‌زمینه‌ی پارت‌ماشین (گام 4d فاز ۴).
+"""کارهای پس‌زمینه‌ی تراشینو (گام 4d فاز ۴).
 
     python -m app.worker                          # اجرای دائمی (در تولید: سرویس worker در compose)
     python -m app.worker --run delivery_reminders # اجرای فوری یک کار و چاپ نتیجه
@@ -235,7 +235,7 @@ def main() -> None:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(errors="replace")
-    parser = argparse.ArgumentParser(description="کارهای پس‌زمینه‌ی پارت‌ماشین")
+    parser = argparse.ArgumentParser(description="کارهای پس‌زمینه‌ی تراشینو")
     parser.add_argument(
         "--run", choices=[job.name for job in JOBS], help="اجرای فوری یک کار و چاپ نتیجه"
     )

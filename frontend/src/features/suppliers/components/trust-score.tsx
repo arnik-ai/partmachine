@@ -29,7 +29,7 @@ export function TrustScoreBreakdown({ score }: { score: TrustScore }) {
         <StarRating value={scoreToStars(score.trust)} size="lg" />
         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5 text-success" />
-          امتیاز اعتماد بر اساس سابقه‌ی کار در پارت‌ماشین
+          امتیاز اعتماد بر اساس سابقه‌ی کار در تراشینو
         </span>
       </div>
 

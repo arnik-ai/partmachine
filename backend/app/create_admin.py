@@ -26,7 +26,7 @@ from app.modules.audit import service as audit
 from app.modules.identity.models import User
 from app.modules.organizations.models import Organization
 
-PLATFORM_ORGANIZATION = "تیم پارت‌ماشین"
+PLATFORM_ORGANIZATION = "تیم تراشینو"
 MIN_PASSWORD_LENGTH = 12
 MAX_PASSWORD_LENGTH = 128
 
@@ -67,7 +67,7 @@ async def create_admin(email: str, full_name: str, password: str) -> AdminResult
                 "این ایمیل متعلق به یک کاربر عادی است؛ برای ادمین ایمیل جداگانه‌ای انتخاب کنید."
             )
 
-        # همه‌ی ادمین‌ها عضو یک سازمان «تیم پارت‌ماشین»اند
+        # همه‌ی ادمین‌ها عضو یک سازمان «تیم تراشینو»اند
         organization_id = await db.scalar(
             select(User.organization_id).where(User.role == "admin").limit(1)
         )
@@ -132,7 +132,7 @@ def main() -> None:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(errors="replace")
-    parser = argparse.ArgumentParser(description="ساخت حساب ادمین پارت‌ماشین")
+    parser = argparse.ArgumentParser(description="ساخت حساب ادمین تراشینو")
     parser.add_argument("--email", required=True)
     parser.add_argument("--name", required=True, help="نام و نام خانوادگی ادمین")
     parser.add_argument(

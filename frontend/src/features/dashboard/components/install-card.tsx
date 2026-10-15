@@ -47,16 +47,16 @@ export function InstallCard() {
           {ios ? <Share className="h-5 w-5" aria-hidden /> : <Download className="h-5 w-5" aria-hidden />}
         </div>
         <div className="flex flex-1 flex-col gap-2">
-          <span className="font-semibold">پارت‌ماشین را مثل اپ نصب کنید</span>
+          <span className="font-semibold">تراشینو را مثل اپ نصب کنید</span>
           {ios ? (
             <span className="text-muted-foreground">
               در Safari دکمه‌ی اشتراک‌گذاری (مربع با فلش رو به بالا) را بزنید و بعد «Add to Home
-              Screen» را انتخاب کنید تا آیکون پارت‌ماشین روی صفحه‌ی گوشی‌تان بیاید.
+              Screen» را انتخاب کنید تا آیکون تراشینو روی صفحه‌ی گوشی‌تان بیاید.
             </span>
           ) : (
             <>
               <span className="text-muted-foreground">
-                با یک لمس، آیکون پارت‌ماشین روی گوشی یا کامپیوترتان قرار می‌گیرد و تمام‌صفحه باز
+                با یک لمس، آیکون تراشینو روی گوشی یا کامپیوترتان قرار می‌گیرد و تمام‌صفحه باز
                 می‌شود.
               </span>
               <Button size="sm" className="self-start" onClick={() => void promptInstall()}>

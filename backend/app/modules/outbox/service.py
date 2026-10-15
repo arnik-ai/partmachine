@@ -35,7 +35,7 @@ RETRY_DELAYS = (
     timedelta(hours=2),
 )
 BATCH_SIZE = 50
-FOOTER = "این پیام خودکار از پارت‌ماشین است."
+FOOTER = "این پیام خودکار از تراشینو است."
 
 
 def enqueue(db: AsyncSession, notification_id: uuid.UUID) -> None:

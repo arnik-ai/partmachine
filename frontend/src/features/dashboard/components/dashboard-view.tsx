@@ -339,7 +339,7 @@ export function DashboardView() {
             </p>
             {unverified && (
               <p className="text-xs text-primary-foreground/75">
-                حساب شما هنوز توسط پارت‌ماشین تأیید نشده است؛ کارشناسان ما پس از بررسی، آن را تأیید می‌کنند.
+                حساب شما هنوز توسط تراشینو تأیید نشده است؛ کارشناسان ما پس از بررسی، آن را تأیید می‌کنند.
               </p>
             )}
             <div className="mt-1 h-1 w-16 rounded-full bg-gold" />

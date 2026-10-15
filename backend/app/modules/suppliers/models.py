@@ -89,7 +89,7 @@ class Supplier(Base, UUIDPrimaryKey, TimestampMixin):
     satisfaction_score: Mapped[float] = mapped_column(Float, default=85, server_default="85")
     dispute_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
-    # سابقه‌ی واقعی در پارت‌ماشین (O12). track_record.refresh این شمارش‌ها را از سفارش‌ها،
+    # سابقه‌ی واقعی در تراشینو (O12). track_record.refresh این شمارش‌ها را از سفارش‌ها،
     # بازرسی‌ها، امتیازها، اختلاف‌ها و پیشنهادها دوباره می‌سازد و نرخ‌ها و امتیازهای بالا را از
     # همین شمارش‌ها و مقدار اولیه به‌روز می‌کند
     delivered_jobs: Mapped[int] = mapped_column(Integer, default=0, server_default="0")

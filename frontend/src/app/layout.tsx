@@ -24,14 +24,14 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "پارت‌ماشین — بازار صنعتی قطعه‌سازی",
-    template: "%s | پارت‌ماشین",
+    default: "تراشینو — سفارش ساخت قطعات صنعتی",
+    template: "%s | تراشینو",
   },
   description:
     "پلتفرم اتصال قطعه‌سازان، کارفرمایان و آزمایشگاه‌های کنترل کیفیت: ثبت درخواست، دریافت پیشنهاد قیمت، قرارداد و پیگیری سفارش.",
-  applicationName: "پارت‌ماشین",
+  applicationName: "تراشینو",
   // نصب روی آیفون (Add to Home Screen): عنوان و نوار وضعیت؛ محتوا زیر نوار وضعیت شروع می‌شود
-  appleWebApp: { capable: true, title: "پارت‌ماشین", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "تراشینو", statusBarStyle: "default" },
   formatDetection: { telephone: false },
   // نسخه‌های قدیمی‌تر iOS فقط نام قدیمی این تگ را می‌شناسند
   other: { "apple-mobile-web-app-capable": "yes" },

@@ -46,7 +46,7 @@ OPEN_FOR_CHOICE = frozenset(
 )
 MAX_LABS = 200
 
-LAB_NOT_AVAILABLE = "این آزمایشگاه پیدا نشد یا هنوز توسط پارت‌ماشین تأیید نشده است."
+LAB_NOT_AVAILABLE = "این آزمایشگاه پیدا نشد یا هنوز توسط تراشینو تأیید نشده است."
 CHOICE_CLOSED = "آزمایشگاه فقط پیش از ارسال و تا پیش از قبولی بازرسی قابل انتخاب، تغییر یا حذف است."
 NOT_READY = (
     "سفارش هنوز آماده‌ی بازرسی نیست یا وضعیت بازرسی تغییر کرده است؛ صفحه را دوباره بارگذاری کنید."
@@ -422,7 +422,7 @@ async def record_result(
         raise Conflict(NOT_READY, code="inspection_not_ready")
     if await _verified_lab(db, user.organization_id) is None:
         raise Forbidden(
-            "حساب آزمایشگاه شما در حال حاضر تأییدشده نیست؛ با پشتیبانی پارت‌ماشین تماس بگیرید.",
+            "حساب آزمایشگاه شما در حال حاضر تأییدشده نیست؛ با پشتیبانی تراشینو تماس بگیرید.",
             code="lab_not_verified",
         )
     if not data.passed and len(data.note) < 3:

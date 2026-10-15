@@ -106,7 +106,7 @@ export function PaymentsCard({ order }: { order: OrderDetail }) {
       <CardContent className="flex flex-col gap-4 text-sm">
         <p className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-muted-foreground">
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-          پول از پارت‌ماشین عبور نمی‌کند. کارفرما مبلغ را مستقیماً به قطعه‌ساز می‌پردازد و این‌جا با
+          پول از تراشینو عبور نمی‌کند. کارفرما مبلغ را مستقیماً به قطعه‌ساز می‌پردازد و این‌جا با
           شماره‌ی پیگیری یا رسید اعلام می‌کند؛ قطعه‌ساز دریافت را تأیید می‌کند.
         </p>
 

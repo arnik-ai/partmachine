@@ -112,7 +112,7 @@ test("both owners sign the contract, the order is shipped, delivered and paid", 
   await expect(buyer.getByText("باربری نمونه، بارنامه ۵۵۵")).toBeVisible();
 
   // پرداخت بیرون از پلتفرم انجام می‌شود؛ کارفرما اعلام و قطعه‌ساز تأیید می‌کند ⇒ سفارش تکمیل
-  await expect(buyer.getByText("پول از پارت‌ماشین عبور نمی‌کند")).toBeVisible();
+  await expect(buyer.getByText("پول از تراشینو عبور نمی‌کند")).toBeVisible();
   await buyer.getByRole("button", { name: "اعلام پرداخت کامل پس از تحویل" }).click();
   const payDialog = buyer.getByRole("dialog", { name: "اعلام پرداخت" });
   await payDialog.getByLabel("شماره‌ی پیگیری یا حواله").fill("778899");

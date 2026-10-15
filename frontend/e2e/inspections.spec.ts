@@ -93,7 +93,7 @@ test.describe("quality inspection", () => {
     await lab.getByRole("link", { name: new RegExp(title) }).click();
     await lab.waitForURL("**/orders/**");
     await expect(lab.getByRole("heading", { name: title })).toBeVisible();
-    await expect(lab.getByText("پول از پارت‌ماشین عبور نمی‌کند")).toHaveCount(0);
+    await expect(lab.getByText("پول از تراشینو عبور نمی‌کند")).toHaveCount(0);
     await expect(lab.getByRole("link", { name: /قرارداد/ })).toHaveCount(0);
     await recordResult(lab, false, "report-1.pdf", "قطر داخلی خارج از تلرانس");
     await expect(lab.getByText("نتیجه‌ی رد ثبت شد.", { exact: false })).toBeVisible();

@@ -81,7 +81,7 @@ export function ForgotPasswordForm() {
         ) : !options.data?.passwordReset ? (
           <div className="flex flex-col gap-4 text-center text-sm">
             <p className="text-muted-foreground">
-              بازیابی خودکار رمز هنوز فعال نشده است. برای بازیابی با پشتیبانی پارت‌ماشین تماس بگیرید.
+              بازیابی خودکار رمز هنوز فعال نشده است. برای بازیابی با پشتیبانی تراشینو تماس بگیرید.
             </p>
             <Link href="/login" className="text-primary hover:underline">
               بازگشت به ورود

@@ -1030,7 +1030,7 @@ export interface paths {
         };
         /**
          * List Labs
-         * @description آزمایشگاه‌هایی که پارت‌ماشین تأیید کرده است (برای انتخاب کارفرما).
+         * @description آزمایشگاه‌هایی که تراشینو تأیید کرده است (برای انتخاب کارفرما).
          */
         get: operations["list_labs_api_v1_qc_labs_get"];
         put?: never;

@@ -14,7 +14,7 @@ test("the app is installable and works offline without caching private data", as
   const manifest = await page.request.get("/manifest.webmanifest");
   expect(manifest.ok()).toBe(true);
   const body = await manifest.json();
-  expect(body.short_name).toBe("پارت‌ماشین");
+  expect(body.short_name).toBe("تراشینو");
   expect(body.display).toBe("standalone");
   expect(body.dir).toBe("rtl");
   for (const icon of body.icons as Array<{ src: string }>) {

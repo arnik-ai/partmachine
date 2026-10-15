@@ -68,7 +68,7 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-xl">ورود به پارت‌ماشین</CardTitle>
+        <CardTitle className="text-xl">ورود به تراشینو</CardTitle>
         <CardDescription>به بازار صنعتی قطعه‌سازی خوش آمدید</CardDescription>
       </CardHeader>
       <CardContent>

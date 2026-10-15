@@ -22,7 +22,7 @@ import type { Verification } from "../types";
 const DOCUMENT_EXTENSIONS = ["pdf", "png", "jpg", "jpeg"] as const;
 
 /**
- * تأیید هویت قطعه‌ساز: مدارک → بررسی کارشناس پارت‌ماشین → نشان «تأییدشده».
+ * تأیید هویت قطعه‌ساز: مدارک → بررسی کارشناس تراشینو → نشان «تأییدشده».
  * در هر وضعیت فقط کاری که الان لازم است نمایش داده می‌شود.
  */
 export function VerificationPanel({ supplier }: { supplier: MySupplier }) {
@@ -34,7 +34,7 @@ export function VerificationPanel({ supplier }: { supplier: MySupplier }) {
         <CardTitle>۳. تأیید هویت شرکت</CardTitle>
         <CardDescription>
           کارفرماها می‌توانند فقط قطعه‌سازهای تأییدشده را ببینند. با ارسال مدارک، کارشناسان
-          پارت‌ماشین هویت شرکت شما را بررسی و نشان «تأییدشده» را فعال می‌کنند.
+          تراشینو هویت شرکت شما را بررسی و نشان «تأییدشده» را فعال می‌کنند.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -156,7 +156,7 @@ function SubmitDocuments({ listed }: { listed: boolean }) {
           <li>کارت بازرگانی</li>
         </ul>
         <p className="mt-1 text-xs text-muted-foreground">
-          مدارک خصوصی‌اند و فقط کارشناسان پارت‌ماشین آن‌ها را می‌بینند.
+          مدارک خصوصی‌اند و فقط کارشناسان تراشینو آن‌ها را می‌بینند.
         </p>
         <p className="mt-1 text-xs font-medium">
           پیش از ارسال مطمئن شوید نام شرکت در بخش ۱ با نام روی مدارک یکی است؛ پس از تأیید، نام شرکت
