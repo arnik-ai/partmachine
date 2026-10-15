@@ -20,6 +20,7 @@ class UserOut(CamelModel):
     org_role: Literal["owner", "member"] = "owner"
     # شماره‌ی موبایل تأییدشده (فقط پس از تأیید با کد ذخیره می‌شود)
     phone: str | None = None
+    two_factor_enabled: bool = False
 
 
 class AuthSession(CamelModel):
@@ -28,6 +29,49 @@ class AuthSession(CamelModel):
     user: UserOut
     access_token: str
     expires_in: int = Field(description="مدت اعتبار access token به ثانیه")
+
+
+class TwoFactorChallengeOut(CamelModel):
+    """پاسخ ورود برای حسابی که ورود دومرحله‌ای دارد: هنوز نشستی ساخته نشده است."""
+
+    two_factor_required: Literal[True] = True
+    challenge: str = Field(description="توکن کوتاه‌عمر برای مرحله‌ی دوم (POST /auth/login/2fa)")
+    expires_in: int = Field(description="مهلت وارد کردن کد به ثانیه")
+
+
+class TwoFactorLoginInput(CamelModel):
+    challenge: str = Field(min_length=1, max_length=2000)
+    # کد ۶ رقمی اپ یا یکی از کدهای پشتیبان
+    code: str = Field(min_length=1, max_length=40)
+
+
+class TwoFactorSetupOut(CamelModel):
+    """کلید تازه برای اسکن در اپ؛ تا تأیید با کد (enable) چیزی ذخیره نمی‌شود."""
+
+    secret: str
+    otpauth_uri: str
+    qr_code: str = Field(description="تصویر QR به‌صورت data URI (SVG)")
+    setup_token: str
+    expires_in: int
+
+
+class TwoFactorEnableInput(CamelModel):
+    setup_token: str = Field(min_length=1, max_length=2000)
+    code: str = Field(min_length=1, max_length=40)
+    password: str = Field(min_length=1, max_length=128)
+
+
+class TwoFactorCodeInput(CamelModel):
+    """تأیید هویت برای خاموش کردن یا ساختن کدهای پشتیبان تازه: رمز به‌علاوه‌ی کد."""
+
+    password: str = Field(min_length=1, max_length=128)
+    code: str = Field(min_length=1, max_length=40)
+
+
+class RecoveryCodesOut(CamelModel):
+    """فقط همین یک بار نمایش داده می‌شوند؛ سرور فقط هش آن‌ها را نگه می‌دارد."""
+
+    recovery_codes: list[str]
 
 
 class LoginInput(CamelModel):
@@ -150,6 +194,8 @@ class AuthOptionsOut(CamelModel):
 
     password_reset: bool
     phone_verification: bool
+    # ادمین بدون ورود دومرحله‌ای به بخش مدیریت راه ندارد (فرانت راهنمای روشن کردن را نشان می‌دهد)
+    admin_two_factor_required: bool = True
 
 
 class MessageOut(CamelModel):

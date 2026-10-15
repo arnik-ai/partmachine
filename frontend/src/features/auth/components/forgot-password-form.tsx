@@ -12,7 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthOptions } from "@/features/account/api";
 import { ApiError, errorMessage } from "@/lib/api-client";
 import { useHydrated } from "@/lib/use-hydrated";
-import { confirmPasswordReset, requestPasswordReset } from "../api";
+import { confirmPasswordReset, isTwoFactorChallenge, requestPasswordReset } from "../api";
+import { TwoFactorStep } from "./two-factor-step";
 
 /**
  * بازیابی رمز در دو قدم: ایمیل ← کد ۶ رقمی و رمز تازه. پس از موفقیت کاربر مستقیم وارد می‌شود.
@@ -30,6 +31,8 @@ export function ForgotPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
+  // رمز عوض شد ولی حساب ورود دومرحله‌ای دارد: نشست فقط پس از کد اپ
+  const [challenge, setChallenge] = useState<string | null>(null);
 
   async function run(action: () => Promise<void>) {
     setError(null);
@@ -54,7 +57,11 @@ export function ForgotPasswordForm() {
 
   const reset = () =>
     run(async () => {
-      await confirmPasswordReset({ email, code, newPassword: password });
+      const result = await confirmPasswordReset({ email, code, newPassword: password });
+      if (isTwoFactorChallenge(result)) {
+        setChallenge(result.challenge);
+        return;
+      }
       router.push("/dashboard");
     });
 
@@ -80,6 +87,13 @@ export function ForgotPasswordForm() {
               بازگشت به ورود
             </Link>
           </div>
+        ) : challenge ? (
+          <TwoFactorStep
+            challenge={challenge}
+            notice="رمز تازه ذخیره شد. برای ورود، کد اپ Authenticator را هم وارد کنید."
+            onDone={() => router.push("/dashboard")}
+            onCancel={() => router.push("/login")}
+          />
         ) : (
           <form
             method="post"

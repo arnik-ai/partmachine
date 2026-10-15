@@ -6,7 +6,7 @@ from app.modules.audit.models import AuditEvent
 from app.modules.contracts.models import Contract, ContractSignature, ContractVersion
 from app.modules.disputes.models import OrderDispute
 from app.modules.files.models import StoredFile
-from app.modules.identity.models import RefreshToken, User
+from app.modules.identity.models import RecoveryCode, RefreshToken, User
 from app.modules.inspections.models import OrderInspection
 from app.modules.notifications.models import Notification
 from app.modules.orders.models import Order, OrderEvent, OrderReminder
@@ -38,6 +38,7 @@ __all__ = [
     "OrganizationInvite",
     "OutboxMessage",
     "Quotation",
+    "RecoveryCode",
     "RefreshToken",
     "Rfq",
     "StoredFile",

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.catalog import Role
-from app.core.errors import NotFound
+from app.core.errors import Forbidden, NotFound
 from app.db.session import get_db
 from app.modules.admin import service
 from app.modules.admin.schemas import (
@@ -29,6 +29,11 @@ from app.modules.verification.schemas import (
 
 
 async def require_admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    if user.admin_locked:
+        raise Forbidden(
+            "برای ورود به بخش ادمین، اول ورود دومرحله‌ای را از صفحه‌ی «حساب کاربری» روشن کنید.",
+            code="two_factor_setup_required",
+        )
     if not user.is_admin:
         raise NotFound("موردی که دنبالش بودید پیدا نشد.")
     return user

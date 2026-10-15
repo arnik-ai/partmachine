@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ShieldCheck } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuthOptions } from "@/features/account/api";
 import { useAuthStore } from "@/features/auth/store";
 
 const TABS = [
@@ -18,11 +22,16 @@ const TABS = [
  */
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const role = useAuthStore((s) => s.user?.role);
+  const twoFactor = useAuthStore((s) => s.user?.twoFactorEnabled ?? false);
+  const options = useAuthOptions();
   const pathname = usePathname().replace(/\/$/, "") || "/";
 
   if (role !== "admin") {
     return <p className="py-12 text-center text-white/70">صفحه‌ی موردنظر پیدا نشد.</p>;
   }
+  if (options.isLoading) return <Skeleton className="h-40" />;
+  // ادمین بدون ورود دومرحله‌ای به بخش مدیریت راه ندارد (سرور هم همین را اجرا می‌کند)
+  if ((options.data?.adminTwoFactorRequired ?? true) && !twoFactor) return <TwoFactorRequired />;
 
   return (
     <div className="flex flex-col gap-6">
@@ -46,6 +55,28 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </div>
       {children}
     </div>
+  );
+}
+
+function TwoFactorRequired() {
+  return (
+    <Card className="mx-auto w-full max-w-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-primary" aria-hidden />
+          اول ورود دومرحله‌ای را روشن کنید
+        </CardTitle>
+        <CardDescription>
+          برای امنیت بخش مدیریت، ورود ادمین علاوه بر رمز به کد اپ Authenticator روی گوشی (مثلاً
+          Google Authenticator) نیاز دارد. روشن کردنش چند دقیقه بیشتر طول نمی‌کشد.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Link href="/account#two-factor" className={buttonVariants()}>
+          روشن کردن ورود دومرحله‌ای
+        </Link>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -12,6 +12,7 @@ import { useAuthStore } from "@/features/auth/store";
 import { ApiError, errorMessage } from "@/lib/api-client";
 import { roleLabel } from "@/lib/constants";
 import { requestPhoneCode, useAuthOptions, verifyPhone } from "../api";
+import { TwoFactorCard } from "./two-factor-card";
 
 /** «+989121234567» ⇒ «۰۹۱۲ ۱۲۳ ۴۵۶۷» برای نمایش */
 function displayPhone(phone: string): string {
@@ -49,6 +50,7 @@ export function AccountView() {
       </Card>
 
       <ChangePasswordCard />
+      <TwoFactorCard adminRequired={options?.adminTwoFactorRequired ?? true} />
       {user.role !== "admin" && (
         <PhoneCard phone={user.phone ?? null} enabled={options?.phoneVerification ?? false} />
       )}

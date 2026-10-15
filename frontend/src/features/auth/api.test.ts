@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryStorage, headerOf, jsonResponse, mockFetch } from "@/test/helpers";
-import { login, logout, refreshSession, restoreSession } from "./api";
+import {
+  isTwoFactorChallenge,
+  login,
+  loginSecondStep,
+  logout,
+  refreshSession,
+  restoreSession,
+} from "./api";
 import { safeNextPath } from "./next-path";
 import { useAuthStore } from "./store";
 import type { AuthSession } from "./types";
@@ -37,6 +44,28 @@ describe("login", () => {
       accessToken: "access-token-123",
     });
     expect(storage.dump()).not.toContain("access-token-123");
+  });
+});
+
+describe("two-factor sign-in", () => {
+  it("keeps no session until the app code is confirmed", async () => {
+    mockFetch(jsonResponse({ twoFactorRequired: true, challenge: "challenge-1", expiresIn: 300 }));
+    const result = await login({ email: "buyer@example.com", password: "Passw0rd-long!" });
+    expect(isTwoFactorChallenge(result)).toBe(true);
+    expect(useAuthStore.getState().status).toBe("unknown");
+    expect(storage.dump()).not.toContain("challenge-1");
+
+    const fetch = mockFetch(jsonResponse(SESSION));
+    await loginSecondStep("challenge-1", "123456");
+    expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toEqual({
+      challenge: "challenge-1",
+      code: "123456",
+    });
+    expect(fetch.mock.calls[0][1]?.credentials).toBe("include");
+    expect(useAuthStore.getState()).toMatchObject({
+      status: "authenticated",
+      accessToken: "access-token-123",
+    });
   });
 });
 

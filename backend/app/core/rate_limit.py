@@ -35,6 +35,8 @@ REGISTER_PER_IP = Limit("register-ip", 30, 3600)
 REFRESH_PER_IP = Limit("refresh-ip", 120, 300)
 UPLOADS_PER_USER = Limit("upload-user", 120, 3600)
 PASSWORD_CHANGE_FAILURES_PER_USER = Limit("password-change-fail-user", 8, 900)
+# کد ورود دومرحله‌ای: ۵ کد اشتباه در ۱۵ دقیقه (حدس زدن کد ۶ رقمی عملاً ناممکن می‌شود)
+TWO_FACTOR_FAILURES_PER_USER = Limit("two-factor-fail-user", 5, 900)
 # کد یک‌بارمصرف: ارسال (هزینه‌ی پیامک و مزاحمت) و حدس زدن کد
 OTP_SEND_PER_IP = Limit("otp-send-ip", 20, 3600)
 OTP_SEND_PER_DESTINATION = Limit("otp-send-destination", 5, 3600)

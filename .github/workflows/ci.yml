@@ -170,7 +170,8 @@ jobs:
           printf '%s' "$E2E_ADMIN_PASSWORD" | python -m app.create_admin --email "$E2E_ADMIN_EMAIL" --name "ادمین آزمون" --password-stdin
           # آزمون مرورگر در هر اجرا ده‌ها حساب تازه می‌سازد؛ محدودیت نرخ فقط برای همین API آزمایشی
           # خاموش است (تست‌های بک‌اند خود محدودیت را می‌آزمایند و تولید اجازه‌ی خاموش کردنش را نمی‌دهد)
-          RATE_LIMIT_ENABLED=false nohup uvicorn app.main:app --port 8100 > "$RUNNER_TEMP/api.log" 2>&1 &
+          # ادمین آزمون هم بدون ورود دومرحله‌ای (آزمون جدای two-factor همان مسیر را با حساب عادی می‌آزماید)
+          RATE_LIMIT_ENABLED=false ADMIN_TWO_FACTOR_REQUIRED=false nohup uvicorn app.main:app --port 8100 > "$RUNNER_TEMP/api.log" 2>&1 &
       - uses: actions/setup-node@v4
         with:
           node-version: 22

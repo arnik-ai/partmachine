@@ -90,6 +90,8 @@ cd backend
 
 ### حساب ادمین
 
+ادمین پس از ورود باید ورود دومرحله‌ای را از صفحه‌ی «حساب کاربری» روشن کند. هر اپ Authenticator کار می‌کند. اگر گوشی را گم کردید: `.venv\Scripts\python -m app.reset_two_factor --email ...`. API آزمون مرورگر با `ADMIN_TWO_FACTOR_REQUIRED=false` اجرا می‌شود تا ادمین آزمون بدون گوشی کار کند. خود جریان ورود دومرحله‌ای را `two-factor.spec.ts` با یک حساب عادی می‌آزماید.
+
 ادمین نه از ثبت‌نام ساخته می‌شود، نه از API؛ **فقط** با این دستور:
 
 ```powershell
@@ -120,6 +122,7 @@ cd backend
 | `COOKIE_SECURE` | بر اساس محیط (خاموش در توسعه) | باید روشن بماند |
 | `DOCS_ENABLED` | بر اساس محیط (روشن در توسعه) | پیش‌فرض خاموش |
 | `RATE_LIMIT_ENABLED` | `true` | `true` |
+| `ADMIN_TWO_FACTOR_REQUIRED` | `true` | `true` (خاموش کردنش فقط برای API آزمون مرورگر) |
 | `RATE_LIMIT_FAIL_OPEN` | بر اساس محیط (`true` در توسعه) | پیش‌فرض `false`: اگر Redis قطع باشد، ورود رد می‌شود |
 | `LOG_JSON` | بر اساس محیط | پیش‌فرض `true` |
 | `LOG_LEVEL` | `INFO` | — |

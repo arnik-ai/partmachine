@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getAuthOptions } from "@/features/auth/api";
+import { getAuthOptions, reloadUser } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
-import type { User } from "@/features/auth/types";
+import type { TwoFactorSetup, User } from "@/features/auth/types";
 import { apiFetch } from "@/lib/api-client";
 
 export function requestPhoneCode(phone: string): Promise<{ detail: string }> {
@@ -31,4 +31,39 @@ export function useAuthOptions() {
     staleTime: 5 * 60_000,
     retry: false,
   });
+}
+
+// --- ورود دومرحله‌ای ----------------------------------------------------------------------------
+
+/** کلید تازه و QR برای اسکن در اپ Authenticator */
+export function startTwoFactorSetup(): Promise<TwoFactorSetup> {
+  return apiFetch<TwoFactorSetup>("/auth/2fa/setup", { method: "POST" });
+}
+
+/** روشن کردن با رمز و نخستین کد اپ؛ کدهای پشتیبان فقط همین یک بار برمی‌گردند */
+export async function enableTwoFactor(
+  setupToken: string,
+  code: string,
+  password: string,
+): Promise<string[]> {
+  const result = await apiFetch<{ recoveryCodes: string[] }>("/auth/2fa/enable", {
+    method: "POST",
+    body: { setupToken, code, password },
+  });
+  await reloadUser();
+  return result.recoveryCodes;
+}
+
+export async function disableTwoFactor(password: string, code: string): Promise<void> {
+  await apiFetch<void>("/auth/2fa/disable", { method: "POST", body: { password, code } });
+  await reloadUser();
+}
+
+/** کدهای پشتیبان تازه؛ کدهای قبلی دیگر کار نمی‌کنند */
+export async function newRecoveryCodes(password: string, code: string): Promise<string[]> {
+  const result = await apiFetch<{ recoveryCodes: string[] }>("/auth/2fa/recovery-codes", {
+    method: "POST",
+    body: { password, code },
+  });
+  return result.recoveryCodes;
 }

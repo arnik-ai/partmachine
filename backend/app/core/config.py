@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     cookie_secure: bool | None = None
     docs_enabled: bool | None = None
     rate_limit_enabled: bool = True
+    # ورود دومرحله‌ای برای ادمین اجباری است (S7)؛ فقط آزمون‌های خودکار می‌توانند خاموشش کنند
+    admin_two_factor_required: bool = True
     rate_limit_fail_open: bool | None = None
     log_json: bool | None = None
 
@@ -184,6 +186,8 @@ class Settings(BaseSettings):
         # فقط برای API آزمایشیِ آزمون مرورگر خاموش می‌شود؛ در staging و production هرگز
         if not self.rate_limit_enabled:
             found.append("RATE_LIMIT_ENABLED must not be disabled")
+        if not self.admin_two_factor_required:
+            found.append("ADMIN_TWO_FACTOR_REQUIRED must not be disabled")
         return found
 
 

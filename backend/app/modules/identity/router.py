@@ -3,6 +3,9 @@
 نشست مرورگر: access token کوتاه‌عمر در بدنه‌ی پاسخ (فقط در حافظه‌ی فرانت) و refresh token
 در کوکی HttpOnly با مسیر محدود `/api/v1/auth`. فرانت با هر بار باز شدن سایت یک‌بار
 `POST /auth/refresh` می‌زند و کاربر بدون ورود دوباره وارد می‌ماند.
+
+حسابی که ورود دومرحله‌ای دارد پس از رمز پاسخ `twoFactorRequired` می‌گیرد و نشست فقط پس از کد اپ
+(`POST /auth/login/2fa`) ساخته می‌شود.
 """
 
 from fastapi import APIRouter, Depends, Request, Response
@@ -13,7 +16,7 @@ from app.core import rate_limit
 from app.core.config import settings
 from app.core.errors import AppError, Unauthorized, error_body
 from app.db.session import get_db
-from app.modules.identity import otp, service
+from app.modules.identity import otp, service, two_factor
 from app.modules.identity.deps import (
     CurrentUser,
     client_info,
@@ -31,7 +34,13 @@ from app.modules.identity.schemas import (
     PasswordResetRequestInput,
     PhoneCodeInput,
     PhoneVerifyInput,
+    RecoveryCodesOut,
     RegisterInput,
+    TwoFactorChallengeOut,
+    TwoFactorCodeInput,
+    TwoFactorEnableInput,
+    TwoFactorLoginInput,
+    TwoFactorSetupOut,
     UserOut,
 )
 
@@ -76,12 +85,28 @@ async def register(
     return issued.session
 
 
-@router.post("/login", response_model=AuthSession)
+@router.post("/login", response_model=AuthSession | TwoFactorChallengeOut)
 async def login(
     payload: LoginInput, request: Request, response: Response, db: AsyncSession = Depends(get_db)
-) -> AuthSession:
+) -> AuthSession | TwoFactorChallengeOut:
     await rate_limit.hit(rate_limit.LOGIN_PER_IP, client_ip(request))
-    issued = await service.login(db, payload.email, payload.password)
+    result = await service.login(db, payload.email, payload.password)
+    if isinstance(result, TwoFactorChallengeOut):
+        return result
+    _set_refresh_cookie(response, result.refresh_token)
+    return result.session
+
+
+@router.post("/login/2fa", response_model=AuthSession)
+async def login_second_step(
+    payload: TwoFactorLoginInput,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> AuthSession:
+    """مرحله‌ی دوم ورود با کد ۶ رقمی اپ Authenticator یا یکی از کدهای پشتیبان."""
+    await rate_limit.hit(rate_limit.LOGIN_PER_IP, client_ip(request))
+    issued = await service.complete_two_factor_login(db, payload)
     _set_refresh_cookie(response, issued.refresh_token)
     return issued.session
 
@@ -130,7 +155,11 @@ async def me(
 async def options() -> AuthOptionsOut:
     """قابلیت‌هایی که به ارسال کد وابسته‌اند (تا انتخاب سرویس پیامک/ایمیل در تولید خاموش‌اند)."""
     enabled = otp.is_enabled()
-    return AuthOptionsOut(password_reset=enabled, phone_verification=enabled)
+    return AuthOptionsOut(
+        password_reset=enabled,
+        phone_verification=enabled,
+        admin_two_factor_required=settings.admin_two_factor_required,
+    )
 
 
 @router.post("/change-password", response_model=AuthSession)
@@ -154,17 +183,19 @@ async def request_password_reset(
     return MessageOut(detail=service.RESET_SENT)
 
 
-@router.post("/password-reset/confirm", response_model=AuthSession)
+@router.post("/password-reset/confirm", response_model=AuthSession | TwoFactorChallengeOut)
 async def confirm_password_reset(
     payload: PasswordResetConfirmInput,
     request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
-) -> AuthSession:
+) -> AuthSession | TwoFactorChallengeOut:
     await rate_limit.hit(rate_limit.OTP_VERIFY_PER_IP, client_ip(request))
-    issued = await service.confirm_password_reset(db, payload)
-    _set_refresh_cookie(response, issued.refresh_token)
-    return issued.session
+    result = await service.confirm_password_reset(db, payload)
+    if isinstance(result, TwoFactorChallengeOut):
+        return result
+    _set_refresh_cookie(response, result.refresh_token)
+    return result.session
 
 
 @router.post("/phone/request", response_model=MessageOut, status_code=202)
@@ -187,3 +218,44 @@ async def verify_phone(
 ) -> UserOut:
     await rate_limit.hit(rate_limit.OTP_VERIFY_PER_IP, client_ip(request))
     return await service.verify_phone(db, user, payload)
+
+
+# --- ورود دومرحله‌ای (برای ادمین اجباری، برای بقیه اختیاری) -------------------------------------
+
+
+@router.post("/2fa/setup", response_model=TwoFactorSetupOut)
+async def two_factor_setup(
+    user: CurrentUser = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> TwoFactorSetupOut:
+    """کلید تازه و QR برای اسکن؛ تا تأیید با کد چیزی ذخیره نمی‌شود."""
+    return await two_factor.setup(db, user)
+
+
+@router.post("/2fa/enable", response_model=RecoveryCodesOut)
+async def two_factor_enable(
+    payload: TwoFactorEnableInput,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> RecoveryCodesOut:
+    """روشن کردن با رمز و نخستین کد اپ؛ کدهای پشتیبان فقط همین یک بار برگردانده می‌شوند."""
+    return RecoveryCodesOut(recovery_codes=await two_factor.enable(db, user, payload))
+
+
+@router.post("/2fa/disable", status_code=204)
+async def two_factor_disable(
+    payload: TwoFactorCodeInput,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    await two_factor.disable(db, user, payload)
+    return Response(status_code=204)
+
+
+@router.post("/2fa/recovery-codes", response_model=RecoveryCodesOut)
+async def two_factor_recovery_codes(
+    payload: TwoFactorCodeInput,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> RecoveryCodesOut:
+    """کدهای پشتیبان تازه؛ کدهای قبلی دیگر کار نمی‌کنند."""
+    return RecoveryCodesOut(recovery_codes=await two_factor.regenerate_codes(db, user, payload))

@@ -30,6 +30,8 @@ os.environ["ENVIRONMENT"] = "test"
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["REDIS_URL"] = TEST_REDIS_URL
 os.environ["CORS_ORIGINS"] = "http://localhost:3100"
+# ادمین‌های آزمون بدون ورود دومرحله‌ای کار می‌کنند؛ test_two_factor اجبار آن را جدا می‌آزماید
+os.environ["ADMIN_TWO_FACTOR_REQUIRED"] = "false"
 # فایل‌های تست در یک پوشه‌ی موقت جدا، نه در var/storage توسعه
 os.environ["STORAGE_LOCAL_DIR"] = tempfile.mkdtemp(prefix="pm-test-storage-")
 if os.environ.get("TEST_STORAGE_BACKEND", "local") == "s3":
@@ -73,7 +75,8 @@ TABLES = (
     "order_payments, "
     "contract_signatures, "
     "contract_versions, contracts, "
-    "order_events, files, orders, verification_requests, organization_invites, refresh_tokens, "
+    "order_events, files, orders, verification_requests, organization_invites, recovery_codes, "
+    "refresh_tokens, "
     "quotations, rfqs, suppliers, users, organizations"
 )
 

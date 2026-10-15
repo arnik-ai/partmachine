@@ -17,6 +17,8 @@ SAFE_PRODUCTION = {
     "allowed_hosts": "api.partmachine.ir",
     # صریح، تا تنظیم S3 اجرای تست (TEST_STORAGE_BACKEND=s3) روی این تست‌ها اثر نگذارد
     "storage_backend": "local",
+    # صریح، چون conftest آن را برای ادمین‌های آزمون خاموش می‌کند
+    "admin_two_factor_required": True,
     # مطلق در ویندوز و لینوکس
     "storage_local_dir": os.path.abspath("/srv/partmachine/files"),
 }
@@ -74,6 +76,7 @@ def test_s3_without_a_bucket_fails_even_in_development() -> None:
         ({"otp_sender": "console"}, "OTP_SENDER"),
         ({"message_sender": "console"}, "MESSAGE_SENDER"),
         ({"rate_limit_enabled": False}, "RATE_LIMIT_ENABLED"),
+        ({"admin_two_factor_required": False}, "ADMIN_TWO_FACTOR_REQUIRED"),
     ],
 )
 def test_unsafe_production_settings_are_reported(
@@ -122,6 +125,7 @@ async def test_docs_are_hidden_in_production(monkeypatch: pytest.MonkeyPatch) ->
         "allowed_hosts": "testserver",
         # سرور S3 تست روی http است و تولید آن را نمی‌پذیرد؛ این تست فقط درباره‌ی مستندات است
         "storage_backend": "local",
+        "admin_two_factor_required": True,
     }
     for name, value in production.items():
         monkeypatch.setattr(main.settings, name, value)
