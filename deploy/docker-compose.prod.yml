@@ -108,6 +108,42 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  # پشتیبان رمزگذاری‌شده‌ی روزانه: پایگاه داده و فایل‌های روی دیسک (گام 4f؛ docs/BACKUP_RESTORE.md)
+  backup:
+    build: ./backup
+    image: partmachine-backup:${IMAGE_TAG:-local}
+    environment:
+      # پیش‌فرض روی همین سرور؛ برای نسخه‌ی جدا از سرور، مثلاً s3:https://.../bucket/partmachine
+      RESTIC_REPOSITORY: ${BACKUP_REPOSITORY:-/backups}
+      RESTIC_PASSWORD: ${BACKUP_PASSWORD:?BACKUP_PASSWORD را تنظیم کنید و جایی بیرون از سرور نگه دارید}
+      AWS_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY:-}
+      PGHOST: db
+      PGUSER: partmachine
+      PGDATABASE: partmachine
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # ساعت پشتیبان روزانه به وقت UTC (۲۳:۳۰ یعنی ۳ بامداد تهران)
+      BACKUP_AT: ${BACKUP_AT:-23:30}
+      BACKUP_KEEP_DAILY: ${BACKUP_KEEP_DAILY:-14}
+    volumes:
+      - backups:/backups
+      - storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # پشتیبان موفق در ۲۶ ساعت اخیر
+      test: ["CMD-SHELL", "find /tmp/partmachine-backup-ok -mmin -1560 | grep -q ."]
+      interval: 5m
+      timeout: 10s
+      retries: 1
+      start_period: 10m
+    restart: unless-stopped
+
   web:
     build:
       context: ../frontend
@@ -137,5 +173,6 @@ volumes:
   db_data:
   redis_data:
   storage:
+  backups:
   caddy_data:
   caddy_config:

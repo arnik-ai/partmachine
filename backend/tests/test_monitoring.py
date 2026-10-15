@@ -98,3 +98,28 @@ async def test_a_single_failed_check_does_not_alert(monkeypatch: pytest.MonkeyPa
 async def test_watch_is_off_outside_production() -> None:
     assert settings.watch_health is False
     assert await health_watch.run() == {"skipped": 1}
+
+
+async def test_stale_backups_alert_admins_once_per_outage(
+    client_factory: Callable[[], httpx.AsyncClient],
+) -> None:
+    await make_admin(client_factory())
+    redis = get_redis()
+    await redis.set(health_watch.BACKUP_KEY, time.time() - 27 * 3600)
+    assert await health_watch.check_backup() is True
+    assert await health_watch.check_backup() is False  # تکراری نمی‌آید
+    # پشتیبان تازه ثبت شد؛ خرابی بعدی دوباره خبر داده می‌شود
+    await redis.set(health_watch.BACKUP_KEY, time.time())
+    assert await health_watch.check_backup() is False
+    await redis.set(health_watch.BACKUP_KEY, time.time() - 30 * 3600)
+    assert await health_watch.check_backup() is True
+    assert await health_notifications() == ["هشدار: بیش از یک روز است پشتیبان‌گیری انجام نشده"] * 2
+    body = (await client_factory().get("/metrics")).text
+    assert "partmachine_backup_last_success_timestamp_seconds" in body
+
+
+async def test_a_fresh_install_waits_a_day_for_the_first_backup() -> None:
+    redis = get_redis()
+    assert await health_watch.check_backup() is False
+    await redis.set(health_watch.BACKUP_MISSING_KEY, time.time() - 27 * 3600)
+    assert await health_watch.check_backup() is True

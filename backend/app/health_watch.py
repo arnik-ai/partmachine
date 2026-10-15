@@ -7,6 +7,9 @@
 
 خاموش شدن کامل سرور را چیزی روی همان سرور نمی‌تواند خبر بدهد. برای آن یک سرویس پایش بیرونی را روی
 `/api/v1/status` تنظیم کنید (deploy/README.md).
+
+همین کار پشتیبان‌گیری را هم می‌پاید: اگر بیش از `BACKUP_MAX_AGE` پشتیبان موفقی ثبت نشده باشد (سرویس
+backup آن را در Redis می‌نویسد)، یک بار به ادمین‌ها اعلان می‌دهد.
 """
 
 import asyncio
@@ -24,6 +27,11 @@ from app.modules.notifications import service as notifications
 logger = logging.getLogger("partmachine.health")
 
 STATE_KEY = "pm:health:state"
+BACKUP_KEY = "pm:backup:last_success"
+BACKUP_MISSING_KEY = "pm:health:backup_missing_since"
+BACKUP_ALERT_KEY = "pm:health:backup_alerted"
+# پشتیبان روزانه است؛ دو ساعت فرصت برای پشتیبان طولانی
+BACKUP_MAX_AGE = 26 * 3600
 FAILURES_TO_ALERT = 2
 TIMEOUT_SECONDS = 10
 
@@ -96,8 +104,38 @@ async def update(failing: list[str]) -> dict[str, int]:
     return {"failing": 0}
 
 
+async def check_backup() -> bool:
+    """True اگر همین حالا هشدار «پشتیبان‌گیری انجام نشده» داده شد (برای هر دوره‌ی خرابی یک بار)."""
+    redis = get_redis()
+    now = time.time()
+    last = await redis.get(BACKUP_KEY)
+    if last is None:
+        # نصب تازه: سرویس backup چند دقیقه بعد نخستین پشتیبان را می‌گیرد؛ تا یک روز صبر
+        await redis.set(BACKUP_MISSING_KEY, now, nx=True)
+        since = float(await redis.get(BACKUP_MISSING_KEY) or now)
+    else:
+        await redis.delete(BACKUP_MISSING_KEY)
+        since = float(last)
+    if now - since <= BACKUP_MAX_AGE:
+        await redis.delete(BACKUP_ALERT_KEY)
+        return False
+    if not await redis.set(BACKUP_ALERT_KEY, "1", nx=True):
+        return False
+    logger.error("ALERT no successful backup for over %s hours", BACKUP_MAX_AGE // 3600)
+    hours = int((now - since) // 3600)
+    await _notify_admins(
+        "هشدار: بیش از یک روز است پشتیبان‌گیری انجام نشده",
+        f"آخرین پشتیبان موفق {fa_digits(hours)} ساعت پیش بوده است. گزارش سرویس backup را بررسی کنید"
+        " (docs/BACKUP_RESTORE.md).",
+    )
+    return True
+
+
 async def run() -> dict[str, int]:
     """کار worker؛ فقط در staging و production (یا با HEALTH_WATCH_ENABLED=true)."""
     if not settings.watch_health:
         return {"skipped": 1}
-    return await update(await failing_targets())
+    result = await update(await failing_targets())
+    if await check_backup():
+        result["backup_alerted"] = 1
+    return result

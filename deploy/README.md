@@ -13,6 +13,7 @@
 | migration | به‌روزرسانی ساختار پایگاه داده، یک‌بار و پیش از API |
 | API | بک‌اند |
 | worker | کارهای پس‌زمینه (جدول پایین) |
+| backup | پشتیبان رمزگذاری‌شده‌ی روزانه ([docs/BACKUP_RESTORE.md](../docs/BACKUP_RESTORE.md)) |
 | سایت | فرانت |
 | Caddy | HTTPS خودکار |
 
@@ -116,6 +117,10 @@ docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod exe
 ```
 
 اگر worker گیر کند، `ps` آن را `unhealthy` نشان می‌دهد. خطای هر کار در لاگ worker می‌آید.
+
+## پشتیبان
+
+پایگاه داده و فایل‌های روی دیسک هر شب خودکار و رمزگذاری‌شده پشتیبان گرفته می‌شوند و ۱۴ روز می‌مانند. پیش از نصب، `BACKUP_PASSWORD` را در فایل env بگذارید و **جایی بیرون از سرور هم نگه دارید**؛ بدون آن هیچ پشتیبانی قابل بازگردانی نیست. فهرست، پشتیبان فوری، بازگردانی و نسخه‌ی جدا از سرور: [docs/BACKUP_RESTORE.md](../docs/BACKUP_RESTORE.md).
 
 ## پایش و هشدار
 

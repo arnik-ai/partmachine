@@ -233,6 +233,7 @@ jobs:
             echo "SECRET_KEY=$(openssl rand -hex 32)"
             echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
             echo "REDIS_PASSWORD=$(openssl rand -hex 24)"
+            echo "BACKUP_PASSWORD=$(openssl rand -hex 24)"
             echo "HTTP_PORT=8080"
             echo "HTTPS_PORT=8443"
             echo "PUBLIC_PORT_SUFFIX=:8443"
@@ -268,6 +269,31 @@ jobs:
           for job in delivery_reminders expired_uploads old_notifications outbox site_watch; do
             $COMPOSE exec -T worker python -m app.worker --run "$job"
           done
+      - name: Backup and restore drill (timed)
+        run: |
+          # یک حساب واقعی، پشتیبان، پاک کردن کامل پایگاه داده، بازگردانی، و بررسی دوباره
+          printf '%s' 'drill-Passw0rd-long' | $COMPOSE exec -T api \
+            python -m app.create_admin --email drill@example.com --name "تمرین بازگردانی" --password-stdin
+          count() { $COMPOSE exec -T db psql -U partmachine -d partmachine -tAc "$1"; }
+          test "$(count "select count(*) from users where email = 'drill@example.com'")" = "1"
+          start=$(date +%s)
+          $COMPOSE exec -T backup partmachine-backup run
+          echo "::notice title=Backup drill::backup took $(( $(date +%s) - start ))s"
+          $COMPOSE exec -T backup partmachine-backup list
+          $COMPOSE stop api worker
+          $COMPOSE exec -T db psql -U partmachine -d postgres \
+            -c 'DROP DATABASE partmachine WITH (FORCE)' -c 'CREATE DATABASE partmachine'
+          test "$(count "select count(*) from pg_tables where schemaname = 'public'")" = "0"
+          start=$(date +%s)
+          $COMPOSE exec -T backup partmachine-backup restore --yes
+          echo "::notice title=Restore drill::restore took $(( $(date +%s) - start ))s"
+          $COMPOSE start api worker
+          for i in $(seq 1 40); do
+            [ "$($COMPOSE ps api --format '{{.Health}}')" = "healthy" ] && break
+            sleep 3
+          done
+          test "$(count "select count(*) from users where email = 'drill@example.com'")" = "1"
+          curl -fsk https://localhost:8443/api/v1/status | grep -q '"ok"'
       - name: Logs on failure
         if: failure()
         run: $COMPOSE logs --no-color --tail=200

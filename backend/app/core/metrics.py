@@ -111,6 +111,14 @@ async def render() -> str:
     )
     lines.append(f"partmachine_worker_heartbeat_age_seconds {age:.0f}")
 
+    last_backup = await redis.get("pm:backup:last_success")
+    lines += _family(
+        "partmachine_backup_last_success_timestamp_seconds",
+        "gauge",
+        "When the last backup succeeded (0 if never).",
+    )
+    lines.append(f"partmachine_backup_last_success_timestamp_seconds {str(last_backup or 0)}")
+
     jobs: dict[str, dict[str, str]] = {}
     async for key in redis.scan_iter(match=f"{JOB_PREFIX}*"):
         name = str(key).removeprefix(JOB_PREFIX)
