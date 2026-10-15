@@ -3,7 +3,7 @@
 #   cp deploy/.env.prod.example deploy/.env.prod      # و مقدارها را پر کنید (هرگز commit نشود)
 #   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
 #
-# ترتیب: پایگاه داده و Redis ← migration (یک‌بار، جدا) ← API ← سایت ← Caddy (HTTPS خودکار).
+# ترتیب: پایگاه داده و Redis ← migration (یک‌بار، جدا) ← API و worker ← سایت ← Caddy (HTTPS خودکار).
 # سایت و API زیر یک دامنه‌اند (API زیر /api)، پس کوکی نشست first-party می‌ماند و CORS لازم نیست.
 # هیچ پورتی جز ۸۰ و ۴۴۳ (Caddy) روی سرور باز نمی‌شود.
 
@@ -26,6 +26,8 @@ x-api-env: &api-env
   S3_PREFIX: ${S3_PREFIX:-}
   ALLOWED_HOSTS: ${APP_DOMAIN},127.0.0.1
   CORS_ORIGINS: https://${APP_DOMAIN}${PUBLIC_PORT_SUFFIX:-}
+  # برای لینک‌های داخل ایمیل و پیامک
+  SITE_URL: https://${APP_DOMAIN}${PUBLIC_PORT_SUFFIX:-}
   # API فقط از داخل شبکه‌ی Docker و از راه Caddy در دسترس است
   FORWARDED_ALLOW_IPS: "*"
   WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
@@ -81,6 +83,27 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+    restart: unless-stopped
+
+  # کارهای پس‌زمینه: یادآوری موعد تحویل، پاک‌سازی‌ها و صف ارسال پیام (خاموش تا انتخاب سرویس)
+  worker:
+    image: partmachine-api:${IMAGE_TAG:-local}
+    command: ["python", "-m", "app.worker"]
+    environment: *api-env
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # worker هر ۱۵ ثانیه این فایل را به‌روز می‌کند؛ کهنه شدنش یعنی worker گیر کرده است
+      test: ["CMD-SHELL", "find /tmp/pm-worker-heartbeat -mmin -2 | grep -q ."]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   web:

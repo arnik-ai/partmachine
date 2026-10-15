@@ -72,6 +72,7 @@ def test_s3_without_a_bucket_fails_even_in_development() -> None:
         ({"database_url": "sqlite+aiosqlite:///./partmachine.db"}, "DATABASE_URL"),
         ({"storage_local_dir": "var/storage"}, "STORAGE_LOCAL_DIR"),
         ({"otp_sender": "console"}, "OTP_SENDER"),
+        ({"message_sender": "console"}, "MESSAGE_SENDER"),
         ({"rate_limit_enabled": False}, "RATE_LIMIT_ENABLED"),
     ],
 )
@@ -101,6 +102,10 @@ def test_one_time_codes_stay_off_in_production_until_a_provider_is_chosen() -> N
     # P8: کد در لاگ فقط برای توسعه؛ سرویس واقعی پیامک/ایمیل فقط پس از تأیید مالک
     assert Settings(**SAFE_PRODUCTION).otp_sender_name == "disabled"  # type: ignore[arg-type]
     assert Settings(environment="development").otp_sender_name == "console"
+    # S9: صف ایمیل اعلان‌ها هم تا انتخاب سرویس در تولید خاموش است
+    production = Settings(**SAFE_PRODUCTION)  # type: ignore[arg-type]
+    assert production.message_sender_name == "disabled"
+    assert Settings(environment="development").message_sender_name == "console"
 
 
 def test_app_refuses_to_start_with_unsafe_settings(monkeypatch: pytest.MonkeyPatch) -> None:

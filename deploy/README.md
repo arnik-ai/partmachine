@@ -12,6 +12,7 @@
 | Redis | محدودیت نرخ و هماهنگی |
 | migration | به‌روزرسانی ساختار پایگاه داده، یک‌بار و پیش از API |
 | API | بک‌اند |
+| worker | کارهای پس‌زمینه (جدول پایین) |
 | سایت | فرانت |
 | Caddy | HTTPS خودکار |
 
@@ -85,11 +86,29 @@ migration خودکار پیش از API اجرا می‌شود. اگر شکست �
 
 همه‌ی migrationها تا امروز فقط چیزی اضافه کرده‌اند، پس کد قبلی با پایگاه داده‌ی تازه کار می‌کند. اگر روزی migration مخربی لازم شود، پیش از آن پشتیبان گرفته می‌شود.
 
+## کارهای پس‌زمینه (worker)
+
+| کار | هر چند وقت | چه می‌کند |
+|---|---|---|
+| `delivery_reminders` | هر ساعت | یادآوری موعد تحویل: «نزدیک موعد» (از ۳ روز مانده) برای قطعه‌ساز، «گذشته از موعد» برای هر دو طرف؛ هر کدام یک بار |
+| `expired_uploads` | هر ۶ ساعت | پاک کردن فایلی که ۷ روز پیش بارگذاری شده و هرگز پیوست نشده است (تصویر نمونه‌کار هرگز) |
+| `old_notifications` | روزانه | پاک کردن اعلان‌های خوانده‌شده‌ی قدیمی‌تر از ۶ ماه |
+| `outbox` | هر ۳۰ ثانیه | فرستادن ایمیل اعلان‌ها؛ تا انتخاب سرویس (S9) در تولید خاموش است |
+
+اجرای چند worker بی‌خطر است. هر کار هم‌زمان فقط در یکی اجرا می‌شود. برای اجرای فوری یک کار:
+
+```bash
+docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod exec worker python -m app.worker --run delivery_reminders
+```
+
+اگر worker گیر کند، `ps` آن را `unhealthy` نشان می‌دهد. خطای هر کار در لاگ worker می‌آید.
+
 ## گزارش‌ها و وضعیت
 
 ```bash
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod ps
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod logs -f api
+docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod logs -f worker
 ```
 
 ## آزمون روی همین کامپیوتر

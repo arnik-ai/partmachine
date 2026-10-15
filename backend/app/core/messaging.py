@@ -1,9 +1,13 @@
-"""ارسال کد یک‌بارمصرف از طریق یک رابط عمومی (P8).
+"""ارسال ایمیل و پیامک از طریق دو رابط عمومی (P8، S9).
 
-- `ConsoleSender`: فقط توسعه و تست؛ کد در لاگ نوشته می‌شود و تست‌ها آن را از `outbox` می‌خوانند.
-- `DisabledSender`: پیش‌فرض staging/production تا سرویس پیامک یا ایمیل واقعی انتخاب و تأیید شود.
+- `CodeSender`: کد یک‌بارمصرف، همان لحظه و بدون صف.
+- `MessageSender`: پیام اعلان‌ها، که worker از صف ارسال (`outbox_messages`) می‌فرستد.
 
-اتصال به سرویس واقعی (پولی) یعنی یک پیاده‌سازی دیگر از همین رابط؛ هیچ جای دیگری از کد عوض نمی‌شود.
+هر کدام دو پیاده‌سازی دارد:
+- console: فقط توسعه و تست؛ پیام در لاگ نوشته می‌شود و تست‌ها آن را از `outbox` می‌خوانند.
+- disabled: پیش‌فرض staging/production تا سرویس پیامک یا ایمیل واقعی انتخاب و تأیید شود.
+
+اتصال به سرویس واقعی (پولی) یعنی یک پیاده‌سازی دیگر از همین رابط‌ها؛ هیچ جای دیگری از کد عوض نمی‌شود.
 """
 
 import logging
@@ -78,3 +82,63 @@ def set_sender(sender: CodeSender | None) -> None:
     """فقط برای تست: جایگزینی ارسال‌کننده (None یعنی دوباره از تنظیمات ساخته شود)."""
     global _sender
     _sender = sender
+
+
+@dataclass(frozen=True)
+class SentMessage:
+    channel: Channel
+    destination: str
+    subject: str
+    body: str
+
+
+class MessageSender(Protocol):
+    enabled: bool
+
+    async def send_message(
+        self, *, channel: Channel, destination: str, subject: str, body: str
+    ) -> None: ...
+
+
+class ConsoleMessageSender:
+    enabled = True
+
+    def __init__(self) -> None:
+        self.outbox: list[SentMessage] = []
+
+    async def send_message(
+        self, *, channel: Channel, destination: str, subject: str, body: str
+    ) -> None:
+        # فقط development/test (Settings.problems در محیط‌های دیگر جلوی آن را می‌گیرد)
+        logger.info("message (%s to %s): %s", channel, mask(destination), subject)
+        self.outbox.append(SentMessage(channel, destination, subject, body))
+        del self.outbox[:-OUTBOX_SIZE]
+
+
+class DisabledMessageSender:
+    enabled = False
+
+    async def send_message(
+        self, *, channel: Channel, destination: str, subject: str, body: str
+    ) -> None:
+        raise RuntimeError("message sending is disabled")  # وقتی خاموش است چیزی در صف نیست
+
+
+_message_sender: MessageSender | None = None
+
+
+def get_message_sender() -> MessageSender:
+    global _message_sender
+    if _message_sender is None:
+        _message_sender = (
+            ConsoleMessageSender()
+            if settings.message_sender_name == "console"
+            else DisabledMessageSender()
+        )
+    return _message_sender
+
+
+def set_message_sender(sender: MessageSender | None) -> None:
+    """فقط برای تست: جایگزینی ارسال‌کننده‌ی پیام (None یعنی دوباره از تنظیمات ساخته شود)."""
+    global _message_sender
+    _message_sender = sender

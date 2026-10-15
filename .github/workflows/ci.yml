@@ -234,10 +234,11 @@ jobs:
           } > deploy/.env.prod.ci
       - name: Build and start everything with one command
         run: $COMPOSE up -d --build
-      - name: Wait until the API is healthy and Caddy answers
+      - name: Wait until the API and worker are healthy and Caddy answers
         run: |
           for i in $(seq 1 60); do
             if [ "$($COMPOSE ps api --format '{{.Health}}')" = "healthy" ] \
+              && [ "$($COMPOSE ps worker --format '{{.Health}}')" = "healthy" ] \
               && curl -fsk -o /dev/null https://localhost:8443/; then exit 0; fi
             sleep 3
           done
@@ -252,6 +253,10 @@ jobs:
           # مستندات API و سلامت داخلی از بیرون در دسترس نیستند؛ نام سرور هم لو نمی‌رود
           test "$(curl -sk -o /dev/null -w '%{http_code}' https://localhost:8443/api/v1/docs)" = "404"
           if curl -skI https://localhost:8443/ | grep -qi '^server:'; then echo "Server header leaked"; exit 1; fi
+          # هر کار worker را یک بار با تنظیمات production اجرا کن
+          for job in delivery_reminders expired_uploads old_notifications outbox; do
+            $COMPOSE exec -T worker python -m app.worker --run "$job"
+          done
       - name: Logs on failure
         if: failure()
         run: $COMPOSE logs --no-color --tail=200

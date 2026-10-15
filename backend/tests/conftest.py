@@ -67,7 +67,8 @@ from tests.helpers import empty_storage, ensure_storage  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 TABLES = (
-    "audit_events, notifications, agreement_acceptances, order_ratings, order_disputes, "
+    "audit_events, outbox_messages, notifications, order_reminders, agreement_acceptances, "
+    "order_ratings, order_disputes, "
     "order_inspections, "
     "order_payments, "
     "contract_signatures, "

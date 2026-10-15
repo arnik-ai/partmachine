@@ -15,6 +15,9 @@ Environment = Literal["development", "test", "staging", "production"]
 # ارسال کد یک‌بارمصرف (P8): console فقط برای توسعه و تست (کد در لاگ)؛ تا انتخاب و تأیید سرویس
 # پیامک/ایمیل واقعی، در تولید disabled است
 OtpSender = Literal["console", "disabled"]
+# ایمیل و پیامک اعلان‌ها (S9): console فقط برای توسعه و تست (پیام در لاگ)؛ تا انتخاب و تأیید سرویس،
+# در تولید disabled است و چیزی در صف ارسال گذاشته نمی‌شود
+MessageSender = Literal["console", "disabled"]
 # محل نگهداری فایل‌ها: دیسک محلی (توسعه یا یک سرور) یا فضای ابری S3-سازگار
 StorageBackend = Literal["local", "s3"]
 S3AddressingStyle = Literal["path", "virtual", "auto"]
@@ -76,6 +79,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     # None یعنی «بر اساس محیط»: console در development/test، disabled در staging/production
     otp_sender: OtpSender | None = None
+    # None یعنی «بر اساس محیط»: console در development/test، disabled در staging/production
+    message_sender: MessageSender | None = None
+    # آدرس سایت، برای لینک‌های داخل ایمیل و پیامک
+    site_url: str = "http://localhost:3100"
 
     @property
     def is_production_like(self) -> bool:
@@ -101,6 +108,12 @@ class Settings(BaseSettings):
     def otp_sender_name(self) -> OtpSender:
         if self.otp_sender is not None:
             return self.otp_sender
+        return "disabled" if self.is_production_like else "console"
+
+    @property
+    def message_sender_name(self) -> MessageSender:
+        if self.message_sender is not None:
+            return self.message_sender
         return "disabled" if self.is_production_like else "console"
 
     @property
@@ -166,6 +179,8 @@ class Settings(BaseSettings):
             found.append("S3_ENDPOINT_URL must use https:// so files are encrypted in transit")
         if self.otp_sender_name == "console":
             found.append("OTP_SENDER=console writes one-time codes to the logs; not allowed here")
+        if self.message_sender_name == "console":
+            found.append("MESSAGE_SENDER=console writes messages to the logs; not allowed here")
         # فقط برای API آزمایشیِ آزمون مرورگر خاموش می‌شود؛ در staging و production هرگز
         if not self.rate_limit_enabled:
             found.append("RATE_LIMIT_ENABLED must not be disabled")
