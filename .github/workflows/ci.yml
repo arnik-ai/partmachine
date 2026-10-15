@@ -1,4 +1,5 @@
-# کنترل کیفیت هر push و pull request: بک‌اند روی PostgreSQL 17 و Redis واقعی، و فرانت با هر دو build.
+# کنترل کیفیت هر push و pull request: بک‌اند روی PostgreSQL 17 و Redis واقعی (فایل‌ها یک بار روی دیسک
+# و یک بار روی سرور S3)، و فرانت با هر دو build.
 name: CI
 
 on:
@@ -37,6 +38,21 @@ jobs:
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s --health-timeout 3s --health-retries 20
+      # سرور S3 رایگان برای اجرای دوم تست‌ها (همان تنظیم docker-compose.yml)
+      s3:
+        image: versity/versitygw:v1.9.0
+        env:
+          ROOT_ACCESS_KEY_ID: partmachine
+          ROOT_SECRET_ACCESS_KEY: partmachine-dev-secret
+          VGW_BACKEND: posix
+          VGW_BACKEND_ARG: /data
+          VGW_HEALTH: /health
+        ports: ["7070:7070"]
+        volumes:
+          - pm_s3_data:/data
+        options: >-
+          --health-cmd "wget -q -O /dev/null http://127.0.0.1:7070/health"
+          --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       ENVIRONMENT: test
       DATABASE_URL: postgresql+asyncpg://partmachine:partmachine@localhost:5433/partmachine
@@ -57,6 +73,10 @@ jobs:
           ruff format --check .
       - name: Type check
         run: mypy app
+      - name: Runtime dependencies have no known vulnerabilities
+        run: |
+          pip install pip-audit==2.10.1
+          pip-audit -r requirements.txt
       - name: Migrations round-trip on a clean database
         run: |
           alembic upgrade head
@@ -64,6 +84,10 @@ jobs:
           alembic upgrade head
           alembic check
       - name: Tests (PostgreSQL + Redis)
+        run: pytest -q
+      - name: Tests again with files on S3 (versitygw)
+        env:
+          TEST_STORAGE_BACKEND: s3
         run: pytest -q
       - name: OpenAPI contract is committed and up to date
         run: |
@@ -148,7 +172,10 @@ jobs:
           pip install -r requirements.txt
           alembic upgrade head
           printf '%s' "$E2E_ADMIN_PASSWORD" | python -m app.create_admin --email "$E2E_ADMIN_EMAIL" --name "ادمین آزمون" --password-stdin
-          nohup uvicorn app.main:app --port 8100 > "$RUNNER_TEMP/api.log" 2>&1 &
+          # آزمون مرورگر در هر اجرا ده‌ها حساب تازه می‌سازد؛ محدودیت نرخ فقط برای همین API آزمایشی
+          # خاموش است (تست‌های بک‌اند خود محدودیت را می‌آزمایند و تولید اجازه‌ی خاموش کردنش را نمی‌دهد)
+          # ادمین آزمون هم بدون ورود دومرحله‌ای (آزمون جدای two-factor همان مسیر را با حساب عادی می‌آزماید)
+          RATE_LIMIT_ENABLED=false ADMIN_TWO_FACTOR_REQUIRED=false nohup uvicorn app.main:app --port 8100 > "$RUNNER_TEMP/api.log" 2>&1 &
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -172,7 +199,8 @@ jobs:
           exit 1
       - name: Install the browser
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        # chromium برای همه‌ی آزمون‌ها؛ webkit (موتور Safari) برای آزمون نمایش روی آیفون و آیپد
+        run: npx playwright install --with-deps chromium webkit
       - name: Browser tests
         working-directory: frontend
         run: npm run test:e2e
@@ -188,3 +216,84 @@ jobs:
             ${{ runner.temp }}/api.log
             ${{ runner.temp }}/web.log
 
+
+  production-stack:
+    # ایمیج‌های تولیدی و راه‌اندازی یک‌دستوری (فاز ۴، گام 4b): ساخت، بالا آمدن پشت Caddy با تنظیمات
+    # production، و آزمون دود از بیرون. رمزها همین‌جا تصادفی ساخته می‌شوند و جایی ذخیره نمی‌شوند.
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    env:
+      COMPOSE: docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod.ci -p pmci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Throwaway production settings
+        run: |
+          {
+            echo "APP_DOMAIN=localhost"
+            echo "SECRET_KEY=$(openssl rand -hex 32)"
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
+            echo "REDIS_PASSWORD=$(openssl rand -hex 24)"
+            echo "BACKUP_PASSWORD=$(openssl rand -hex 24)"
+            echo "HTTP_PORT=8080"
+            echo "HTTPS_PORT=8443"
+            echo "PUBLIC_PORT_SUFFIX=:8443"
+          } > deploy/.env.prod.ci
+      - name: Build and start everything with one command
+        run: $COMPOSE up -d --build
+      - name: Wait until the API and worker are healthy and Caddy answers
+        run: |
+          for i in $(seq 1 60); do
+            if [ "$($COMPOSE ps api --format '{{.Health}}')" = "healthy" ] \
+              && [ "$($COMPOSE ps worker --format '{{.Health}}')" = "healthy" ] \
+              && curl -fsk -o /dev/null https://localhost:8443/; then exit 0; fi
+            sleep 3
+          done
+          $COMPOSE ps -a
+          exit 1
+      - name: Smoke test from outside
+        run: |
+          test "$($COMPOSE ps -a migrate --format '{{.ExitCode}}')" = "0"
+          curl -fsk https://localhost:8443/ | grep -q 'rel="manifest"'
+          # CSP با nonce از پشت Caddy هم می‌رسد (گام 4e)
+          curl -fskI https://localhost:8443/ | grep -i '^content-security-policy:' | grep "'nonce-" | grep -q upgrade-insecure-requests
+          curl -fsk https://localhost:8443/manifest.webmanifest | grep -q '"display":"standalone"'
+          curl -fsk https://localhost:8443/api/v1/agreements/buyer_signup | grep -q '"key":"buyer_signup"'
+          # مستندات API و سلامت داخلی از بیرون در دسترس نیستند؛ نام سرور هم لو نمی‌رود
+          test "$(curl -sk -o /dev/null -w '%{http_code}' https://localhost:8443/api/v1/docs)" = "404"
+          if curl -skI https://localhost:8443/ | grep -qi '^server:'; then echo "Server header leaked"; exit 1; fi
+          # هر کار worker را یک بار با تنظیمات production اجرا کن
+          # پایش (گام 4e): وضعیت عمومی از بیرون هست؛ آمار فقط داخل سرور
+          curl -fsk https://localhost:8443/api/v1/status | grep -q '"ok"'
+          test "$(curl -sk -o /dev/null -w '%{http_code}' https://localhost:8443/metrics)" = "404"
+          $COMPOSE exec -T api python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/metrics').read().decode())" | grep -q partmachine_http_requests_total
+          for job in delivery_reminders expired_uploads old_notifications outbox site_watch; do
+            $COMPOSE exec -T worker python -m app.worker --run "$job"
+          done
+      - name: Backup and restore drill (timed)
+        run: |
+          # یک حساب واقعی، پشتیبان، پاک کردن کامل پایگاه داده، بازگردانی، و بررسی دوباره
+          printf '%s' 'drill-Passw0rd-long' | $COMPOSE exec -T api \
+            python -m app.create_admin --email drill@example.com --name "تمرین بازگردانی" --password-stdin
+          count() { $COMPOSE exec -T db psql -U partmachine -d partmachine -tAc "$1"; }
+          test "$(count "select count(*) from users where email = 'drill@example.com'")" = "1"
+          start=$(date +%s)
+          $COMPOSE exec -T backup partmachine-backup run
+          echo "::notice title=Backup drill::backup took $(( $(date +%s) - start ))s"
+          $COMPOSE exec -T backup partmachine-backup list
+          $COMPOSE stop api worker
+          $COMPOSE exec -T db psql -U partmachine -d postgres \
+            -c 'DROP DATABASE partmachine WITH (FORCE)' -c 'CREATE DATABASE partmachine'
+          test "$(count "select count(*) from pg_tables where schemaname = 'public'")" = "0"
+          start=$(date +%s)
+          $COMPOSE exec -T backup partmachine-backup restore --yes
+          echo "::notice title=Restore drill::restore took $(( $(date +%s) - start ))s"
+          $COMPOSE start api worker
+          for i in $(seq 1 40); do
+            [ "$($COMPOSE ps api --format '{{.Health}}')" = "healthy" ] && break
+            sleep 3
+          done
+          test "$(count "select count(*) from users where email = 'drill@example.com'")" = "1"
+          curl -fsk https://localhost:8443/api/v1/status | grep -q '"ok"'
+      - name: Logs on failure
+        if: failure()
+        run: $COMPOSE logs --no-color --tail=200

@@ -4,22 +4,22 @@
 در تولید پشت reverse proxy:  uvicorn app.main:app --proxy-headers --forwarded-allow-ips=<proxy-ip>
 """
 
-import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from sqlalchemy import text
+from fastapi.responses import JSONResponse, PlainTextResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from app.core import metrics
 from app.core.config import settings
 from app.core.errors import install_error_handlers
+from app.core.health import components
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
-from app.core.redis import close_redis, get_redis
+from app.core.redis import close_redis
 from app.core.schemas import ErrorResponse
 from app.db.session import engine
 from app.modules.admin.router import router as admin_router
@@ -87,24 +87,26 @@ async def health() -> dict[str, str]:
 
 async def ready() -> JSONResponse:
     """آمادگی دریافت ترافیک (readiness): پایگاه داده و Redis."""
-    checks: dict[str, str] = {}
-    try:
-        async with asyncio.timeout(3):
-            async with engine.connect() as conn:
-                await conn.execute(text("SELECT 1"))
-        checks["database"] = "ok"
-    except Exception:
-        checks["database"] = "unavailable"
-    try:
-        async with asyncio.timeout(3):
-            await get_redis().ping()
-        checks["redis"] = "ok"
-    except Exception:
-        checks["redis"] = "unavailable"
+    checks = {name: "ok" if ok else "unavailable" for name, ok in (await components()).items()}
     healthy = all(v == "ok" for v in checks.values())
     return JSONResponse(
         {"status": "ok" if healthy else "unavailable", "checks": checks},
         status_code=200 if healthy else 503,
+    )
+
+
+async def metrics_endpoint() -> PlainTextResponse:
+    """آمار در قالب Prometheus؛ فقط از داخل سرور (Caddy این مسیر را بیرون نمی‌برد)."""
+    return PlainTextResponse(
+        await metrics.render(), media_type="text/plain; version=0.0.4; charset=utf-8"
+    )
+
+
+async def public_status() -> JSONResponse:
+    """برای سرویس‌های بیرونی پایش در دسترس بودن: فقط «بالا» یا «پایین»، بدون جزئیات."""
+    healthy = all((await components()).values())
+    return JSONResponse(
+        {"status": "ok" if healthy else "unavailable"}, status_code=200 if healthy else 503
     )
 
 
@@ -141,11 +143,16 @@ def create_app() -> FastAPI:
         max_body_bytes=settings.max_body_bytes,
         upload_paths=(f"{settings.api_v1_prefix}/files",),
         upload_max_bytes=settings.upload_max_bytes,
+        route_prefix=settings.api_v1_prefix,
     )
 
     app.include_router(build_api_router(), prefix=settings.api_v1_prefix)
     app.add_api_route("/health", health, methods=["GET"], tags=["system"])
     app.add_api_route("/ready", ready, methods=["GET"], tags=["system"])
+    app.add_api_route("/metrics", metrics_endpoint, methods=["GET"], include_in_schema=False)
+    app.add_api_route(
+        f"{settings.api_v1_prefix}/status", public_status, methods=["GET"], tags=["system"]
+    )
     return app
 
 

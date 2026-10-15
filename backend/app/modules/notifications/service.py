@@ -3,11 +3,18 @@
 `notify` و `notify_user` چیزی commit نمی‌کنند؛ فراخواننده پس از ثبت رویداد اصلی commit می‌کند،
 پس اعلانِ رویدادی که ثبت نشده هرگز دیده نمی‌شود. کسی که خودش کاری کرده برای همان کار اعلان
 نمی‌گیرد (`exclude_user_id`).
+
+اگر ارسال ایمیل روشن باشد (فعلاً فقط در توسعه؛ در تولید پس از انتخاب سرویس، S9)، ایمیل هر اعلان در
+همان تراکنش در صف ارسال گذاشته می‌شود و worker آن را می‌فرستد.
+
+اعلان‌های خوانده‌شده پس از `READ_RETENTION_DAYS` روز پاک می‌شوند (کار worker). اعلان فقط رونوشتی
+برای فهرست است؛ تاریخچه‌ی کامل هر سفارش در رویدادهای همان سفارش می‌ماند.
 """
 
 import uuid
+from datetime import datetime, timedelta
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import NotFound
@@ -16,9 +23,14 @@ from app.modules.identity.deps import CurrentUser
 from app.modules.identity.models import User
 from app.modules.notifications.models import Notification
 from app.modules.notifications.schemas import NotificationOut, NotificationPage, UnreadCountOut
+from app.modules.outbox import service as outbox
 
 TITLE_MAX = 200
 BODY_MAX = 1000
+READ_RETENTION_DAYS = 180
+DELETE_BATCH = 5000
+# سقف هر اجرا تا تراکنش‌ها کوتاه بمانند؛ باقی‌مانده در اجرای بعدی پاک می‌شود
+DELETE_MAX_BATCHES = 20
 
 
 def _clip(value: str, limit: int) -> str:
@@ -35,9 +47,10 @@ def _add(
     body: str,
     link: str,
 ) -> None:
+    notification_id = uuid.uuid4()
     db.add(
         Notification(
-            id=uuid.uuid4(),
+            id=notification_id,
             user_id=user_id,
             organization_id=organization_id,
             kind=kind,
@@ -47,6 +60,7 @@ def _add(
             created_at=utcnow(),
         )
     )
+    outbox.enqueue(db, notification_id)
 
 
 async def notify(
@@ -190,3 +204,22 @@ async def mark_all_read(db: AsyncSession, user: CurrentUser) -> UnreadCountOut:
     )
     await db.commit()
     return UnreadCountOut(unread=0)
+
+
+async def delete_old_read(db: AsyncSession, *, now: datetime) -> int:
+    """کار worker: اعلان‌های خوانده‌شده‌ی قدیمی‌تر از `READ_RETENTION_DAYS` روز را دسته‌دسته پاک می‌کند."""
+    cutoff = now - timedelta(days=READ_RETENTION_DAYS)
+    deleted = 0
+    for _ in range(DELETE_MAX_BATCHES):
+        batch = (
+            select(Notification.id)
+            .where(Notification.read_at.is_not(None), Notification.created_at < cutoff)
+            .limit(DELETE_BATCH)
+        )
+        result = await db.execute(delete(Notification).where(Notification.id.in_(batch)))
+        await db.commit()
+        count = result.rowcount or 0  # type: ignore[attr-defined]
+        deleted += count
+        if count < DELETE_BATCH:
+            break
+    return deleted

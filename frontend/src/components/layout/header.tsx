@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Factory, LogOut, UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
+import { TarashinoMark } from "@/components/brand/tarashino-mark";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { logout } from "@/features/auth/api";
 import { useAuthStore } from "@/features/auth/store";
@@ -53,10 +54,10 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 font-bold">
-            <Factory className="h-6 w-6 text-primary" />
-            پارت‌ماشین
+            <TarashinoMark className="h-7 w-7 text-primary" />
+            تراشینو
           </Link>
-          <nav aria-label="منوی اصلی" className="hidden items-center gap-5 text-sm md:flex">
+          <nav aria-label="منوی اصلی" className="hidden items-center gap-5 text-sm lg:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -118,10 +119,10 @@ export function Header() {
           )}
         </div>
       </div>
-      {/* موبایل: همان لینک‌ها در یک ردیف ساده، بدون منوی کشویی */}
+      {/* موبایل و تبلت (زیر ۱۰۲۴ پیکسل): همان لینک‌ها در یک ردیف ساده‌ی قابل‌لغزش، بدون منوی کشویی */}
       <nav
         aria-label="منوی اصلی"
-        className="mx-auto flex max-w-6xl gap-5 overflow-x-auto px-4 pb-3 text-sm md:hidden"
+        className="mx-auto flex max-w-6xl gap-5 overflow-x-auto px-4 pb-3 text-sm lg:hidden"
       >
         {links.map((link) => (
           <Link

@@ -4,6 +4,7 @@ import {
   acceptTerms,
   createRfq,
   inDays,
+  pickJalaliDate,
   quote,
   register,
   stamp,
@@ -139,7 +140,7 @@ test("drawings stay private until the supplier accepts the NDA", async ({ browse
   await buyer.getByLabel("عنوان درخواست").fill(`درخواست با نقشه ${stamp}`);
   await buyer.getByLabel("شرح فنی").fill("طبق نقشه‌ی پیوست");
   await buyer.getByLabel("تعداد").fill("50");
-  await buyer.getByLabel("مهلت تحویل").fill(inDays(30));
+  await pickJalaliDate(buyer, "مهلت تحویل", inDays(30));
   await buyer.getByLabel("انتخاب فایل‌های فنی").setInputFiles({
     name: fileName,
     mimeType: "application/pdf",

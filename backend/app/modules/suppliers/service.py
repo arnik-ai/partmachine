@@ -24,9 +24,7 @@ from app.modules.suppliers.schemas import (
 from app.modules.suppliers.trust_score import compute_trust_score
 
 NOT_FOUND = "قطعه‌ساز موردنظر پیدا نشد."
-NAME_LOCKED = (
-    "نام شرکت پس از تأیید هویت قفل می‌شود. برای تغییر آن با پشتیبانی پارت‌ماشین تماس بگیرید."
-)
+NAME_LOCKED = "نام شرکت پس از تأیید هویت قفل می‌شود. برای تغییر آن با پشتیبانی تراشینو تماس بگیرید."
 
 # فیلدهایی که قطعه‌ساز خودش ویرایش می‌کند (ورودی فرم ← ستون)
 _EDITABLE = (

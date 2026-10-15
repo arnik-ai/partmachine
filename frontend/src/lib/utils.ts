@@ -15,22 +15,36 @@ export function faToman(rials: number): string {
   return `${faNumber(Math.floor(rials / 10))} تومان`;
 }
 
-/** تاریخ را به تقویم جلالی فارسی قالب‌بندی می‌کند */
-export function faDate(date: string | Date): string {
-  return new Intl.DateTimeFormat("fa-IR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(new Date(date));
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * تاریخ بدون ساعت (YYYY-MM-DD) همان روز تقویم است و در هر منطقه‌ی زمانی همان روز نمایش
+ * داده می‌شود؛ زمان‌های کامل به وقت تهران.
+ */
+function persianFormat(date: string | Date, withTime: boolean): string {
+  const plain = typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const timeZone = plain ? "UTC" : "Asia/Tehran";
+  const key = `${timeZone}|${withTime}`;
+  let formatter = formatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian-nu-arabext", {
+      timeZone,
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      ...(withTime ? { hour: "2-digit", minute: "2-digit", hourCycle: "h23" } : {}),
+    });
+    formatters.set(key, formatter);
+  }
+  return formatter.format(new Date(date));
 }
 
-/** تاریخ و ساعت به تقویم جلالی فارسی */
+/** تاریخ به تقویم شمسی، مثل «۲۳ مهر ۱۴۰۵» */
+export function faDate(date: string | Date): string {
+  return persianFormat(date, false);
+}
+
+/** تاریخ و ساعت به تقویم شمسی و وقت تهران */
 export function faDateTime(date: string | Date): string {
-  return new Intl.DateTimeFormat("fa-IR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(date));
+  return persianFormat(date, true);
 }

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
 
-_EXTRA_FIELDS = ("method", "path", "status", "duration_ms", "event")
+_EXTRA_FIELDS = ("method", "path", "status", "duration_ms", "event", "job", "result", "failures")
 
 
 class JsonFormatter(logging.Formatter):

@@ -1,0 +1,14 @@
+# فقط کد برنامه و migrationها وارد ایمیج می‌شوند
+.venv
+venv
+var
+tests
+**/__pycache__
+**/*.py[cod]
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.env
+.env.*
+openapi.json
+requirements-dev.txt

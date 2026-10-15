@@ -81,7 +81,7 @@ test.describe("disputes", () => {
     const report = buyer.getByRole("dialog", { name: "اعلام مشکل" });
     await report.getByLabel("شرح مشکل").fill("بیست عدد از قطعات ترک دارند");
     await report.getByRole("button", { name: "ثبت و ارسال برای پشتیبانی" }).click();
-    await expect(buyer.getByText("تا تصمیم پشتیبانی پارت‌ماشین، سفارش متوقف است.")).toBeVisible();
+    await expect(buyer.getByText("تا تصمیم پشتیبانی تراشینو، سفارش متوقف است.")).toBeVisible();
     await expect(buyer.getByRole("button", { name: "تأیید تحویل" })).toHaveCount(0);
 
     const admin = await login(browser, ADMIN_EMAIL, ADMIN_PASSWORD);

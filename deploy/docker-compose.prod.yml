@@ -1,0 +1,178 @@
+# راه‌اندازی تولید روی یک سرور (VPS)، یا آزمون کامل محلی — برنامه‌ی فاز ۴، گام 4b.
+#
+#   cp deploy/.env.prod.example deploy/.env.prod      # و مقدارها را پر کنید (هرگز commit نشود)
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
+#
+# ترتیب: پایگاه داده و Redis ← migration (یک‌بار، جدا) ← API و worker ← سایت ← Caddy (HTTPS خودکار).
+# سایت و API زیر یک دامنه‌اند (API زیر /api)، پس کوکی نشست first-party می‌ماند و CORS لازم نیست.
+# هیچ پورتی جز ۸۰ و ۴۴۳ (Caddy) روی سرور باز نمی‌شود.
+
+name: partmachine-prod
+
+x-api-env: &api-env
+  ENVIRONMENT: production
+  SECRET_KEY: ${SECRET_KEY:?SECRET_KEY را در فایل env تنظیم کنید}
+  DATABASE_URL: postgresql+asyncpg://partmachine:${POSTGRES_PASSWORD}@db:5432/partmachine
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  # فایل‌ها: local روی volume «storage»، یا s3 (فضای ابری؛ تنظیمات S3_* در فایل env)
+  STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+  STORAGE_LOCAL_DIR: /data/storage
+  S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_BUCKET: ${S3_BUCKET:-}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+  S3_ADDRESSING_STYLE: ${S3_ADDRESSING_STYLE:-path}
+  S3_PREFIX: ${S3_PREFIX:-}
+  ALLOWED_HOSTS: ${APP_DOMAIN},127.0.0.1
+  CORS_ORIGINS: https://${APP_DOMAIN}${PUBLIC_PORT_SUFFIX:-}
+  # برای لینک‌های داخل ایمیل و پیامک
+  SITE_URL: https://${APP_DOMAIN}${PUBLIC_PORT_SUFFIX:-}
+  # worker هر دقیقه API را از همین آدرس داخلی می‌آزماید (هشدار «سایت پایین است»)
+  API_INTERNAL_URL: http://api:8000
+  # API فقط از داخل شبکه‌ی Docker و از راه Caddy در دسترس است
+  FORWARDED_ALLOW_IPS: "*"
+  WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: partmachine
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD را تنظیم کنید}
+      POSTGRES_DB: partmachine
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U partmachine -d partmachine"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD را تنظیم کنید}"]
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # migration پیش از هر نسخه‌ی تازه؛ اگر شکست بخورد، API بالا نمی‌آید
+  migrate:
+    image: partmachine-api:${IMAGE_TAG:-local}
+    command: ["alembic", "upgrade", "head"]
+    environment: *api-env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build: ../backend
+    image: partmachine-api:${IMAGE_TAG:-local}
+    environment: *api-env
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # کارهای پس‌زمینه: یادآوری موعد تحویل، پاک‌سازی‌ها و صف ارسال پیام (خاموش تا انتخاب سرویس)
+  worker:
+    image: partmachine-api:${IMAGE_TAG:-local}
+    command: ["python", "-m", "app.worker"]
+    environment: *api-env
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # worker هر ۱۵ ثانیه این فایل را به‌روز می‌کند؛ کهنه شدنش یعنی worker گیر کرده است
+      test: ["CMD-SHELL", "find /tmp/pm-worker-heartbeat -mmin -2 | grep -q ."]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # پشتیبان رمزگذاری‌شده‌ی روزانه: پایگاه داده و فایل‌های روی دیسک (گام 4f؛ docs/BACKUP_RESTORE.md)
+  backup:
+    build: ./backup
+    image: partmachine-backup:${IMAGE_TAG:-local}
+    environment:
+      # پیش‌فرض روی همین سرور؛ برای نسخه‌ی جدا از سرور، مثلاً s3:https://.../bucket/partmachine
+      RESTIC_REPOSITORY: ${BACKUP_REPOSITORY:-/backups}
+      RESTIC_PASSWORD: ${BACKUP_PASSWORD:?BACKUP_PASSWORD را تنظیم کنید و جایی بیرون از سرور نگه دارید}
+      AWS_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY:-}
+      PGHOST: db
+      PGUSER: partmachine
+      PGDATABASE: partmachine
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # ساعت پشتیبان روزانه به وقت UTC (۲۳:۳۰ یعنی ۳ بامداد تهران)
+      BACKUP_AT: ${BACKUP_AT:-23:30}
+      BACKUP_KEEP_DAILY: ${BACKUP_KEEP_DAILY:-14}
+    volumes:
+      - backups:/backups
+      - storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # پشتیبان موفق در ۲۶ ساعت اخیر
+      test: ["CMD-SHELL", "find /tmp/partmachine-backup-ok -mmin -1560 | grep -q ."]
+      interval: 5m
+      timeout: 10s
+      retries: 1
+      start_period: 10m
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../frontend
+      args:
+        # در کد مرورگر جاسازی می‌شود؛ با تغییر دامنه، ایمیج دوباره ساخته شود
+        NEXT_PUBLIC_API_URL: https://${APP_DOMAIN}${PUBLIC_PORT_SUFFIX:-}/api/v1
+    image: partmachine-web:${IMAGE_TAG:-local}
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN را تنظیم کنید}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - web
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  redis_data:
+  storage:
+  backups:
+  caddy_data:
+  caddy_config:

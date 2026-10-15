@@ -127,7 +127,7 @@ export function ContractDocument({ orderId }: { orderId: string }) {
           <p className="text-sm text-muted-foreground">
             شماره‌ی قرارداد: <span dir="ltr">{order.id.toUpperCase()}</span> ·
             تاریخ تنظیم: {faDate(contractDate)} · صادرشده به‌صورت خودکار توسط
-            پلتفرم پارت‌ماشین
+            پلتفرم تراشینو
           </p>
           <div className="h-1 w-24 rounded-full bg-gold" />
         </header>
@@ -135,7 +135,7 @@ export function ContractDocument({ orderId }: { orderId: string }) {
         <Article number={1} title="طرفین قرارداد">
           این قرارداد فی‌مابین <strong>{buyerName}</strong> (از این پس
           «کارفرما») و <strong>{order.supplierName}</strong> به نشانی{" "}
-          {order.supplierCity} (از این پس «مجری») در بستر پلتفرم پارت‌ماشین
+          {order.supplierCity} (از این پس «مجری») در بستر پلتفرم تراشینو
           منعقد می‌گردد و طرفین با هویت احرازشده در پلتفرم، خود را متعهد به
           مفاد آن می‌دانند.
         </Article>
@@ -210,7 +210,7 @@ export function ContractDocument({ orderId }: { orderId: string }) {
 
         <Article number={10} title="حل اختلاف">
           در صورت بروز اختلاف، موضوع ابتدا از طریق سازوکار داوری و حل اختلاف
-          پلتفرم پارت‌ماشین (با استناد به مستندات ثبت‌شده: قرارداد، گزارش QC،
+          پلتفرم تراشینو (با استناد به مستندات ثبت‌شده: قرارداد، گزارش QC،
           تاریخچه‌ی سفارش و مکاتبات) رسیدگی می‌شود. در صورت عدم حصول نتیجه،
           مراجع قانونی ذی‌صلاح صالح به رسیدگی خواهند بود.
         </Article>

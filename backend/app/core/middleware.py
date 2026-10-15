@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.core import metrics
 from app.core.errors import GENERIC_500, error_body
 from app.core.logging import request_id_var
 
@@ -39,12 +40,15 @@ class RequestContextMiddleware:
         *,
         upload_paths: tuple[str, ...] = (),
         upload_max_bytes: int = 0,
+        route_prefix: str = "",
     ) -> None:
         self.app = app
         self.max_body_bytes = max_body_bytes
         # مسیر آپلود فایل سقف جداگانه دارد؛ خود endpoint هم سقف هر نوع فایل را اعمال می‌کند
         self.upload_paths = upload_paths
         self.upload_max_bytes = upload_max_bytes
+        # الگوی مسیرهای روتر API بدون پیشوندش در scope می‌آید؛ برای آمار پیشوند اضافه می‌شود
+        self.route_prefix = route_prefix
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -112,7 +116,23 @@ class RequestContextMiddleware:
                     "event": "http_request",
                 },
             )
+            # شمارش با الگوی مسیر (نه آدرس واقعی) تا برچسب‌ها محدود بمانند؛ خود /metrics شمرده نمی‌شود
+            if scope.get("path") != "/metrics":
+                route = self._route_template(scope)
+                metrics.observe(
+                    str(scope.get("method")), route, state["status"], duration_ms / 1000
+                )
             request_id_var.reset(token)
+
+    def _route_template(self, scope: Scope) -> str:
+        route = getattr(scope.get("route"), "path_format", None)
+        if not route:
+            return "unmatched"
+        prefix = self.route_prefix
+        if prefix and str(scope.get("path", "")).startswith(prefix + "/"):
+            if not route.startswith(prefix):
+                return prefix + route
+        return str(route)
 
     @staticmethod
     async def _send_json(send: Send, status: int, body: dict[str, Any]) -> None:

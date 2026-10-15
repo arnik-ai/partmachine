@@ -26,7 +26,7 @@ from app.core.time import utcnow
 from app.modules.agreements import service as agreements
 from app.modules.agreements.catalog import SIGNUP_AGREEMENT_BY_ROLE
 from app.modules.audit import service as audit
-from app.modules.identity import otp
+from app.modules.identity import otp, two_factor
 from app.modules.identity.deps import ClientInfo, CurrentUser
 from app.modules.identity.models import RefreshToken, User
 from app.modules.identity.schemas import (
@@ -35,6 +35,8 @@ from app.modules.identity.schemas import (
     PasswordResetConfirmInput,
     PhoneVerifyInput,
     RegisterInput,
+    TwoFactorChallengeOut,
+    TwoFactorLoginInput,
     UserOut,
 )
 from app.modules.notifications import service as notifications
@@ -70,6 +72,7 @@ def user_out(user: User, organization: Organization) -> UserOut:
         verified=user.is_verified,
         org_role=user.org_role,
         phone=user.phone,
+        two_factor_enabled=user.totp_enabled_at is not None,
     )
 
 
@@ -209,7 +212,9 @@ async def _register_with_invite(
     return issued
 
 
-async def login(db: AsyncSession, email: str, password: str) -> IssuedSession:
+async def login(
+    db: AsyncSession, email: str, password: str
+) -> IssuedSession | TwoFactorChallengeOut:
     await rate_limit.ensure_below(rate_limit.LOGIN_FAILURES_PER_EMAIL, email)
     user = await db.scalar(select(User).where(User.email == email))
     if user is None:
@@ -225,6 +230,20 @@ async def login(db: AsyncSession, email: str, password: str) -> IssuedSession:
     await rate_limit.reset(rate_limit.LOGIN_FAILURES_PER_EMAIL, email)
     if password_needs_rehash(user.hashed_password):
         user.hashed_password = await hash_password(password)
+    if user.totp_enabled_at is not None:
+        # رمز درست است؛ نشست فقط پس از کد اپ (مرحله‌ی دوم) ساخته می‌شود
+        await db.commit()
+        return two_factor.challenge(user)
+    organization = await db.get(Organization, user.organization_id)
+    assert organization is not None
+    issued, _ = _issue(db, user, organization)
+    await db.commit()
+    return issued
+
+
+async def complete_two_factor_login(db: AsyncSession, data: TwoFactorLoginInput) -> IssuedSession:
+    """مرحله‌ی دوم ورود: کد اپ یا کد پشتیبان، و بعد نشست."""
+    user = await two_factor.verify_login(db, data.challenge, data.code)
     organization = await db.get(Organization, user.organization_id)
     assert organization is not None
     issued, _ = _issue(db, user, organization)
@@ -317,8 +336,8 @@ async def _revoke_all_sessions(db: AsyncSession, user_id: uuid.UUID) -> None:
 
 async def _replace_password(
     db: AsyncSession, user: User, new_password: str, *, action: str
-) -> IssuedSession:
-    """رمز تازه، باطل شدن همه‌ی نشست‌ها و توکن‌های قبلی (همه‌ی دستگاه‌ها) و یک نشست تازه."""
+) -> None:
+    """رمز تازه و باطل شدن همه‌ی نشست‌ها و توکن‌های قبلی (همه‌ی دستگاه‌ها)؛ commit با فراخواننده."""
     user.hashed_password = await hash_password(new_password)
     user.token_version += 1
     await _revoke_all_sessions(db, user.id)
@@ -330,6 +349,9 @@ async def _replace_password(
         actor_user_id=user.id,
         organization_id=user.organization_id,
     )
+
+
+async def _new_session(db: AsyncSession, user: User) -> IssuedSession:
     organization = await db.get(Organization, user.organization_id)
     assert organization is not None
     issued, _ = _issue(db, user, organization)
@@ -356,7 +378,9 @@ async def change_password(
     await rate_limit.reset(rate_limit.PASSWORD_CHANGE_FAILURES_PER_USER, subject)
     if data.new_password == data.current_password:
         raise field_error("newPassword", "رمز جدید باید با رمز فعلی فرق داشته باشد.")
-    return await _replace_password(db, user, data.new_password, action="auth.password_changed")
+    await _replace_password(db, user, data.new_password, action="auth.password_changed")
+    # کاربر همین حالا (با مرحله‌ی دوم، اگر روشن باشد) وارد شده است؛ همین مرورگر نشست تازه می‌گیرد
+    return await _new_session(db, user)
 
 
 async def request_password_reset(db: AsyncSession, email: str, ip: str) -> None:
@@ -370,15 +394,23 @@ async def request_password_reset(db: AsyncSession, email: str, ip: str) -> None:
 
 async def confirm_password_reset(
     db: AsyncSession, data: PasswordResetConfirmInput
-) -> IssuedSession:
+) -> IssuedSession | TwoFactorChallengeOut:
     await otp.consume(purpose="password_reset", subject=data.email, code=data.code)
     user = await db.scalar(select(User).where(User.email == data.email).with_for_update())
     if user is None or not user.is_active:
         raise field_error("code", otp.CODE_EXPIRED)
-    issued = await _replace_password(db, user, data.new_password, action="auth.password_reset")
+    await _replace_password(db, user, data.new_password, action="auth.password_reset")
+    # حسابی که ورود دومرحله‌ای دارد نشست نمی‌گیرد و باید کد اپ را هم وارد کند؛ وگرنه بازیابی رمز
+    # راهی برای دور زدن مرحله‌ی دوم می‌شد
+    result: IssuedSession | TwoFactorChallengeOut
+    if user.totp_enabled_at is not None:
+        await db.commit()
+        result = two_factor.challenge(user)
+    else:
+        result = await _new_session(db, user)
     # کسی که رمز را از راه ایمیل بازیابی کرده نباید به‌خاطر تلاش‌های ناموفق قبلی قفل بماند
     await rate_limit.reset(rate_limit.LOGIN_FAILURES_PER_EMAIL, user.email)
-    return issued
+    return result
 
 
 def _phone_subject(user_id: uuid.UUID, phone: str) -> str:

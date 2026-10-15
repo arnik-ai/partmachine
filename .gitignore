@@ -43,3 +43,7 @@ htmlcov/
 # Misc
 *.tsbuildinfo
 next-env.d.ts
+
+# تنظیمات راه‌اندازی تولید (رمزها) — فقط فایل نمونه commit می‌شود
+deploy/.env.*
+!deploy/.env.prod.example

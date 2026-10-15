@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { JalaliDateInput } from "@/components/ui/jalali-date-input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -191,28 +192,26 @@ export function RfqForm() {
               </Select>
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="deadline">مهلت تحویل</Label>
-              <Input
+              <JalaliDateInput
                 id="deadline"
                 name="deadline"
-                type="date"
+                label="مهلت تحویل"
                 required
                 min={today}
                 value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+                onChange={setDeadline}
               />
               <FieldError message={fieldErrors.deadline} />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="quotesDue">مهلت دریافت پیشنهاد (اختیاری)</Label>
-              <Input
+              <JalaliDateInput
                 id="quotesDue"
                 name="quotesDue"
-                type="date"
+                label="مهلت دریافت پیشنهاد (اختیاری)"
                 min={today}
                 max={deadline || undefined}
                 value={quotesDue}
-                onChange={(e) => setQuotesDue(e.target.value)}
+                onChange={setQuotesDue}
               />
               <p className="text-xs text-muted-foreground">
                 تا این روز قطعه‌سازها می‌توانند قیمت بدهند. اگر خالی بماند، ۷ روز بعد در نظر گرفته می‌شود.

@@ -13,6 +13,24 @@ export interface User {
   orgRole?: "owner" | "member";
   /** موبایل تأییدشده (قالب +989xxxxxxxxx) */
   phone?: string | null;
+  /** ورود دومرحله‌ای با اپ Authenticator روشن است */
+  twoFactorEnabled?: boolean;
+}
+
+/** پاسخ ورود برای حسابی که ورود دومرحله‌ای دارد: هنوز نشستی ساخته نشده است */
+export interface TwoFactorChallenge {
+  twoFactorRequired: true;
+  challenge: string;
+  expiresIn: number;
+}
+
+/** کلید تازه برای اسکن در اپ؛ تا تأیید با کد چیزی ذخیره نمی‌شود */
+export interface TwoFactorSetup {
+  secret: string;
+  otpauthUri: string;
+  qrCode: string;
+  setupToken: string;
+  expiresIn: number;
 }
 
 export interface ChangePasswordInput {
@@ -30,6 +48,8 @@ export interface PasswordResetConfirmInput {
 export interface AuthOptions {
   passwordReset: boolean;
   phoneVerification: boolean;
+  /** ادمین بدون ورود دومرحله‌ای به بخش مدیریت راه ندارد */
+  adminTwoFactorRequired?: boolean;
 }
 
 export interface LoginInput {

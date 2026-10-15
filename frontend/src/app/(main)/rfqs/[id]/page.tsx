@@ -12,10 +12,10 @@ export const metadata: Metadata = {
 };
 
 // نسخه‌ی نمایشی (خروجی استاتیک): صفحه‌ی RFQهای نمونه از پیش ساخته می‌شود.
-// در نسخه‌ی سروری چیزی از پیش ساخته نمی‌شود و هر صفحه هنگام درخواست رندر می‌شود.
-export function generateStaticParams() {
-  return DEMO_MODE ? Object.keys(MOCK_QUOTATIONS).map((id) => ({ id })) : [];
-}
+// نسخه‌ی سروری این تابع را ندارد تا هر صفحه هنگام درخواست ساخته شود (CSP با nonce، گام 4e).
+export const generateStaticParams = DEMO_MODE
+  ? () => Object.keys(MOCK_QUOTATIONS).map((id) => ({ id }))
+  : undefined;
 
 export default async function RfqDetailPage({
   params,

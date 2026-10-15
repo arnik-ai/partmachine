@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { ErrorState, FieldError } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { JalaliDateInput } from "@/components/ui/jalali-date-input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
@@ -345,14 +346,13 @@ function TermsForm({ contract }: { contract: Contract }) {
         <form onSubmit={save} className="flex flex-col gap-4 text-sm">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="delivery-due">تاریخ تحویل</Label>
-              <Input
+              <JalaliDateInput
                 id="delivery-due"
-                type="date"
+                label="تاریخ تحویل"
+                required
                 min={localToday()}
                 value={deliveryDue}
-                onChange={(e) => setDeliveryDue(e.target.value)}
-                required
+                onChange={setDeliveryDue}
               />
               <FieldError message={fieldErrors.deliveryDue} />
             </div>

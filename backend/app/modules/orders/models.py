@@ -133,3 +133,29 @@ class OrderEvent(Base, UUIDPrimaryKey):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, server_default=func.now()
     )
+
+
+REMINDER_KINDS = ("due_soon", "overdue")
+
+
+class OrderReminder(Base):
+    """یادآوری خودکار موعد تحویل که برای یک سفارش فرستاده شده است (کار پس‌زمینه‌ی گام 4d).
+
+    کلید (سفارش، نوع) تضمین می‌کند هر یادآوری فقط یک بار فرستاده شود، حتی اگر worker دوباره اجرا شود.
+    """
+
+    __tablename__ = "order_reminders"
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN (" + ", ".join(f"'{kind}'" for kind in REMINDER_KINDS) + ")",
+            name="kind_valid",
+        ),
+    )
+
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), primary_key=True
+    )
+    kind: Mapped[str] = mapped_column(String(20), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, server_default=func.now()
+    )

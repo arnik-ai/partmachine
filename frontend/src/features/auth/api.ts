@@ -10,8 +10,16 @@ import type {
   LoginInput,
   PasswordResetConfirmInput,
   RegisterInput,
+  TwoFactorChallenge,
   User,
 } from "./types";
+
+/** نتیجه‌ی ورود یا بازیابی رمز: نشست، یا (برای حسابی که ورود دومرحله‌ای دارد) درخواست کد اپ */
+export type LoginResult = AuthSession | TwoFactorChallenge;
+
+export function isTwoFactorChallenge(result: LoginResult): result is TwoFactorChallenge {
+  return "twoFactorRequired" in result && result.twoFactorRequired === true;
+}
 
 /**
  * نشانه‌ی غیرحساس «احتمالاً نشست داریم» — فقط برای اینکه بازدیدکننده‌ی ناشناس با هر
@@ -51,14 +59,32 @@ function applySession(session: AuthSession): AuthSession {
   return session;
 }
 
-export async function login(input: LoginInput): Promise<AuthSession> {
-  const session = await apiFetch<AuthSession>("/auth/login", {
+export async function login(input: LoginInput): Promise<LoginResult> {
+  const result = await apiFetch<LoginResult>("/auth/login", {
     method: "POST",
     body: input,
     auth: false,
     credentials: "include",
   });
+  return isTwoFactorChallenge(result) ? result : applySession(result);
+}
+
+/** مرحله‌ی دوم ورود با کد ۶ رقمی اپ یا یکی از کدهای پشتیبان */
+export async function loginSecondStep(challenge: string, code: string): Promise<AuthSession> {
+  const session = await apiFetch<AuthSession>("/auth/login/2fa", {
+    method: "POST",
+    body: { challenge, code },
+    auth: false,
+    credentials: "include",
+  });
   return applySession(session);
+}
+
+/** کاربر جاری را دوباره از سرور می‌خواند (مثلاً پس از روشن کردن ورود دومرحله‌ای) */
+export async function reloadUser(): Promise<User> {
+  const user = await apiFetch<User>("/auth/me");
+  useAuthStore.setState((state) => (state.user ? { user: { ...state.user, ...user } } : state));
+  return user;
 }
 
 export async function register(input: RegisterInput): Promise<AuthSession> {
@@ -82,7 +108,9 @@ export async function changePassword(input: ChangePasswordInput): Promise<AuthSe
 }
 
 export function getAuthOptions(): Promise<AuthOptions> {
-  if (DEMO_MODE) return Promise.resolve({ passwordReset: false, phoneVerification: false });
+  if (DEMO_MODE) {
+    return Promise.resolve({ passwordReset: false, phoneVerification: false, adminTwoFactorRequired: false });
+  }
   return apiFetch<AuthOptions>("/auth/options", { auth: false });
 }
 
@@ -95,14 +123,17 @@ export function requestPasswordReset(email: string): Promise<{ detail: string }>
 }
 
 /** کد درست ⇒ رمز تازه و ورود مستقیم (همه‌ی نشست‌های قبلی بسته می‌شوند) */
-export async function confirmPasswordReset(input: PasswordResetConfirmInput): Promise<AuthSession> {
-  const session = await apiFetch<AuthSession>("/auth/password-reset/confirm", {
+/** رمز تازه؛ حسابی که ورود دومرحله‌ای دارد پس از آن کد اپ را هم وارد می‌کند */
+export async function confirmPasswordReset(
+  input: PasswordResetConfirmInput,
+): Promise<LoginResult> {
+  const result = await apiFetch<LoginResult>("/auth/password-reset/confirm", {
     method: "POST",
     body: input,
     auth: false,
     credentials: "include",
   });
-  return applySession(session);
+  return isTwoFactorChallenge(result) ? result : applySession(result);
 }
 
 let inflightRefresh: Promise<string | null> | null = null;

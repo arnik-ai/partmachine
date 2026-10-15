@@ -60,7 +60,7 @@ class SupplierOut(CamelModel):
     certifications: list[SupplierCertification]
     production_capacity_per_month: int | None = None
     lead_time_days: int
-    # سابقه‌ی واقعی در پارت‌ماشین (O12)
+    # سابقه‌ی واقعی در تراشینو (O12)
     completed_jobs: int
     delivered_jobs: int = 0
     on_time_jobs: int = 0

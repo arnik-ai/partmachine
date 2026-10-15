@@ -37,6 +37,7 @@ import { DEMO_MODE } from "@/lib/config";
 import { roleLabel, type RoleValue } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useHydrated } from "@/lib/use-hydrated";
+import { InstallCard } from "./install-card";
 import { LiveStats, RecentNotifications } from "./live-stats";
 import { StatCard, type StatCardProps } from "./stat-card";
 
@@ -338,7 +339,7 @@ export function DashboardView() {
             </p>
             {unverified && (
               <p className="text-xs text-primary-foreground/75">
-                حساب شما هنوز توسط پارت‌ماشین تأیید نشده است؛ کارشناسان ما پس از بررسی، آن را تأیید می‌کنند.
+                حساب شما هنوز توسط تراشینو تأیید نشده است؛ کارشناسان ما پس از بررسی، آن را تأیید می‌کنند.
               </p>
             )}
             <div className="mt-1 h-1 w-16 rounded-full bg-gold" />
@@ -364,11 +365,13 @@ export function DashboardView() {
         <div className="absolute -bottom-24 left-1/3 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
       </div>
 
+      <InstallCard />
+
       {role === "supplier" && !DEMO_MODE && <SupplierProfileReminder />}
 
       {/* کارت‌های آمار: نسخه‌ی واقعی از API؛ نسخه‌ی نمایشی داده‌ی نمونه */}
       {DEMO_MODE ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {stats.map((stat) => (
             <StatCard key={stat.label} {...stat} />
           ))}

@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -29,6 +30,9 @@ class User(Base, UUIDPrimaryKey, TimestampMixin):
         CheckConstraint("email = lower(email)", name="email_lowercase"),
         CheckConstraint("org_role IN ('owner', 'member')", name="org_role_valid"),
         CheckConstraint("phone_verified_at IS NULL OR phone IS NOT NULL", name="phone_consistent"),
+        CheckConstraint(
+            "totp_enabled_at IS NULL OR totp_secret IS NOT NULL", name="totp_consistent"
+        ),
         # هر شماره‌ی تأییدشده فقط به یک حساب تعلق دارد
         Index("uq_users_phone", "phone", unique=True, postgresql_where=text("phone IS NOT NULL")),
     )
@@ -51,6 +55,26 @@ class User(Base, UUIDPrimaryKey, TimestampMixin):
     phone_verified_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # ورود دومرحله‌ای (TOTP): کلید مخفی رمزگذاری‌شده با کلید سرور؛ خالی یعنی خاموش
+    totp_secret: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    totp_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # آخرین گام زمانی پذیرفته‌شده؛ هر کد فقط یک بار پذیرفته می‌شود
+    totp_last_step: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+
+class RecoveryCode(Base, UUIDPrimaryKey):
+    """کد پشتیبان ورود دومرحله‌ای برای روز گم شدن گوشی؛ فقط هش آن ذخیره می‌شود و هر کد یک بار."""
+
+    __tablename__ = "recovery_codes"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    code_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, server_default=func.now()
+    )
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class RefreshToken(Base, UUIDPrimaryKey):

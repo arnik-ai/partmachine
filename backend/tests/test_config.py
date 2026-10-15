@@ -15,13 +15,52 @@ SAFE_PRODUCTION = {
     "redis_url": "redis://cache.internal:6379/0",
     "cors_origins": "https://app.partmachine.ir",
     "allowed_hosts": "api.partmachine.ir",
+    # صریح، تا تنظیم S3 اجرای تست (TEST_STORAGE_BACKEND=s3) روی این تست‌ها اثر نگذارد
+    "storage_backend": "local",
+    # صریح، چون conftest آن را برای ادمین‌های آزمون خاموش می‌کند
+    "admin_two_factor_required": True,
     # مطلق در ویندوز و لینوکس
     "storage_local_dir": os.path.abspath("/srv/partmachine/files"),
+}
+SAFE_S3 = {
+    **SAFE_PRODUCTION,
+    "storage_backend": "s3",
+    "s3_endpoint_url": "https://storage.example.ir",
+    "s3_bucket": "partmachine-files",
+    "s3_access_key_id": "access-key",
+    "s3_secret_access_key": "secret-key",
 }
 
 
 def test_safe_production_settings_have_no_problems() -> None:
     assert Settings(**SAFE_PRODUCTION).problems() == []  # type: ignore[arg-type]
+    assert Settings(**SAFE_S3).problems() == []  # type: ignore[arg-type]
+    # با S3 دیسک محلی استفاده نمی‌شود، پس مسیر آن هم لازم نیست
+    no_disk = {**SAFE_S3, "storage_local_dir": "var/storage"}
+    assert Settings(**no_disk).problems() == []  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("override", "expected"),
+    [
+        ({"s3_bucket": ""}, "S3_BUCKET"),
+        ({"s3_access_key_id": ""}, "S3_ACCESS_KEY_ID"),
+        ({"s3_secret_access_key": " "}, "S3_SECRET_ACCESS_KEY"),
+        ({"s3_endpoint_url": "http://storage.example.ir"}, "S3_ENDPOINT_URL"),
+        ({"s3_endpoint_url": "storage.example.ir"}, "S3_ENDPOINT_URL"),
+    ],
+)
+def test_incomplete_s3_settings_are_reported(override: dict[str, object], expected: str) -> None:
+    problems = Settings(**{**SAFE_S3, **override}).problems()  # type: ignore[arg-type]
+    assert any(expected in p for p in problems)
+
+
+def test_s3_without_a_bucket_fails_even_in_development() -> None:
+    # در توسعه هم بهتر است برنامه با پیام روشن بالا نیاید تا این‌که بارگذاری بعداً شکست بخورد
+    problems = Settings(
+        environment="development", storage_backend="s3", s3_bucket="", s3_access_key_id="key"
+    ).problems()
+    assert any("S3_BUCKET" in p for p in problems)
 
 
 @pytest.mark.parametrize(
@@ -35,6 +74,9 @@ def test_safe_production_settings_have_no_problems() -> None:
         ({"database_url": "sqlite+aiosqlite:///./partmachine.db"}, "DATABASE_URL"),
         ({"storage_local_dir": "var/storage"}, "STORAGE_LOCAL_DIR"),
         ({"otp_sender": "console"}, "OTP_SENDER"),
+        ({"message_sender": "console"}, "MESSAGE_SENDER"),
+        ({"rate_limit_enabled": False}, "RATE_LIMIT_ENABLED"),
+        ({"admin_two_factor_required": False}, "ADMIN_TWO_FACTOR_REQUIRED"),
     ],
 )
 def test_unsafe_production_settings_are_reported(
@@ -63,6 +105,10 @@ def test_one_time_codes_stay_off_in_production_until_a_provider_is_chosen() -> N
     # P8: کد در لاگ فقط برای توسعه؛ سرویس واقعی پیامک/ایمیل فقط پس از تأیید مالک
     assert Settings(**SAFE_PRODUCTION).otp_sender_name == "disabled"  # type: ignore[arg-type]
     assert Settings(environment="development").otp_sender_name == "console"
+    # S9: صف ایمیل اعلان‌ها هم تا انتخاب سرویس در تولید خاموش است
+    production = Settings(**SAFE_PRODUCTION)  # type: ignore[arg-type]
+    assert production.message_sender_name == "disabled"
+    assert Settings(environment="development").message_sender_name == "console"
 
 
 def test_app_refuses_to_start_with_unsafe_settings(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -77,6 +123,9 @@ async def test_docs_are_hidden_in_production(monkeypatch: pytest.MonkeyPatch) ->
         "secret_key": "q" * 48,
         "cors_origins": "https://app.partmachine.ir",
         "allowed_hosts": "testserver",
+        # سرور S3 تست روی http است و تولید آن را نمی‌پذیرد؛ این تست فقط درباره‌ی مستندات است
+        "storage_backend": "local",
+        "admin_two_factor_required": True,
     }
     for name, value in production.items():
         monkeypatch.setattr(main.settings, name, value)

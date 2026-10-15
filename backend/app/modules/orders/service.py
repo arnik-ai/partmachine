@@ -667,7 +667,7 @@ async def _notify_transition(
     other = other_side(side)
     if action == "dispute":
         title = f"{SIDE_NAMES[side]} برای سفارش {ref(order)} مشکل اعلام کرد"
-        body = f"{note} — سفارش تا تصمیم پشتیبانی پارت‌ماشین متوقف است."
+        body = f"{note} — سفارش تا تصمیم پشتیبانی تراشینو متوقف است."
         await notifications.notify_admins(
             db,
             kind="dispute_opened",

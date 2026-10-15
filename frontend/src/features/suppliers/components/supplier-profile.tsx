@@ -117,7 +117,7 @@ export function SupplierProfile({ id }: { id: string }) {
                 <Clock className="h-4 w-4" />
                 {supplier.deliveredJobs
                   ? `تحویل به‌موقع: ${faNumber(supplier.onTimeJobs ?? 0)} از ${faNumber(supplier.deliveredJobs)}`
-                  : "هنوز سفارشی در پارت‌ماشین تحویل نداده است"}
+                  : "هنوز سفارشی در تراشینو تحویل نداده است"}
               </span>
             )}
             {supplier.ratingCount !== undefined && (

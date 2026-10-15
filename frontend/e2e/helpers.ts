@@ -1,4 +1,6 @@
+import { createHmac } from "node:crypto";
 import { expect, type Browser, type Page } from "@playwright/test";
+import { isoToJalali } from "../src/lib/jalali";
 
 /** ابزارهای مشترک آزمون‌های سرتاسری: ثبت‌نام و ورود از راه خود رابط کاربری. */
 
@@ -13,6 +15,16 @@ export const PNG = Buffer.concat([
 
 export function inDays(days: number): string {
   return new Date(Date.now() + days * 86_400_000).toLocaleDateString("en-CA");
+}
+
+/** تاریخ (ISO میلادی) را در انتخابگر شمسی روز/ماه/سالِ فیلدی با این عنوان انتخاب می‌کند. */
+export async function pickJalaliDate(page: Page, label: string, iso: string): Promise<void> {
+  const date = isoToJalali(iso);
+  if (!date) throw new Error(`invalid date: ${iso}`);
+  const group = page.getByRole("group", { name: label, exact: true });
+  await group.getByLabel("سال", { exact: true }).selectOption(String(date.jy));
+  await group.getByLabel("ماه", { exact: true }).selectOption(String(date.jm));
+  await group.getByLabel("روز", { exact: true }).selectOption(String(date.jd));
 }
 
 export function uniqueEmail(prefix: string): string {
@@ -62,7 +74,7 @@ export async function createRfq(page: Page, title: string): Promise<string> {
   await page.getByLabel("عنوان درخواست").fill(title);
   await page.getByLabel("شرح فنی").fill("بوش برنجی طبق نقشه، تلرانس ۰٫۰۵ میلی‌متر");
   await page.getByLabel("تعداد").fill("200");
-  await page.getByLabel("مهلت تحویل").fill(inDays(30));
+  await pickJalaliDate(page, "مهلت تحویل", inDays(30));
   await acceptTerms(page);
   await page.getByRole("button", { name: "انتشار درخواست" }).click();
   await expect(page.getByText("درخواست شما ثبت شد")).toBeVisible();
@@ -113,4 +125,22 @@ export async function verifyLab(admin: Page, email: string, ownerName: string): 
   await expect(
     admin.getByText("این آزمایشگاه در فهرست انتخاب کارفرماها برای بازرسی کیفیت است."),
   ).toBeVisible();
+}
+
+const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+/** کد ۶ رقمی اپ Authenticator (TOTP، RFC 6238) برای کلیدی که صفحه نشان داده است */
+export function totp(secret: string, stepsAhead = 0): string {
+  const bits = secret
+    .replace(/\s+/g, "")
+    .toUpperCase()
+    .split("")
+    .map((ch) => BASE32.indexOf(ch).toString(2).padStart(5, "0"))
+    .join("");
+  const key = Buffer.from((bits.match(/.{8}/g) ?? []).map((byte) => parseInt(byte, 2)));
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000) + stepsAhead));
+  const hmac = createHmac("sha1", key).update(counter).digest();
+  const offset = hmac[hmac.length - 1] & 0xf;
+  return String((hmac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0");
 }

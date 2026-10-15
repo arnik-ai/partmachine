@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { ErrorState, FieldError } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { JalaliDateInput } from "@/components/ui/jalali-date-input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -105,7 +106,7 @@ export function PaymentsCard({ order }: { order: OrderDetail }) {
       <CardContent className="flex flex-col gap-4 text-sm">
         <p className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-muted-foreground">
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-          پول از پارت‌ماشین عبور نمی‌کند. کارفرما مبلغ را مستقیماً به قطعه‌ساز می‌پردازد و این‌جا با
+          پول از تراشینو عبور نمی‌کند. کارفرما مبلغ را مستقیماً به قطعه‌ساز می‌پردازد و این‌جا با
           شماره‌ی پیگیری یا رسید اعلام می‌کند؛ قطعه‌ساز دریافت را تأیید می‌کند.
         </p>
 
@@ -218,13 +219,12 @@ export function PaymentsCard({ order }: { order: OrderDetail }) {
       >
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="paid-on">تاریخ پرداخت</Label>
-            <Input
+            <JalaliDateInput
               id="paid-on"
-              type="date"
+              label="تاریخ پرداخت"
               max={localToday()}
               value={paidOn}
-              onChange={(e) => setPaidOn(e.target.value)}
+              onChange={setPaidOn}
             />
             <FieldError message={fieldErrors.paidOn} />
           </div>

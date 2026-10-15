@@ -29,10 +29,13 @@ class CurrentUser:
     full_name: str
     is_verified: bool
     org_role: str = "owner"
+    two_factor_enabled: bool = False
+    # ادمینی که ورود دومرحله‌ای را هنوز روشن نکرده: تا روشن کردنش هیچ دسترسی ادمینی ندارد
+    admin_locked: bool = False
 
     @property
     def is_admin(self) -> bool:
-        return self.role == "admin"
+        return self.role == "admin" and not self.admin_locked
 
     @property
     def is_org_owner(self) -> bool:
@@ -57,6 +60,7 @@ async def get_current_user(
     user = await db.get(User, user_id)
     if user is None or not user.is_active or payload.get("ver", 0) != user.token_version:
         raise Unauthorized(SESSION_EXPIRED, code="token_invalid")
+    two_factor = user.totp_enabled_at is not None
     return CurrentUser(
         id=user.id,
         organization_id=user.organization_id,
@@ -65,6 +69,8 @@ async def get_current_user(
         full_name=user.full_name,
         is_verified=user.is_verified,
         org_role=user.org_role,
+        two_factor_enabled=two_factor,
+        admin_locked=user.role == "admin" and settings.admin_two_factor_required and not two_factor,
     )
 
 

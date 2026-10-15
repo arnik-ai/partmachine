@@ -69,7 +69,7 @@ async def test_completed_order_builds_history_and_the_buyer_rates_it(
     before = await _profile(deal.supplier)
     assert (before["completedJobs"], before["deliveredJobs"], before["ratingCount"]) == (0, 0, 0)
     assert before["ratingAverage"] is None
-    assert _explain(before, "on_time_delivery").startswith("هنوز سفارشی در پارت‌ماشین تحویل نشده")
+    assert _explain(before, "on_time_delivery").startswith("هنوز سفارشی در تراشینو تحویل نشده")
     assert _explain(before, "satisfaction").startswith("هنوز امتیازی از کارفرماها ثبت نشده")
     # پیشنهاد همین قطعه‌ساز برای سرعت پاسخ حساب شده است
     assert "در ۱ پیشنهاد" in _explain(before, "response_speed")

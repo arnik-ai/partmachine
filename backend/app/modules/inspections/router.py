@@ -28,7 +28,7 @@ async def list_labs(
     _: CurrentUser = Depends(require_roles(*RFQ_CREATOR_ROLES)),
     db: AsyncSession = Depends(get_db),
 ) -> QcLabList:
-    """آزمایشگاه‌هایی که پارت‌ماشین تأیید کرده است (برای انتخاب کارفرما)."""
+    """آزمایشگاه‌هایی که تراشینو تأیید کرده است (برای انتخاب کارفرما)."""
     return await service.list_labs(db)
 
 

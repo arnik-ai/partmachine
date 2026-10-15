@@ -160,6 +160,11 @@ export function NotificationsView() {
           )}
         </>
       )}
+
+      <p className="text-xs text-white/60">
+        اعلان‌های خوانده‌شده پس از ۶ ماه پاک می‌شوند. تاریخچه‌ی کامل هر سفارش در صفحه‌ی همان سفارش
+        می‌ماند.
+      </p>
     </div>
   );
 }

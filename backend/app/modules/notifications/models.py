@@ -24,6 +24,12 @@ class Notification(Base, UUIDPrimaryKey):
             "user_id",
             postgresql_where=text("read_at IS NULL"),
         ),
+        # پاک‌سازی روزانه‌ی اعلان‌های خوانده‌شده‌ی قدیمی (worker)
+        Index(
+            "ix_notifications_read_created",
+            "created_at",
+            postgresql_where=text("read_at IS NOT NULL"),
+        ),
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))

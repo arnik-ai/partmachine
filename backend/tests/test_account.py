@@ -209,7 +209,8 @@ async def test_everything_is_off_without_a_sender(client: httpx.AsyncClient) -> 
     set_sender(DisabledSender())
     try:
         options = (await client.get(f"{API}/auth/options")).json()
-        assert options == {"passwordReset": False, "phoneVerification": False}
+        # قابلیت‌های وابسته به ارسال کد خاموش‌اند (بقیه‌ی گزینه‌ها به ارسال‌کننده ربطی ندارند)
+        assert options["passwordReset"] is False and options["phoneVerification"] is False
         account = await register(client)
         reset = await client.post(
             f"{API}/auth/password-reset/request", json={"email": account.user["email"]}
@@ -222,4 +223,4 @@ async def test_everything_is_off_without_a_sender(client: httpx.AsyncClient) -> 
     finally:
         set_sender(None)
     enabled = (await client.get(f"{API}/auth/options")).json()
-    assert enabled == {"passwordReset": True, "phoneVerification": True}
+    assert enabled["passwordReset"] is True and enabled["phoneVerification"] is True

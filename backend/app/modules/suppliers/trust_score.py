@@ -82,7 +82,7 @@ def compute_trust_score(
             "value": dispute_value,
             "weight": 0.15,
             "explanation": (
-                "بدون اختلاف ثبت‌شده در پارت‌ماشین"
+                "بدون اختلاف ثبت‌شده در تراشینو"
                 if dispute_count == 0
                 else f"{fa_digits(dispute_count)} مشکل اعلام‌شده از سوی کارفرماها در سابقه"
             ),
@@ -117,7 +117,7 @@ def _explanations(
             f"{fa_digits(record.on_time_jobs)} از {fa_digits(record.delivered_jobs)} سفارش "
             "در موعد تحویل شد"
             if record.delivered_jobs
-            else f"هنوز سفارشی در پارت‌ماشین تحویل نشده؛ {initial} ({fa_digits(on_time)}٪)"
+            else f"هنوز سفارشی در تراشینو تحویل نشده؛ {initial} ({fa_digits(on_time)}٪)"
         ),
         "quality": (
             f"{fa_digits(record.first_pass_jobs)} از {fa_digits(record.inspected_jobs)} بازرسی "

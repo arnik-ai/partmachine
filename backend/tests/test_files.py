@@ -1,7 +1,6 @@
 """فایل‌های خصوصی (گام 2d فاز ۲): آپلود با بررسی محتوای واقعی، پیوست به RFQ، قواعد دانلود
 (مالک، قطعه‌ساز پس از NDA، بقیه هیچ)، لینک کوتاه‌عمر و حذف فایل پیوست‌نشده."""
 
-import os
 import struct
 from collections.abc import Callable
 from datetime import timedelta
@@ -24,14 +23,9 @@ from tests.helpers import (
     create_rfq,
     register,
     rfq_body,
+    stored_keys,
     upload_file,
 )
-
-STORAGE = Path(os.environ["STORAGE_LOCAL_DIR"])
-
-
-def _stored_paths() -> list[Path]:
-    return [p for p in STORAGE.rglob("*") if p.is_file()]
 
 
 async def _download(account: Account, file_id: str) -> httpx.Response:
@@ -48,7 +42,7 @@ async def test_upload_and_attach_to_rfq(client: httpx.AsyncClient) -> None:
     body = uploaded.json()
     assert body["name"] == "نقشه فلنج.pdf"
     assert body["size"] == len(PDF_BYTES) and body["kind"] == "pdf"
-    assert len(_stored_paths()) == 1
+    assert len(stored_keys()) == 1
 
     rfq = await create_rfq(buyer, fileIds=[body["id"]])
     assert rfq["fileCount"] == 1
@@ -100,7 +94,7 @@ async def test_invalid_files_are_rejected_and_not_kept(
     assert response.status_code == 422
     assert response.json()["errors"][0]["field"] == "file"
     assert message_part in response.json()["detail"]
-    assert _stored_paths() == []
+    assert stored_keys() == []
 
 
 async def test_size_limit_per_purpose(client: httpx.AsyncClient) -> None:
@@ -111,7 +105,7 @@ async def test_size_limit_per_purpose(client: httpx.AsyncClient) -> None:
     )
     assert response.status_code == 413
     assert response.json()["code"] == "file_too_large"
-    assert _stored_paths() == []
+    assert stored_keys() == []
 
     # مسیر آپلود از سقف عمومی ۱ مگابایت معاف است
     buyer = await register(client)
@@ -221,7 +215,7 @@ async def test_only_unattached_files_can_be_deleted(
     assert (
         await buyer.client.delete(f"{API}/files/{loose}", headers=buyer.auth)
     ).status_code == 204
-    assert len(_stored_paths()) == 1
+    assert len(stored_keys()) == 1
     conflict = await buyer.client.delete(f"{API}/files/{attached}", headers=buyer.auth)
     assert conflict.status_code == 409 and conflict.json()["code"] == "file_attached"
 
