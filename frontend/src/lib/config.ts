@@ -15,3 +15,6 @@ export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 /** مسیر پایه (فقط نسخه‌ی نمایشی: /partmachine)؛ برای آدرس service worker */
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+/** نشانی اصلی سایت برای canonical، sitemap و داده‌ی ساختاریافته (NEXT_PUBLIC_SITE_URL) */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tarashino.ir").replace(/\/+$/, "");

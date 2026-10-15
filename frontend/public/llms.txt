@@ -1,0 +1,33 @@
+# Tarashino (تراشینو)
+
+> Tarashino is an Iranian B2B marketplace for custom industrial parts. Buyers upload a drawing or CAD file, get quotes from verified manufacturers, sign a contract and track the order to delivery. Optional inspections by quality-control labs are recorded on the same order.
+
+## Key facts
+
+- Website: https://tarashino.ir (Persian) and https://tarashino.ir/en (English)
+- Users: buyers, manufacturers (part makers) and quality-control labs
+- Drawings are visible only to manufacturers who accept the NDA for that request, and every download is logged.
+- Manufacturers receive the "Verified" badge after the Tarashino team reviews their company documents.
+- Payments go directly between the buyer and the manufacturer. Tarashino records and confirms each payment on the order page; it does not hold money.
+- The managers of both companies sign the contract, and every contract version is kept.
+- Accounts can use two-step login with an authenticator app; it is required for admins.
+- Works on Android and iPhone as an installable web app (PWA), without an app store.
+
+## Manufacturing processes
+
+CNC machining, plastic injection molding, sheet metal fabrication, casting, welding, mold making, plastic parts production, forging, heat treatment, coating and plating.
+
+## Pages
+
+- [Home, Persian](https://tarashino.ir/)
+- [Home, English](https://tarashino.ir/en)
+- [Sign up](https://tarashino.ir/register)
+- [Log in](https://tarashino.ir/login)
+
+## فارسی
+
+تراشینو بازار آنلاین ساخت قطعات صنعتی در ایران است. کارفرما نقشه یا فایل CAD را ثبت می‌کند، از قطعه‌سازان تأییدشده پیشنهاد قیمت می‌گیرد، قرارداد می‌بندد و سفارش را تا تحویل دنبال می‌کند. بازرسی کیفیت اختیاری آزمایشگاه‌ها هم در همان سفارش ثبت می‌شود.
+
+- نقشه را فقط قطعه‌سازی می‌بیند که تعهد محرمانگی همان درخواست را پذیرفته است و هر دانلود ثبت می‌شود.
+- پرداخت مستقیم بین کارفرما و قطعه‌ساز انجام می‌شود؛ تراشینو فقط ثبت و تأیید آن را نگه می‌دارد.
+- قطعه‌سازان پس از بررسی مدارک شرکت، نشان «تأییدشده» می‌گیرند.

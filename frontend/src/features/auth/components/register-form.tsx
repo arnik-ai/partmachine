@@ -38,10 +38,15 @@ export function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<RegisterInput["role"]>("buyer");
+  const params = useSearchParams();
+  // دکمه‌های صفحه‌ی اول نقش را پیشنهاد می‌دهند (?role=supplier)؛ کاربر می‌تواند عوضش کند
+  const [role, setRole] = useState<RegisterInput["role"]>(() => {
+    const wanted = params.get("role");
+    return ROLES.some((r) => r.value === wanted) ? (wanted as RegisterInput["role"]) : "buyer";
+  });
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
   // ثبت‌نام با لینک دعوت: نقش و سازمان از دعوت می‌آید و کاربر فقط اطلاعات خودش را وارد می‌کند
-  const inviteToken = useSearchParams().get("invite");
+  const inviteToken = params.get("invite");
   const invite = useInviteInfo(inviteToken);
   const status = useAuthStore((s) => s.status);
   const invited = invite.data;
@@ -119,7 +124,7 @@ export function RegisterForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-xl">ثبت‌نام در پارت‌ماشین</CardTitle>
+        <CardTitle className="text-xl">ثبت‌نام در تراشینو</CardTitle>
         <CardDescription>
           {invited
             ? `${invited.inviterName} شما را به سازمان «${invited.organizationName}» دعوت کرده است.`
@@ -138,7 +143,7 @@ export function RegisterForm() {
             <FieldError message={fieldErrors.inviteToken} />
             {invited ? (
               <p className="rounded-lg border p-3 text-sm">
-                نقش شما در پارت‌ماشین: <strong>{roleLabel(invited.role)}</strong>
+                نقش شما در تراشینو: <strong>{roleLabel(invited.role)}</strong>
               </p>
             ) : (
               <div className="flex flex-col gap-2">
