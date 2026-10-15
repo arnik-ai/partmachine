@@ -1,6 +1,6 @@
-# راه‌اندازی پارت‌ماشین روی یک سرور
+# راه‌اندازی تراشینو روی یک سرور
 
-> مخاطب: کسی که پارت‌ماشین را روی سرور نصب یا به‌روز می‌کند. راهنمای کامل (staging، پایش و پشتیبان) در گام‌های بعدی فاز ۴ به `docs/DEPLOYMENT.md` اضافه می‌شود.
+> مخاطب: کسی که تراشینو را روی سرور نصب یا به‌روز می‌کند. راهنمای کامل (staging، پایش و پشتیبان) در گام‌های بعدی فاز ۴ به `docs/DEPLOYMENT.md` اضافه می‌شود.
 
 ## چه چیزی بالا می‌آید
 
@@ -22,7 +22,7 @@
 ## پیش‌نیازها
 
 - سروری با Docker و Docker Compose.
-- یک دامنه یا زیردامنه (مثلاً `app.partmachine.ir`) که رکورد DNS آن به IP سرور اشاره کند.
+- یک دامنه یا زیردامنه (مثلاً `tarashino.ir`) که رکورد DNS آن به IP سرور اشاره کند.
 - پورت‌های ۸۰ و ۴۴۳ از اینترنت باز باشند تا Caddy گواهی Let's Encrypt بگیرد.
 
 ## نصب بار اول
@@ -33,7 +33,7 @@ docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up 
 
 # ساخت حساب ادمین (رمز از ورودی خوانده می‌شود و در تاریخچه‌ی shell نمی‌ماند)
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod run --rm -T api \
-  python -m app.create_admin --email admin@example.com --name "مدیر پارت‌ماشین" --password-stdin
+  python -m app.create_admin --email admin@example.com --name "مدیر تراشینو" --password-stdin
 ```
 
 اگر تنظیمی ناامن یا ناقص باشد، API با پیام روشن بالا نمی‌آید. نمونه‌ها: رمز کوتاه، دامنه‌ی نامشخص، خاموش بودن محدودیت نرخ.

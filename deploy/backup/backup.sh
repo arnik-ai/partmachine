@@ -1,5 +1,5 @@
 #!/bin/sh
-# پشتیبان‌گیری پارت‌ماشین با restic (فاز ۴، گام 4f). راهنما: docs/BACKUP_RESTORE.md
+# پشتیبان‌گیری تراشینو با restic (فاز ۴، گام 4f). راهنما: docs/BACKUP_RESTORE.md
 #
 #   partmachine-backup daemon                 یک پشتیبان هنگام شروع و بعد هر روز در ساعت BACKUP_AT (UTC)
 #   partmachine-backup run                    همین حالا یک پشتیبان
