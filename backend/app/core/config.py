@@ -83,8 +83,12 @@ class Settings(BaseSettings):
     otp_sender: OtpSender | None = None
     # None یعنی «بر اساس محیط»: console در development/test، disabled در staging/production
     message_sender: MessageSender | None = None
-    # آدرس سایت، برای لینک‌های داخل ایمیل و پیامک
+    # آدرس سایت، برای لینک‌های داخل ایمیل و پیامک و بررسی در دسترس بودن سایت
     site_url: str = "http://localhost:3100"
+    # آدرس داخلی API برای بررسی سلامت توسط worker (در compose تولید: http://api:8000)
+    api_internal_url: str = "http://localhost:8100"
+    # None یعنی «بر اساس محیط»: هشدار پایین بودن سایت فقط در staging/production
+    health_watch_enabled: bool | None = None
 
     @property
     def is_production_like(self) -> bool:
@@ -111,6 +115,12 @@ class Settings(BaseSettings):
         if self.otp_sender is not None:
             return self.otp_sender
         return "disabled" if self.is_production_like else "console"
+
+    @property
+    def watch_health(self) -> bool:
+        if self.health_watch_enabled is not None:
+            return self.health_watch_enabled
+        return self.is_production_like
 
     @property
     def message_sender_name(self) -> MessageSender:

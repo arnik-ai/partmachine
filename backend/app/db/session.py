@@ -14,6 +14,8 @@ engine = create_async_engine(
             "application_name": "partmachine-api",
             # هیچ کوئری‌ای نباید یک اتصال را بی‌نهایت نگه دارد
             "statement_timeout": str(settings.db_statement_timeout_ms),
+            # تراکنشی که بی‌کار باز مانده (مثلاً درخواستی که وسط کار قطع شد) قفل‌هایش را نگه ندارد
+            "idle_in_transaction_session_timeout": "60000",
         }
     },
 )

@@ -31,6 +31,8 @@ from pathlib import Path
 
 from redis.asyncio import Redis
 
+from app import health_watch
+from app.core import metrics
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.redis import close_redis, get_redis
@@ -91,6 +93,7 @@ JOBS = (
     Job("expired_uploads", timedelta(hours=6), expired_uploads),
     Job("old_notifications", timedelta(days=1), old_notifications),
     Job("outbox", timedelta(seconds=30), send_messages, timeout=timedelta(minutes=2)),
+    Job("site_watch", timedelta(minutes=1), health_watch.run, timeout=timedelta(seconds=45)),
 )
 
 
@@ -191,6 +194,9 @@ async def _job_loop(redis: Redis, job: Job, stop: asyncio.Event) -> None:
 async def _heartbeat_loop(stop: asyncio.Event) -> None:
     while not stop.is_set():
         await asyncio.to_thread(HEARTBEAT_FILE.touch)
+        # برای /metrics (سن ضربان worker)؛ اگر Redis در دسترس نباشد، دور بعد
+        with contextlib.suppress(Exception):
+            await get_redis().set(metrics.HEARTBEAT_KEY, time.time(), ex=3600)
         await _wait(stop, TICK_SECONDS)
 
 

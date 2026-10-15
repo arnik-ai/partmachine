@@ -73,6 +73,10 @@ jobs:
           ruff format --check .
       - name: Type check
         run: mypy app
+      - name: Runtime dependencies have no known vulnerabilities
+        run: |
+          pip install pip-audit==2.10.1
+          pip-audit -r requirements.txt
       - name: Migrations round-trip on a clean database
         run: |
           alembic upgrade head
@@ -257,7 +261,11 @@ jobs:
           test "$(curl -sk -o /dev/null -w '%{http_code}' https://localhost:8443/api/v1/docs)" = "404"
           if curl -skI https://localhost:8443/ | grep -qi '^server:'; then echo "Server header leaked"; exit 1; fi
           # هر کار worker را یک بار با تنظیمات production اجرا کن
-          for job in delivery_reminders expired_uploads old_notifications outbox; do
+          # پایش (گام 4e): وضعیت عمومی از بیرون هست؛ آمار فقط داخل سرور
+          curl -fsk https://localhost:8443/api/v1/status | grep -q '"ok"'
+          test "$(curl -sk -o /dev/null -w '%{http_code}' https://localhost:8443/metrics)" = "404"
+          $COMPOSE exec -T api python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/metrics').read().decode())" | grep -q partmachine_http_requests_total
+          for job in delivery_reminders expired_uploads old_notifications outbox site_watch; do
             $COMPOSE exec -T worker python -m app.worker --run "$job"
           done
       - name: Logs on failure

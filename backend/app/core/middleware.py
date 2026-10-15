@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.core import metrics
 from app.core.errors import GENERIC_500, error_body
 from app.core.logging import request_id_var
 
@@ -112,6 +113,12 @@ class RequestContextMiddleware:
                     "event": "http_request",
                 },
             )
+            # شمارش با الگوی مسیر (نه آدرس واقعی) تا برچسب‌ها محدود بمانند؛ خود /metrics شمرده نمی‌شود
+            if scope.get("path") != "/metrics":
+                route = getattr(scope.get("route"), "path", None) or "unmatched"
+                metrics.observe(
+                    str(scope.get("method")), route, state["status"], duration_ms / 1000
+                )
             request_id_var.reset(token)
 
     @staticmethod

@@ -28,6 +28,8 @@ x-api-env: &api-env
   CORS_ORIGINS: https://${APP_DOMAIN}${PUBLIC_PORT_SUFFIX:-}
   # برای لینک‌های داخل ایمیل و پیامک
   SITE_URL: https://${APP_DOMAIN}${PUBLIC_PORT_SUFFIX:-}
+  # worker هر دقیقه API را از همین آدرس داخلی می‌آزماید (هشدار «سایت پایین است»)
+  API_INTERNAL_URL: http://api:8000
   # API فقط از داخل شبکه‌ی Docker و از راه Caddy در دسترس است
   FORWARDED_ALLOW_IPS: "*"
   WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
