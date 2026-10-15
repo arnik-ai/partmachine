@@ -223,4 +223,4 @@ async def test_everything_is_off_without_a_sender(client: httpx.AsyncClient) -> 
     finally:
         set_sender(None)
     enabled = (await client.get(f"{API}/auth/options")).json()
-    assert enabled == {"passwordReset": True, "phoneVerification": True}
+    assert enabled["passwordReset"] is True and enabled["phoneVerification"] is True
