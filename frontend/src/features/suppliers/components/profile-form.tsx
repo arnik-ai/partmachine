@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldError } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { JalaliDateInput } from "@/components/ui/jalali-date-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, errorMessage } from "@/lib/api-client";
@@ -312,7 +313,7 @@ export function ProfileForm({ supplier }: { supplier: MySupplier }) {
               }
             >
               {form.certifications.map((row, index) => (
-                <div key={row.key} className="grid gap-2 sm:grid-cols-[2fr_2fr_1fr_auto]">
+                <div key={row.key} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(15rem,1.3fr)_auto]">
                   <div className="flex flex-col gap-1">
                     <Input
                       aria-label={`عنوان گواهی‌نامه ${index + 1}`}
@@ -343,15 +344,17 @@ export function ProfileForm({ supplier }: { supplier: MySupplier }) {
                     }
                   />
                   <div className="flex flex-col gap-1">
-                    <Input
-                      type="date"
-                      aria-label={`اعتبار گواهی‌نامه ${index + 1} تا`}
+                    <JalaliDateInput
+                      label={`اعتبار گواهی‌نامه ${index + 1} تا`}
+                      hideLabel
+                      summary={false}
+                      yearsAhead={10}
                       value={row.validUntil}
-                      onChange={(e) =>
+                      onChange={(validUntil) =>
                         set(
                           "certifications",
                           form.certifications.map((c) =>
-                            c.key === row.key ? { ...c, validUntil: e.target.value } : c,
+                            c.key === row.key ? { ...c, validUntil } : c,
                           ),
                         )
                       }

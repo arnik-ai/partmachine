@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PASSWORD, createRfq, inDays, quote, register, stamp } from "./helpers";
+import { PASSWORD, createRfq, inDays, pickJalaliDate, quote, register, stamp } from "./helpers";
 
 /** سفارش (گام 3a): ساخت خودکار پس از انتخاب برنده، دید مشترک دو طرف، لغو با دلیل پیش از قرارداد. */
 
@@ -72,7 +72,7 @@ test("both owners sign the contract, the order is shipped, delivered and paid", 
   await buyer.getByRole("link", { name: "مشاهده و امضای قرارداد" }).click();
   await buyer.waitForURL("**/contract");
   await expect(buyer.getByText("پیش‌نویس است")).toBeVisible();
-  await buyer.getByLabel("تاریخ تحویل").fill(inDays(25));
+  await pickJalaliDate(buyer, "تاریخ تحویل", inDays(25));
   await buyer.getByLabel("توضیح تغییر (اختیاری؛ در تاریخچه ثبت می‌شود)").fill("هماهنگی با خط تولید");
   await buyer.getByRole("button", { name: "ذخیره‌ی شرایط" }).click();
   await expect(buyer.getByText("نسخه‌ی تازه‌ی قرارداد ذخیره شد.")).toBeVisible();

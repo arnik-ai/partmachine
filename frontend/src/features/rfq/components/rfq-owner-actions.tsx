@@ -5,7 +5,7 @@ import { CalendarClock, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { FieldError } from "@/components/ui/error-state";
-import { Input } from "@/components/ui/input";
+import { JalaliDateInput } from "@/components/ui/jalali-date-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, errorMessage } from "@/lib/api-client";
@@ -78,25 +78,25 @@ export function RfqOwnerActions({ rfq }: { rfq: Rfq }) {
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="resched-quotes">مهلت دریافت پیشنهاد</Label>
-            <Input
+            <JalaliDateInput
               id="resched-quotes"
-              type="date"
+              label="مهلت دریافت پیشنهاد"
+              required
               min={localToday()}
               max={deadline}
               value={quotesDue}
-              onChange={(e) => setQuotesDue(e.target.value)}
+              onChange={setQuotesDue}
             />
             <FieldError message={fieldErrors.quotesDue} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="resched-deadline">مهلت تحویل</Label>
-            <Input
+            <JalaliDateInput
               id="resched-deadline"
-              type="date"
+              label="مهلت تحویل"
+              required
               min={localToday()}
               value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
+              onChange={setDeadline}
             />
             <FieldError message={fieldErrors.deadline} />
           </div>

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { ErrorState, FieldError } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { JalaliDateInput } from "@/components/ui/jalali-date-input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -218,13 +219,12 @@ export function PaymentsCard({ order }: { order: OrderDetail }) {
       >
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="paid-on">تاریخ پرداخت</Label>
-            <Input
+            <JalaliDateInput
               id="paid-on"
-              type="date"
+              label="تاریخ پرداخت"
               max={localToday()}
               value={paidOn}
-              onChange={(e) => setPaidOn(e.target.value)}
+              onChange={setPaidOn}
             />
             <FieldError message={fieldErrors.paidOn} />
           </div>

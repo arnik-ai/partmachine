@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/error-state";
 import { Input } from "@/components/ui/input";
+import { JalaliDateInput } from "@/components/ui/jalali-date-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TomanInput } from "@/components/ui/toman-input";
@@ -105,14 +106,13 @@ export function QuoteForm({
           <FieldError message={fieldErrors.leadTimeDays} />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="quote-valid">اعتبار پیشنهاد تا</Label>
-          <Input
+          <JalaliDateInput
             id="quote-valid"
-            type="date"
+            label="اعتبار پیشنهاد تا"
             required
             min={localToday()}
             value={validUntil}
-            onChange={(e) => setValidUntil(e.target.value)}
+            onChange={setValidUntil}
           />
           <FieldError message={fieldErrors.validUntil} />
         </div>
