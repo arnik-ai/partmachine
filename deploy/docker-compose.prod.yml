@@ -14,7 +14,16 @@ x-api-env: &api-env
   SECRET_KEY: ${SECRET_KEY:?SECRET_KEY را در فایل env تنظیم کنید}
   DATABASE_URL: postgresql+asyncpg://partmachine:${POSTGRES_PASSWORD}@db:5432/partmachine
   REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  # فایل‌ها: local روی volume «storage»، یا s3 (فضای ابری؛ تنظیمات S3_* در فایل env)
+  STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
   STORAGE_LOCAL_DIR: /data/storage
+  S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_BUCKET: ${S3_BUCKET:-}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+  S3_ADDRESSING_STYLE: ${S3_ADDRESSING_STYLE:-path}
+  S3_PREFIX: ${S3_PREFIX:-}
   ALLOWED_HOSTS: ${APP_DOMAIN},127.0.0.1
   CORS_ORIGINS: https://${APP_DOMAIN}${PUBLIC_PORT_SUFFIX:-}
   # API فقط از داخل شبکه‌ی Docker و از راه Caddy در دسترس است

@@ -3,12 +3,16 @@
 تست‌ها روی PostgreSQL واقعی (پایگاه `partmachine_test`) و Redis (db 15) اجرا می‌شوند؛
 SQLite رفتار PostgreSQL را پنهان می‌کند (گزارش فاز ۰: F02, F09). پیش‌نیاز:
     docker compose up -d db redis
+
+فایل‌ها به‌طور پیش‌فرض روی دیسک (یک پوشه‌ی موقت) نوشته می‌شوند. با `TEST_STORAGE_BACKEND=s3`
+همه‌ی تست‌ها روی یک سرور S3 محلی اجرا می‌شوند (`docker compose up -d s3`)؛ CI هر دو را اجرا می‌کند.
 """
 
 import asyncio
 import os
 import shutil
 import tempfile
+import uuid
 from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 
@@ -28,6 +32,26 @@ os.environ["REDIS_URL"] = TEST_REDIS_URL
 os.environ["CORS_ORIGINS"] = "http://localhost:3100"
 # فایل‌های تست در یک پوشه‌ی موقت جدا، نه در var/storage توسعه
 os.environ["STORAGE_LOCAL_DIR"] = tempfile.mkdtemp(prefix="pm-test-storage-")
+if os.environ.get("TEST_STORAGE_BACKEND", "local") == "s3":
+    TEST_S3_BUCKET = os.environ.get("TEST_S3_BUCKET", "partmachine-test")
+    # حفاظ: تست‌ها فایل‌ها را پاک می‌کنند؛ هرگز روی bucketی که نامش به -test ختم نشود اجرا نشوند
+    if not TEST_S3_BUCKET.endswith("-test"):
+        raise RuntimeError("TEST_S3_BUCKET must be a bucket whose name ends with -test")
+    os.environ.update(
+        {
+            "STORAGE_BACKEND": "s3",
+            "S3_ENDPOINT_URL": os.environ.get("TEST_S3_ENDPOINT_URL", "http://localhost:7070"),
+            "S3_BUCKET": TEST_S3_BUCKET,
+            "S3_ACCESS_KEY_ID": os.environ.get("TEST_S3_ACCESS_KEY_ID", "partmachine"),
+            "S3_SECRET_ACCESS_KEY": os.environ.get(
+                "TEST_S3_SECRET_ACCESS_KEY", "partmachine-dev-secret"
+            ),
+            # هر اجرا پوشه‌ی جدای خود را در bucket دارد
+            "S3_PREFIX": f"run-{uuid.uuid4().hex[:12]}",
+        }
+    )
+else:
+    os.environ["STORAGE_BACKEND"] = "local"
 
 import asyncpg  # noqa: E402
 import httpx  # noqa: E402
@@ -39,6 +63,7 @@ from sqlalchemy import text  # noqa: E402
 from app.core.redis import close_redis, get_redis  # noqa: E402
 from app.db.session import engine  # noqa: E402
 from app.main import app  # noqa: E402
+from tests.helpers import empty_storage, ensure_storage  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 TABLES = (
@@ -88,18 +113,12 @@ async def database() -> AsyncIterator[None]:
     # هر اجرا از schema تمیز شروع می‌شود؛ خود این کار مسیر downgrade/upgrade را هم می‌آزماید
     await asyncio.to_thread(command.downgrade, cfg, "base")
     await asyncio.to_thread(command.upgrade, cfg, "head")
+    await asyncio.to_thread(ensure_storage)
     yield
     await engine.dispose()
     await close_redis()
+    await asyncio.to_thread(empty_storage)
     shutil.rmtree(os.environ["STORAGE_LOCAL_DIR"], ignore_errors=True)
-
-
-def _empty_storage() -> None:
-    for child in Path(os.environ["STORAGE_LOCAL_DIR"]).iterdir():
-        if child.is_dir():
-            shutil.rmtree(child)
-        else:
-            child.unlink()
 
 
 @pytest.fixture(autouse=True)
@@ -107,7 +126,7 @@ async def clean_state(database: None) -> None:
     async with engine.begin() as conn:
         await conn.execute(text(f"TRUNCATE {TABLES} RESTART IDENTITY CASCADE"))
     await get_redis().flushdb()
-    await asyncio.to_thread(_empty_storage)
+    await asyncio.to_thread(empty_storage)
 
 
 @pytest.fixture

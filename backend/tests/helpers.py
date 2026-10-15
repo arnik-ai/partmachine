@@ -1,5 +1,6 @@
 """ابزارهای کمکی تست: ساخت حساب، RFQ و پیشنهاد از طریق خود API (نه مستقیم در DB)."""
 
+import shutil
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -7,8 +8,10 @@ from datetime import date, timedelta
 from typing import Any
 
 import httpx
+from botocore.exceptions import ClientError
 from sqlalchemy import text
 
+from app.core.storage import LocalStorage, S3Storage, get_storage
 from app.core.time import business_today
 from app.db.session import engine
 from app.modules.agreements.catalog import (
@@ -127,6 +130,51 @@ async def accept_nda(account: Account, rfq_id: str) -> httpx.Response:
     return await account.client.post(
         f"{API}/rfqs/{rfq_id}/nda", json=accepted(RFQ_NDA.key), headers=account.auth
     )
+
+
+def _s3_keys(storage: S3Storage) -> list[str]:
+    paginator = storage.client.get_paginator("list_objects_v2")
+    return [
+        item["Key"]
+        for page in paginator.paginate(Bucket=storage.bucket, Prefix=storage.prefix)
+        for item in page.get("Contents", [])
+    ]
+
+
+def stored_keys() -> list[str]:
+    """کلید فایل‌هایی که الان در فضای ذخیره‌ی تست هستند (دیسک یا S3)."""
+    storage = get_storage()
+    if isinstance(storage, S3Storage):
+        return sorted(key.removeprefix(storage.prefix) for key in _s3_keys(storage))
+    assert isinstance(storage, LocalStorage)
+    return sorted(
+        p.relative_to(storage.root).as_posix() for p in storage.root.rglob("*") if p.is_file()
+    )
+
+
+def ensure_storage() -> None:
+    """bucket تست را اگر نباشد می‌سازد (فقط در حالت S3)."""
+    storage = get_storage()
+    if isinstance(storage, S3Storage):
+        try:
+            storage.client.head_bucket(Bucket=storage.bucket)
+        except ClientError:
+            storage.client.create_bucket(Bucket=storage.bucket)
+
+
+def empty_storage() -> None:
+    storage = get_storage()
+    if isinstance(storage, S3Storage):
+        # یکی‌یکی، چون DeleteObjects در برخی سرویس‌های S3-سازگار checksum متفاوتی می‌خواهد
+        for key in _s3_keys(storage):
+            storage.client.delete_object(Bucket=storage.bucket, Key=key)
+        return
+    assert isinstance(storage, LocalStorage)
+    for child in storage.root.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
 
 
 PDF_BYTES = b"%PDF-1.4\n% PartMachine test file\n" + b"0" * 200

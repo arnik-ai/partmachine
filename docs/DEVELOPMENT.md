@@ -6,7 +6,7 @@
 
 | ابزار | نسخه | کاربرد |
 |---|---|---|
-| Docker Desktop یا Docker Engine با Compose | — | PostgreSQL 17 و Redis 7 |
+| Docker Desktop یا Docker Engine با Compose | — | PostgreSQL 17، Redis 7 و سرور S3 آزمون |
 | Python | 3.13 (حداقل 3.12) | بک‌اند |
 | Node.js | 22.12 یا جدیدتر | فرانت |
 
@@ -105,7 +105,11 @@ cd backend
 | `DB_POOL_SIZE` / `DB_MAX_OVERFLOW` | `10` / `10` | بر اساس ظرفیت PostgreSQL |
 | `DB_STATEMENT_TIMEOUT_MS` | `15000` | — |
 | `BUSINESS_TIMEZONE` | `Asia/Tehran` | مبنای «امروز» برای مهلت‌ها |
-| `STORAGE_LOCAL_DIR` | `var/storage` (نسبت به `backend/`) | الزامی؛ مسیر **مطلق** روی دیسک پایدار (volume) |
+| `STORAGE_BACKEND` | `local` | `local` (دیسک سرور) یا `s3` (فضای ابری S3-سازگار) |
+| `STORAGE_LOCAL_DIR` | `var/storage` (نسبت به `backend/`) | با `local` الزامی؛ مسیر **مطلق** روی دیسک پایدار (volume) |
+| `S3_ENDPOINT_URL` | — | با `s3`: آدرس `https://` سرویس (خالی یعنی AWS) |
+| `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | — | با `s3` الزامی، حتی در توسعه؛ bucket خصوصی |
+| `S3_REGION` / `S3_ADDRESSING_STYLE` / `S3_PREFIX` | `us-east-1` / `path` / — | طبق راهنمای سرویس؛ `S3_PREFIX` پوشه‌ای اختیاری داخل bucket |
 | `UPLOAD_MAX_BYTES` | `52428800` (۵۰MB) | سقف کلی بدنه‌ی بارگذاری؛ هر نوع فایل سقف کوچک‌تر خودش را دارد |
 | `DOWNLOAD_LINK_TTL_SECONDS` | `120` | — |
 | `OTP_SENDER` | `console` در توسعه (کد در لاگ API) | پیش‌فرض `disabled`؛ `console` در تولید مجاز نیست. سرویس واقعی پیامک/ایمیل فقط پس از تأیید مالک |
@@ -153,6 +157,19 @@ cd backend
 - **حفاظ:** تست‌ها جدول‌ها را خالی می‌کنند؛ نام پایگاهی که در `TEST_DATABASE_URL` می‌آید باید به `_test` ختم شود، وگرنه تست‌ها اجرا نمی‌شوند.
 - هر اجرا از schema تمیز شروع می‌شود (`downgrade base` و سپس `upgrade head`). یک تست جداگانه هم upgrade، downgrade و دوباره upgrade را روی یک پایگاه خالی می‌آزماید.
 - سناریوهای بازتولید گزارش فاز ۰ (پیوست الف) به تست دائمی تبدیل شده‌اند؛ شناسه‌ی سناریو در docstring تست‌ها آمده است.
+- **فایل‌ها روی S3:** تست‌ها به‌طور پیش‌فرض فایل‌ها را روی دیسک (یک پوشه‌ی موقت) می‌نویسند. برای اجرای همه‌ی آن‌ها روی یک سرور S3 محلی و رایگان (versitygw):
+
+  ```powershell
+  docker compose up -d s3              # روی 127.0.0.1:7070
+  $env:TEST_STORAGE_BACKEND = "s3"
+  .venv\Scripts\pytest -q
+  $env:TEST_STORAGE_BACKEND = $null
+  ```
+
+  - در این حالت تست‌های `test_storage.py` هم اجرا می‌شوند: نوشتن و خواندن، خصوصی بودن فایل‌ها و ابزار انتقال.
+  - هر اجرا پوشه‌ی جدای خود را در bucket `partmachine-test` دارد.
+  - **حفاظ:** نام bucket تست باید به `-test` ختم شود.
+  - CI هر دو حالت را اجرا می‌کند.
 
 ### فرانت
 
@@ -261,7 +278,7 @@ npm run typecheck                                         # contract.ts ناسا
 ## CI
 
 - **`ci.yml`:** روی push به `master` و شاخه‌های `phase-*` و روی هر PR اجرا می‌شود.
-  - بک‌اند: ruff، mypy، round-trip کامل Alembic و pytest روی سرویس‌های PostgreSQL 17 و Redis.
+  - بک‌اند: ruff، mypy، round-trip کامل Alembic و pytest روی سرویس‌های PostgreSQL 17 و Redis. pytest دو بار اجرا می‌شود: یک بار با فایل‌ها روی دیسک و یک بار روی سرور S3 (versitygw).
   - فرانت: به‌روز بودن تایپ‌های API، tsc، eslint، vitest، build سروری، رد build سروری با حالت دمو، build نمایشی و `npm audit` وابستگی‌های runtime.
 - **`deploy-pages.yml`:** با push به `master` نسخه‌ی نمایشی را روی GitHub Pages منتشر می‌کند.
 
@@ -274,7 +291,7 @@ docker compose exec -T db pg_dump -U partmachine -Fc partmachine > partmachine.d
 docker compose exec -T db pg_restore -U partmachine -d partmachine --clean --if-exists < partmachine.dump
 ```
 
-- **فایل‌ها:** محتوای فایل‌ها در پایگاه داده نیست؛ پوشه‌ی `STORAGE_LOCAL_DIR` (در توسعه `backend/var/storage`) را **هم‌زمان** با پایگاه داده پشتیبان بگیرید، وگرنه فراداده و فایل‌ها ناهماهنگ می‌شوند.
+- **فایل‌ها:** محتوای فایل‌ها در پایگاه داده نیست؛ پوشه‌ی `STORAGE_LOCAL_DIR` (در توسعه `backend/var/storage`) را **هم‌زمان** با پایگاه داده پشتیبان بگیرید، وگرنه فراداده و فایل‌ها ناهماهنگ می‌شوند. با `STORAGE_BACKEND=s3` فایل‌ها در bucket هستند؛ پشتیبان آن در راهنمای پشتیبان‌گیری (گام 4f) می‌آید.
 - **بازگشت نسخه:** نسخه‌ی قبلی برنامه را مستقر کنید و فقط اگر migration برگشت‌پذیر بوده، `alembic downgrade <revision>` اجرا کنید.
 - پیش از هر migration در تولید پشتیبان بگیرید.
 - مستندات کامل استقرار، پشتیبان‌گیری خودکار و آزمون بازگردانی در فاز ۴ تهیه می‌شود.

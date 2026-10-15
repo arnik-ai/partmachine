@@ -8,12 +8,16 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["development", "test", "staging", "production"]
 # ارسال کد یک‌بارمصرف (P8): console فقط برای توسعه و تست (کد در لاگ)؛ تا انتخاب و تأیید سرویس
 # پیامک/ایمیل واقعی، در تولید disabled است
 OtpSender = Literal["console", "disabled"]
+# محل نگهداری فایل‌ها: دیسک محلی (توسعه یا یک سرور) یا فضای ابری S3-سازگار
+StorageBackend = Literal["local", "s3"]
+S3AddressingStyle = Literal["path", "virtual", "auto"]
 
 DEV_SECRET_KEY = "dev-only-insecure-secret-key-do-not-use-in-production"
 DEV_DATABASE_URL = "postgresql+asyncpg://partmachine:partmachine@localhost:5433/partmachine"
@@ -54,8 +58,18 @@ class Settings(BaseSettings):
     log_json: bool | None = None
 
     max_body_bytes: int = 1_000_000
-    # فایل‌ها: فعلاً دیسک محلی (در تولید یک volume پایدار)؛ پیاده‌سازی S3 با انتخاب سرویس در فاز ۴
+    # فایل‌ها روی دیسک محلی (در تولید یک volume پایدار) یا فضای ابری S3-سازگار
+    storage_backend: StorageBackend = "local"
     storage_local_dir: str = "var/storage"
+    # خالی یعنی AWS؛ برای سرویس‌های دیگر آدرس endpoint همان سرویس (مثلاً لیارا یا آروان)
+    s3_endpoint_url: str = ""
+    s3_region: str = "us-east-1"
+    s3_bucket: str = ""
+    s3_access_key_id: str = ""
+    s3_secret_access_key: SecretStr = SecretStr("")
+    s3_addressing_style: S3AddressingStyle = "path"
+    # اختیاری: پوشه‌ای داخل bucket، برای وقتی که چند محیط (مثلاً staging) یک bucket دارند
+    s3_prefix: str = ""
     upload_max_bytes: int = 50 * 1024 * 1024
     download_link_ttl_seconds: int = 120
     business_timezone: str = "Asia/Tehran"
@@ -106,6 +120,24 @@ class Settings(BaseSettings):
             found.append(
                 "DATABASE_URL must be a postgresql+asyncpg:// URL (SQLite is not supported)"
             )
+        if self.storage_backend == "s3":
+            missing = [
+                name
+                for name, value in (
+                    ("S3_BUCKET", self.s3_bucket),
+                    ("S3_ACCESS_KEY_ID", self.s3_access_key_id),
+                    ("S3_SECRET_ACCESS_KEY", self.s3_secret_access_key.get_secret_value()),
+                )
+                if not value.strip()
+            ]
+            if missing:
+                found.append(f"STORAGE_BACKEND=s3 needs {', '.join(missing)}")
+            if self.s3_endpoint_url and not self.s3_endpoint_url.startswith(
+                ("http://", "https://")
+            ):
+                found.append(
+                    "S3_ENDPOINT_URL must be a full URL such as https://storage.example.com"
+                )
         if not self.is_production_like:
             return found
 
@@ -123,13 +155,15 @@ class Settings(BaseSettings):
             found.append("ALLOWED_HOSTS must list explicit host names")
         if not self.secure_cookies:
             found.append("COOKIE_SECURE must not be disabled")
-        if (
+        if self.storage_backend == "local" and (
             "storage_local_dir" not in self.model_fields_set
             or not Path(self.storage_local_dir).is_absolute()
         ):
             found.append(
                 "STORAGE_LOCAL_DIR must be an explicit absolute path on persistent storage"
             )
+        if self.storage_backend == "s3" and self.s3_endpoint_url.startswith("http://"):
+            found.append("S3_ENDPOINT_URL must use https:// so files are encrypted in transit")
         if self.otp_sender_name == "console":
             found.append("OTP_SENDER=console writes one-time codes to the logs; not allowed here")
         # فقط برای API آزمایشیِ آزمون مرورگر خاموش می‌شود؛ در staging و production هرگز

@@ -1,4 +1,5 @@
-# کنترل کیفیت هر push و pull request: بک‌اند روی PostgreSQL 17 و Redis واقعی، و فرانت با هر دو build.
+# کنترل کیفیت هر push و pull request: بک‌اند روی PostgreSQL 17 و Redis واقعی (فایل‌ها یک بار روی دیسک
+# و یک بار روی سرور S3)، و فرانت با هر دو build.
 name: CI
 
 on:
@@ -37,6 +38,21 @@ jobs:
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s --health-timeout 3s --health-retries 20
+      # سرور S3 رایگان برای اجرای دوم تست‌ها (همان تنظیم docker-compose.yml)
+      s3:
+        image: versity/versitygw:v1.9.0
+        env:
+          ROOT_ACCESS_KEY_ID: partmachine
+          ROOT_SECRET_ACCESS_KEY: partmachine-dev-secret
+          VGW_BACKEND: posix
+          VGW_BACKEND_ARG: /data
+          VGW_HEALTH: /health
+        ports: ["7070:7070"]
+        volumes:
+          - pm_s3_data:/data
+        options: >-
+          --health-cmd "wget -q -O /dev/null http://127.0.0.1:7070/health"
+          --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       ENVIRONMENT: test
       DATABASE_URL: postgresql+asyncpg://partmachine:partmachine@localhost:5433/partmachine
@@ -64,6 +80,10 @@ jobs:
           alembic upgrade head
           alembic check
       - name: Tests (PostgreSQL + Redis)
+        run: pytest -q
+      - name: Tests again with files on S3 (versitygw)
+        env:
+          TEST_STORAGE_BACKEND: s3
         run: pytest -q
       - name: OpenAPI contract is committed and up to date
         run: |

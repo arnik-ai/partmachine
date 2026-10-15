@@ -1,4 +1,4 @@
-# محیط توسعه‌ی محلی PartMachine — PostgreSQL + Redis
+# محیط توسعه‌ی محلی PartMachine — PostgreSQL + Redis (و S3 فقط برای آزمون)
 #
 #   docker compose up -d db redis
 #
@@ -40,6 +40,30 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # فضای فایل S3-سازگار، فقط برای آزمون فایل‌ها روی S3 (TEST_STORAGE_BACKEND=s3):
+  #   docker compose up -d s3
+  # versitygw رایگان و متن‌باز است (ایمیج‌های رایگان MinIO دیگر منتشر نمی‌شوند)؛ کد برنامه همان
+  # پروتکل استاندارد S3 را به کار می‌برد و به این سرور وابسته نیست.
+  s3:
+    image: versity/versitygw:v1.9.0
+    profiles: ["s3"]
+    environment:
+      ROOT_ACCESS_KEY_ID: partmachine
+      ROOT_SECRET_ACCESS_KEY: partmachine-dev-secret
+      VGW_BACKEND: posix
+      VGW_BACKEND_ARG: /data
+      VGW_HEALTH: /health
+    ports:
+      - "127.0.0.1:${PM_S3_PORT:-7070}:7070"
+    volumes:
+      - pm_s3_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:7070/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
 volumes:
   pm_db_data:
   pm_redis_data:
+  pm_s3_data:
