@@ -248,6 +248,8 @@ jobs:
         run: |
           test "$($COMPOSE ps -a migrate --format '{{.ExitCode}}')" = "0"
           curl -fsk https://localhost:8443/ | grep -q 'rel="manifest"'
+          # CSP با nonce از پشت Caddy هم می‌رسد (گام 4e)
+          curl -fskI https://localhost:8443/ | grep -i '^content-security-policy:' | grep "'nonce-" | grep -q upgrade-insecure-requests
           curl -fsk https://localhost:8443/manifest.webmanifest | grep -q '"display":"standalone"'
           curl -fsk https://localhost:8443/api/v1/agreements/buyer_signup | grep -q '"key":"buyer_signup"'
           # مستندات API و سلامت داخلی از بیرون در دسترس نیستند؛ نام سرور هم لو نمی‌رود

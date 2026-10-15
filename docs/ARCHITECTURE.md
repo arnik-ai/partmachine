@@ -38,6 +38,7 @@ PartMachine یک بازار صنعتی B2B است که پنج نقش اصلی د
 ## ۳. فرانت‌اند
 
 - **Next.js 16 (App Router)** — Server Components به‌صورت پیش‌فرض؛ Client Components فقط برای تعامل (فرم‌ها، استورها).
+- **CSP با nonce (گام 4e):** `src/proxy.ts` برای هر درخواست CSP تازه می‌سازد. برای همین layout ریشه همه‌ی صفحه‌ها را هنگام درخواست می‌سازد (`connection()`)، جز در خروجی استاتیک نسخه‌ی نمایشی.
 - **TailwindCSS v4** — پیکربندی CSS-first با `@theme`؛ فونت وزیرمتن؛ `dir="rtl"` در ریشه.
 - **shadcn/ui-style** — کامپوننت‌های ui داخل `src/components/ui` با CVA.
 - **React Query v5** — داده‌ی سرور (لیست تأمین‌کننده‌ها، RFQها)؛ کش و revalidate.

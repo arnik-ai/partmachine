@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { connection } from "next/server";
 import { DemoBanner } from "@/components/layout/demo-banner";
 import { PwaSetup } from "@/components/layout/pwa-setup";
 import { Providers } from "./providers";
@@ -36,9 +37,14 @@ export const metadata: Metadata = {
   other: { "apple-mobile-web-app-capable": "yes" },
 };
 
-export default function RootLayout({
+// CSP با nonce (گام 4e): هر صفحه هنگام درخواست ساخته می‌شود تا Next بتواند nonce همان درخواست را روی
+// اسکریپت‌ها بگذارد. خروجی استاتیک نسخه‌ی نمایشی درخواستی ندارد و CSP هم ندارد.
+const isStaticExport = process.env.NEXT_OUTPUT === "export";
+
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  if (!isStaticExport) await connection();
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
       <body className="min-h-screen font-[family-name:var(--font-vazirmatn)] antialiased">

@@ -10,6 +10,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // خروجی موقت آزمون مرورگر
+    "test-results/**",
+    "playwright-report/**",
     // تولیدشده از OpenAPI بک‌اند — دستی ویرایش نمی‌شود
     "src/lib/api/schema.ts",
   ]),

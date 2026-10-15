@@ -29,7 +29,12 @@ export default defineConfig({
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     // نمایش روی دستگاه‌های دیگر (فاز ۴، گام 4a): فقط آزمون نمایش
     { name: "android", use: { ...devices["Pixel 7"] }, testMatch: /responsive\.spec\.ts/ },
-    { name: "iphone", use: { ...devices["iPhone 13"] }, testMatch: /responsive\.spec\.ts/ },
+    // روی آیفون، CSP هم آزموده می‌شود (موتور Safari)
+    {
+      name: "iphone",
+      use: { ...devices["iPhone 13"] },
+      testMatch: /(responsive|csp)\.spec\.ts/,
+    },
     { name: "ipad", use: { ...devices["iPad (gen 7)"] }, testMatch: /responsive\.spec\.ts/ },
     {
       name: "ipad-landscape",
