@@ -57,6 +57,9 @@ html:has(.lp), html:has(.lp) body { background: #0d0c12; }
   .lp .site-header.is-scrolled { background: rgba(13, 12, 18, .72); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); border-color: var(--line); }
   .lp .site-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; }
   .lp .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+  .lp .head-start { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .lp .back-btn { background: rgba(255, 255, 255, .06); border: 1px solid var(--line-strong); color: var(--fg); box-shadow: none; }
+  .lp .back-btn:hover { background: rgba(139, 92, 246, .2); }
   .lp .brand-name { font-weight: 900; font-size: 1.3rem; letter-spacing: -.01em; }
   .lp .brand svg { flex: none; overflow: visible; }
   .lp .mark-light { color: #ecebf2; }
