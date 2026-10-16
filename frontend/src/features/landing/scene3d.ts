@@ -23,6 +23,10 @@ export const D = {
 
 const ease = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const smooth = (a: number, b: number, x: number) => {
+  const k = clamp01((x - a) / (b - a));
+  return k * k * (3 - 2 * k);
+};
 
 export function buildMaterials() {
   const steel = new THREE.MeshPhysicalMaterial({ color: 0xc9c7d3, metalness: 1, roughness: 0.28, clearcoat: 0.2, clearcoatRoughness: 0.35 });
@@ -131,7 +135,7 @@ export function buildFlange(mats: Materials, { plugs = false, body = "steel" as 
       rings.push(ring);
     }
   }
-  return { group, holes, plugs: plugMeshes, rings };
+  return { group, holes, plugs: plugMeshes, rings, body: [disk, hub] };
 }
 
 /** مته‌ی T لوگو: نوار بالا (نگه‌دارنده)، متوازی‌الاضلاع کهربایی و ساقه‌ی شیاردار. مبدأ = نوک مته. */
@@ -467,7 +471,8 @@ export function startHero(opts: {
   const mats = buildMaterials();
   const { t } = D;
 
-  const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.ShadowMaterial({ opacity: 0.4 }));
+  const shadowMat = new THREE.ShadowMaterial({ opacity: 0 });
+  const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), shadowMat);
   shadowPlane.rotation.x = -Math.PI / 2;
   shadowPlane.receiveShadow = true;
   scene.add(shadowPlane);
@@ -487,6 +492,11 @@ export function startHero(opts: {
   scene.add(slide);
   const part = buildFlange(mats, { plugs: true });
   spin.add(part.group);
+  // خطوط نقشه‌ی فنی همان قطعه؛ صحنه با همین نقشه از نمای بالا شروع می‌شود
+  const blueprint = new THREE.LineBasicMaterial({ color: 0x9fb6ff, transparent: true, opacity: 0 });
+  const lines = new THREE.Group();
+  for (const mesh of part.body) lines.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 25), blueprint));
+  spin.add(lines);
 
   const drill = buildDrill(mats);
   scene.add(drill.group);
@@ -501,15 +511,10 @@ export function startHero(opts: {
   scene.add(laser);
 
   const park = new THREE.Vector3();
-  const frame = () => {
-    const w = host.clientWidth;
-    const h = host.clientHeight;
-    if (!w || !h) return;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    const dist = Math.max(1.7 / tanV, 2.05 / (tanV * camera.aspect));
-    const el = THREE.MathUtils.degToRad(28);
+  let elev = 28;
+  let dist = 6;
+  const place = () => {
+    const el = THREE.MathUtils.degToRad(elev);
     const az = THREE.MathUtils.degToRad(-32);
     camera.position.set(
       target.x + dist * Math.cos(el) * Math.sin(az),
@@ -517,6 +522,16 @@ export function startHero(opts: {
       target.z + dist * Math.cos(el) * Math.cos(az),
     );
     camera.lookAt(target);
+  };
+  const frame = () => {
+    const w = host.clientWidth;
+    const h = host.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    dist = Math.max(1.7 / tanV, 2.05 / (tanV * camera.aspect));
+    place();
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
     right.setFromMatrixColumn(camera.matrixWorld, 0).setY(0).normalize();
@@ -526,6 +541,7 @@ export function startHero(opts: {
   };
   frame();
   drill.group.position.copy(park);
+  drill.group.visible = false;
   const ro = new ResizeObserver(frame);
   ro.observe(host);
 
@@ -667,8 +683,35 @@ export function startHero(opts: {
     });
     await loop.tween(1000, (k) => slide.position.copy(right).multiplyScalar(-4.6 * (1 - ease(k))));
   };
+  const steels = [mats.steel, mats.steelDS];
+  const setIntro = (m: number) => {
+    spin.scale.y = 0.02 + 0.98 * smooth(0.12, 0.75, m);
+    const solid = smooth(0.4, 0.9, m);
+    for (const mat of steels) {
+      mat.opacity = solid;
+      mat.transparent = solid < 0.999;
+      mat.depthWrite = solid > 0.98;
+    }
+    blueprint.opacity = 1 - 0.85 * smooth(0.6, 1, m);
+    shadowMat.opacity = 0.4 * smooth(0.5, 1, m);
+    elev = 88 - 60 * smooth(0.05, 0.8, m);
+    place();
+  };
   void (async () => {
-    await wait(900);
+    setIntro(0);
+    blueprint.opacity = 0;
+    // نقشه‌ی سه‌بعدی جای نقشه‌ی SVG را می‌گیرد، کمی می‌ماند و بعد بلند می‌شود
+    await loop.tween(500, (k) => {
+      blueprint.opacity = k;
+    });
+    await wait(700);
+    await loop.tween(2800, setIntro);
+    setIntro(1);
+    lines.visible = false;
+    drill.group.visible = true;
+    const above = park.clone().addScaledVector(up, 1.4);
+    await loop.tween(700, (k) => drill.group.position.lerpVectors(above, park, ease(k)));
+    await wait(300);
     while (!stopped) await cycle();
   })();
 
@@ -696,8 +739,10 @@ export function startExplode(opts: {
   labels: Iterable<HTMLElement>;
   progress: () => number;
   bar: HTMLElement | null;
+  /** کارت مشخصات جزء انتخاب‌شده: [data-name]، [data-proc]، [data-spec]، a[data-link]، [data-close] */
+  card: HTMLElement | null;
 }): Scene3D {
-  const { canvas, host, labels, progress, bar } = opts;
+  const { canvas, host, labels, progress, bar, card } = opts;
   const { renderer, scene, dispose } = makeRenderer(canvas, false);
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 80);
   const mats = buildMaterials();
@@ -711,6 +756,79 @@ export function startExplode(opts: {
     item: byKey.get(el.dataset.part as PartKey),
     at: Number(el.dataset.at ?? 0),
   }));
+  // ---- انتخاب جزء: هر جزء مواد خودش را دارد تا جداگانه محو یا روشن شود
+  type Pickable = { item: AssemblyItem; meshes: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>[] };
+  const pickables: Pickable[] = asm.items.map((item) => {
+    const meshes: Pickable["meshes"] = [];
+    item.holder.traverse((o) => {
+      if (!(o instanceof THREE.Mesh)) return;
+      const mesh = o as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+      mesh.material = mesh.material.clone();
+      mesh.material.transparent = true;
+      mesh.material.emissive.setHex(0x6d4bd6);
+      mesh.material.emissiveIntensity = 0;
+      meshes.push(mesh);
+    });
+    return { item, meshes };
+  });
+  const allMeshes = pickables.flatMap((pk) => pk.meshes);
+  const owner = new Map(pickables.flatMap((pk) => pk.meshes.map((m) => [m, pk] as const)));
+  // دو لوله یک جزءاند
+  const infoKey = (key: PartKey) => (key === "pipeB" ? "pipe" : key);
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const pickAt = (clientX: number, clientY: number) => {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const hit = ray.intersectObjects(allMeshes, false)[0];
+    return hit ? (owner.get(hit.object as Pickable["meshes"][number]) ?? null) : null;
+  };
+  let selected: PartKey | null = null;
+  let hovered: PartKey | null = null;
+  const select = (key: PartKey | null) => {
+    selected = key;
+    host.classList.toggle("picking", key !== null);
+    if (!key || !card) return;
+    const label = labelEls.find((l) => l.el.dataset.part === key)?.el;
+    if (!label) return;
+    const set = (sel: string, text: string) => {
+      const el = card.querySelector(sel);
+      if (el) el.textContent = text;
+    };
+    set("[data-name]", label.querySelector("small")?.textContent ?? "");
+    set("[data-proc]", label.querySelector("b")?.textContent ?? "");
+    set("[data-spec]", label.dataset.spec ?? "");
+    const link = card.querySelector<HTMLAnchorElement>("a[data-link]");
+    if (link) link.href = label.getAttribute("href") ?? "#";
+  };
+  let downX = 0;
+  let downY = 0;
+  const onDown = (e: PointerEvent) => {
+    downX = e.clientX;
+    downY = e.clientY;
+  };
+  const onUp = (e: PointerEvent) => {
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return;
+    const pk = pickAt(e.clientX, e.clientY);
+    const key = pk ? infoKey(pk.item.key) : null;
+    select(key && key !== selected ? key : null);
+  };
+  const onHover = (e: PointerEvent) => {
+    const pk = pickAt(e.clientX, e.clientY);
+    hovered = pk ? infoKey(pk.item.key) : null;
+    canvas.style.cursor = hovered ? "pointer" : "";
+  };
+  const onClose = () => select(null);
+  canvas.addEventListener("pointerdown", onDown);
+  canvas.addEventListener("pointerup", onUp);
+  canvas.addEventListener("pointermove", onHover);
+  const closeBtn = card?.querySelector("[data-close]");
+  closeBtn?.addEventListener("click", onClose);
+  const focus = new THREE.Vector3();
+  const want = new THREE.Vector3();
+  const box = new THREE.Box3();
+  const size = new THREE.Vector3();
   let vertical = false;
   let dist = 10;
   const resize = () => {
@@ -743,14 +861,37 @@ export function startExplode(opts: {
     // دوربین طوری عقب می‌رود که کل مجموعه در قاب بماند
     const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     const half = asm.halfLength(e);
-    const need = vertical
+    let need = vertical
       ? Math.max((half + 0.45) / tanV, 2.5 / (tanV * camera.aspect))
       : Math.max((half * 0.9 + 0.5) / (tanV * camera.aspect), 2.1 / tanV);
+    want.set(0, 0, 0);
+    const k = Math.min(1, dt * 5);
+    for (const pk of pickables) {
+      const key = infoKey(pk.item.key);
+      const on = selected === null || key === selected;
+      if (selected !== null && key === selected && pk.item.key !== "pipeB") {
+        // دوربین روی جزء انتخاب‌شده نزدیک می‌رود
+        box.setFromObject(pk.item.holder);
+        box.getCenter(want);
+        need = Math.max(3, box.getSize(size).length() * 2.4);
+      }
+      const glow = selected === null && hovered === key ? 0.35 : 0;
+      for (const mesh of pk.meshes) {
+        mesh.material.opacity += ((on ? 1 : 0.08) - mesh.material.opacity) * k;
+        mesh.material.depthWrite = mesh.material.opacity > 0.95;
+        mesh.material.emissiveIntensity += (glow - mesh.material.emissiveIntensity) * k;
+      }
+    }
+    focus.lerp(want, k);
     dist += (need - dist) * Math.min(1, dt * 6);
     const el = THREE.MathUtils.degToRad(vertical ? 12 : 17);
     const az = THREE.MathUtils.degToRad(24);
-    camera.position.set(dist * Math.cos(el) * Math.sin(az), dist * Math.sin(el), dist * Math.cos(el) * Math.cos(az));
-    camera.lookAt(0, 0, 0);
+    camera.position.set(
+      focus.x + dist * Math.cos(el) * Math.sin(az),
+      focus.y + dist * Math.sin(el),
+      focus.z + dist * Math.cos(el) * Math.cos(az),
+    );
+    camera.lookAt(focus);
     renderer.render(scene, camera);
     for (const { el, item, at } of labelEls) {
       if (!item?.anchor) continue;
@@ -762,11 +903,16 @@ export function startExplode(opts: {
     }
     if (bar) bar.style.transform = `scaleX(${p})`;
     host.classList.toggle("started", p > 0.06);
+    host.classList.toggle("can-pick", e > 0.8);
   });
   return {
     stop: () => {
       loop.stop();
       ro.disconnect();
+      canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("pointerup", onUp);
+      canvas.removeEventListener("pointermove", onHover);
+      closeBtn?.removeEventListener("click", onClose);
       dispose();
     },
   };

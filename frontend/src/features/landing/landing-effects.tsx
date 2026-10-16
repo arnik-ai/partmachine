@@ -454,6 +454,158 @@ export function LandingEffects() {
       }
     }
 
+    // ---- جرقه‌هایی که لوگو را می‌سازند (بخش پایانی): هزاران ذره که جمع می‌شوند، با نشانگر پخش
+    //      می‌شوند و با کلیک دوباره مثل جرقه‌ی سنگ‌فرز می‌پاشند. Canvas دوبعدی، فقط وقتی دیده می‌شود.
+    const sparkHost = $(".spark-logo");
+    const sparkCanvas = $<HTMLCanvasElement>("[data-sparklogo]");
+    const sctx = sparkCanvas?.getContext("2d");
+    if (!reduce && sparkHost && sparkCanvas && sctx) {
+      type Spark = { x: number; y: number; vx: number; vy: number; tx: number; ty: number; amber: boolean; tw: number; s: number };
+      // همان شکل لوگو (مختصات SVG): نوار T، ساقه‌ی T و متوازی‌الاضلاع کهربایی
+      const SHAPES: { pts: [number, number][]; amber: boolean }[] = [
+        { pts: [[40, 6], [118, 6], [104, 30], [26, 30]], amber: false },
+        { pts: [[64, 30], [90, 30], [90, 126], [74, 146], [64, 136]], amber: false },
+        { pts: [[126, 6], [158, 6], [144, 30], [112, 30]], amber: true },
+      ];
+      let W = 0;
+      let H = 0;
+      let sparks: Spark[] = [];
+      let burstAt = 0;
+      let last = 0;
+      let raf = 0;
+      let visible = false;
+      const pointer = { x: -9999, y: -9999 };
+      const burst = (cx = W / 2, cy = H * 0.95) => {
+        burstAt = performance.now();
+        for (const p of sparks) {
+          const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4;
+          const speed = 6 + Math.random() * 16;
+          p.x = cx + (Math.random() - 0.5) * 20;
+          p.y = cy;
+          p.vx = Math.cos(a) * speed;
+          p.vy = Math.sin(a) * speed;
+        }
+      };
+      const build = () => {
+        const r = sparkHost.getBoundingClientRect();
+        const dpr = Math.min(devicePixelRatio || 1, 2);
+        W = r.width;
+        H = r.height;
+        if (!W || !H) return;
+        sparkCanvas.width = Math.round(W * dpr);
+        sparkCanvas.height = Math.round(H * dpr);
+        sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const off = document.createElement("canvas");
+        off.width = Math.round(W);
+        off.height = Math.round(H);
+        const o = off.getContext("2d");
+        if (!o) return;
+        const scale = Math.min((W * 0.62) / 132, (H * 0.82) / 140);
+        const ox = W / 2 - (26 + 66) * scale;
+        const oy = H / 2 - (6 + 70) * scale;
+        const step = Math.max(3, Math.round(Math.sqrt((W * H) / 26000)));
+        let targets: { x: number; y: number; amber: boolean }[] = [];
+        for (const shape of SHAPES) {
+          o.clearRect(0, 0, off.width, off.height);
+          o.beginPath();
+          shape.pts.forEach(([x, y], i) => {
+            if (i) o.lineTo(ox + x * scale, oy + y * scale);
+            else o.moveTo(ox + x * scale, oy + y * scale);
+          });
+          o.closePath();
+          o.fillStyle = "#fff";
+          o.fill();
+          const img = o.getImageData(0, 0, off.width, off.height).data;
+          for (let y = 0; y < off.height; y += step) {
+            for (let x = 0; x < off.width; x += step) {
+              if (img[(y * off.width + x) * 4 + 3] > 128) targets.push({ x, y, amber: shape.amber });
+            }
+          }
+        }
+        // روی صفحه‌ی کوچک ذره‌ی کمتر تا گوشی روان بماند
+        const cap = W < 600 ? 1200 : 2200;
+        if (targets.length > cap) targets = targets.sort(() => Math.random() - 0.5).slice(0, cap);
+        sparks = targets.map((t) => ({ ...t, tx: t.x, ty: t.y, vx: 0, vy: 0, tw: Math.random() * 6.28, s: 0.8 + Math.random() * 1.1 }));
+        burst();
+      };
+      const draw = (now: number) => {
+        raf = 0;
+        if (!visible) return;
+        const dt = Math.min(2, (now - (last || now)) / 16.7);
+        last = now;
+        sctx.clearRect(0, 0, W, H);
+        sctx.globalCompositeOperation = "lighter";
+        const settle = Math.min(1, (now - burstAt) / 1600);
+        for (const p of sparks) {
+          const k = 0.012 + 0.05 * settle;
+          p.vx += (p.tx - p.x) * k * dt;
+          p.vy += (p.ty - p.y) * k * dt + (1 - settle) * 0.35 * dt;
+          const dx = p.x - pointer.x;
+          const dy = p.y - pointer.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < 6400) {
+            const d = Math.sqrt(d2) || 1;
+            const f = (1 - d2 / 6400) * 4.5;
+            p.vx += (dx / d) * f;
+            p.vy += (dy / d) * f;
+          }
+          p.vx *= Math.pow(0.86, dt);
+          p.vy *= Math.pow(0.86, dt);
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.tw += 0.08 * dt;
+          const speed = Math.min(1, Math.hypot(p.vx, p.vy) / 8);
+          const a = 0.55 + 0.35 * Math.sin(p.tw) * (1 - speed) + 0.4 * speed;
+          sctx.fillStyle =
+            p.amber || speed > 0.55
+              ? `rgba(255, ${Math.round(150 + 60 * (1 - speed))}, 60, ${a})`
+              : `rgba(${Math.round(200 + 40 * speed)}, ${Math.round(190 - 40 * speed)}, 255, ${a})`;
+          sctx.beginPath();
+          sctx.arc(p.x, p.y, p.s * (1 + speed), 0, Math.PI * 2);
+          sctx.fill();
+        }
+        sctx.globalCompositeOperation = "source-over";
+        // هر چند ثانیه یک بار دوباره می‌پاشد و از نو جمع می‌شود
+        if (now - burstAt > 10000) burst();
+        raf = requestAnimationFrame(draw);
+      };
+      const io = new IntersectionObserver(([entry]) => {
+        visible = Boolean(entry?.isIntersecting);
+        cancelAnimationFrame(raf);
+        raf = 0;
+        last = 0;
+        if (!visible) return;
+        if (!sparks.length) build();
+        raf = requestAnimationFrame(draw);
+      });
+      io.observe(sparkHost);
+      const ro = new ResizeObserver(() => {
+        if (sparks.length) build();
+      });
+      ro.observe(sparkHost);
+      const move = (e: PointerEvent) => {
+        const r = sparkHost.getBoundingClientRect();
+        pointer.x = e.clientX - r.left;
+        pointer.y = e.clientY - r.top;
+      };
+      on(sparkHost, "pointermove", move);
+      on(sparkHost, "pointerdown", move);
+      on(sparkHost, "pointerleave", () => {
+        pointer.x = pointer.y = -9999;
+      });
+      on(sparkHost, "click", (e) => {
+        const r = sparkHost.getBoundingClientRect();
+        burst(e.clientX - r.left, e.clientY - r.top);
+      });
+      sparkHost.classList.add("is-live");
+      cleanups.push(() => {
+        io.disconnect();
+        ro.disconnect();
+        cancelAnimationFrame(raf);
+        sparkHost.classList.remove("is-live");
+      });
+    }
+
     // ---- قطعه‌ی سه‌بعدی: پس از بار کامل صفحه و فقط اگر «کاهش حرکت» خاموش است و دستگاه خیلی ضعیف نیست.
     //      three.js تکه‌ی جدایی است که فقط همین‌جا بار می‌شود؛ اگر WebGL نباشد یا کند باشد، نقشه‌ی SVG می‌ماند.
     const visual3d = $(".visual");
@@ -501,6 +653,7 @@ export function LandingEffects() {
               host: view,
               labels: $$(".xlabel"),
               bar: $("#explodeBar"),
+              card: $("#explodeInfo"),
               progress: () => {
                 const r = pin.getBoundingClientRect();
                 const total = r.height - stage.offsetHeight;
