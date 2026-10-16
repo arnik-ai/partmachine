@@ -70,7 +70,7 @@ export function MobileTabBar({ links }: { links: TabLink[] }) {
       {open && more.length > 0 && (
         <div
           id="tab-more"
-          className="mx-auto mb-2 flex max-w-md flex-col gap-1 rounded-3xl border bg-card/95 p-2 text-card-foreground shadow-soft backdrop-blur-md"
+          className="mx-auto mb-2 flex max-w-md flex-col gap-1 rounded-3xl border border-sky-200 bg-card/95 p-2 text-card-foreground shadow-soft backdrop-blur-md"
         >
           {more.map((link) => {
             const Icon = ICONS[link.href] ?? LayoutGrid;
@@ -89,7 +89,7 @@ export function MobileTabBar({ links }: { links: TabLink[] }) {
           })}
         </div>
       )}
-      <div className="mx-auto grid max-w-md auto-cols-fr grid-flow-col gap-1 rounded-full border bg-card/90 p-1.5 text-card-foreground shadow-[0_18px_34px_-16px_rgb(12_50_80/0.4)] backdrop-blur-md">
+      <div className="mx-auto grid max-w-md auto-cols-fr grid-flow-col gap-1 rounded-full border border-sky-200 bg-card/95 p-1.5 text-card-foreground shadow-[0_18px_34px_-16px_rgb(12_50_80/0.45)] backdrop-blur-md">
         {tabs.map((tab) => {
           const Icon = ICONS[tab.href] ?? LayoutGrid;
           const active = isActive(tab.href);
@@ -100,11 +100,12 @@ export function MobileTabBar({ links }: { links: TabLink[] }) {
               onClick={() => setOpen(false)}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-0.5 rounded-full px-1 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors",
-                active && "bg-secondary font-bold text-secondary-foreground",
+                "flex flex-col items-center gap-0.5 rounded-full px-1 py-1.5 text-[11px] font-semibold text-foreground/80 transition-colors",
+                active &&
+                  "bg-gradient-to-br from-sky-300 to-sky-400 font-bold text-sky-950 shadow-[0_6px_14px_-8px_rgb(2_132_199)]",
               )}
             >
-              <Icon className="h-5 w-5" aria-hidden />
+              <Icon className={cn("h-5 w-5", active ? "text-sky-950" : "text-primary")} aria-hidden />
               {SHORT[tab.href] ?? tab.label}
             </Link>
           );
@@ -116,11 +117,11 @@ export function MobileTabBar({ links }: { links: TabLink[] }) {
             aria-expanded={open}
             aria-controls="tab-more"
             className={cn(
-              "flex flex-col items-center gap-0.5 rounded-full px-1 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors",
+              "flex flex-col items-center gap-0.5 rounded-full px-1 py-1.5 text-[11px] font-semibold text-foreground/80 transition-colors",
               open && "bg-secondary text-secondary-foreground",
             )}
           >
-            <LayoutGrid className="h-5 w-5" aria-hidden />
+            <LayoutGrid className="h-5 w-5 text-primary" aria-hidden />
             بیشتر
           </button>
         )}
