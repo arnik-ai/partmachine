@@ -11,12 +11,11 @@ export const MOCK_ORDERS: Order[] = [
     material: "استیل 304",
     deliveryCity: "تهران",
     amountRials: 1_850_000_000,
-    stage: "qc_inspection",
+    stage: "in_production",
     stageDates: {
       placed: "2026-05-20",
       escrow_funded: "2026-05-21",
       in_production: "2026-05-23",
-      qc_inspection: "2026-06-10",
     },
     expectedDelivery: "2026-06-25",
   },

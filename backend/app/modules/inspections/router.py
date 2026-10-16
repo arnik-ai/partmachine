@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.catalog import RFQ_CREATOR_ROLES
+from app.core.config import settings
+from app.core.errors import NotFound
 from app.db.session import get_db
 from app.modules.agreements.schemas import AcceptedAgreementIn
 from app.modules.identity.deps import CurrentUser, client_info, get_current_user, require_roles
@@ -19,7 +21,14 @@ from app.modules.inspections.schemas import (
     QcLabList,
 )
 
-router = APIRouter(tags=["inspections"])
+
+def _inspections_enabled() -> None:
+    """تا روشن شدن آزمایشگاه‌ها (فاز بعد) همه‌ی مسیرهای این بخش مثل مسیر ناموجود ۴۰۴ می‌دهند."""
+    if not settings.inspections_enabled:
+        raise NotFound("این بخش فعلاً فعال نیست.")
+
+
+router = APIRouter(tags=["inspections"], dependencies=[Depends(_inspections_enabled)])
 INSPECTION = "/orders/{order_id}/inspection"
 
 

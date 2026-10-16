@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     # ورود دومرحله‌ای برای ادمین اجباری است (S7)؛ فقط آزمون‌های خودکار می‌توانند خاموشش کنند
     admin_two_factor_required: bool = True
+    # آزمایشگاه کنترل کیفیت (بازرسی سفارش‌ها) فعلاً خاموش است و برای فاز بعد نگه داشته شده
+    inspections_enabled: bool = False
     rate_limit_fail_open: bool | None = None
     log_json: bool | None = None
 

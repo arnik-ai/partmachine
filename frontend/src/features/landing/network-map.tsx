@@ -6,7 +6,7 @@ import { CITIES, IRAN_OUTLINE, ROUTES } from "./iran-map";
 type Copy = { caption: string };
 
 /**
- * نقشه‌ی شبکه: مرز ایران و مسیر نمونه‌ی سفارش‌ها (درخواست ← ساخت ← بازرسی) با کمان‌های نورانی.
+ * نقشه‌ی شبکه: مرز ایران و مسیر نمونه‌ی سفارش‌ها (درخواست ← ساخت) با کمان‌های نورانی.
  * Canvas دوبعدی؛ فقط وقتی دیده می‌شود می‌چرخد. با «کاهش حرکت» مسیرها بی‌حرکت نمایش داده می‌شوند.
  */
 export function NetworkMap({ copy, lang }: { copy: Copy; lang: "fa" | "en" }) {
@@ -96,10 +96,10 @@ export function NetworkMap({ copy, lang }: { copy: Copy; lang: "fa" | "en" }) {
       ctx.strokeStyle = "rgba(196, 181, 253, .55)";
       ctx.lineWidth = 1.2;
       ctx.stroke();
-      const [a, b, c] = ROUTES[route];
+      const [a, b] = ROUTES[route];
       for (const [key, city] of Object.entries(CITIES)) {
         const [x, y] = proj(city.lat, city.lon);
-        const active = key === a || key === b || key === c;
+        const active = key === a || key === b;
         ctx.fillStyle = active ? "#f5a623" : "rgba(220, 215, 240, .7)";
         ctx.beginPath();
         ctx.arc(x, y, active ? 4.5 : 2.6, 0, Math.PI * 2);
@@ -109,16 +109,14 @@ export function NetworkMap({ copy, lang }: { copy: Copy; lang: "fa" | "en" }) {
         ctx.fillStyle = active ? "#fff" : "rgba(203, 198, 216, .75)";
         ctx.fillText(city[lang], x, y - 9);
       }
-      rt = reduce ? 3.2 : rt + dt;
+      rt = reduce ? 1.6 : rt + dt;
       arc(a, b, rt / 1.4, "#c4b5fd");
-      if (rt > 1.6) arc(b, c, (rt - 1.6) / 1.4, "#f5a623");
       if (captionRef.current) {
         captionRef.current.textContent = copy.caption
           .replace("{a}", CITIES[a][lang])
-          .replace("{b}", CITIES[b][lang])
-          .replace("{c}", CITIES[c][lang]);
+          .replace("{b}", CITIES[b][lang]);
       }
-      if (!reduce && rt > 5) {
+      if (!reduce && rt > 3.6) {
         rt = 0;
         route = (route + 1) % ROUTES.length;
       }

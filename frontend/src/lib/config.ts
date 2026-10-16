@@ -13,6 +13,9 @@ export const API_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_API_URL);
 
 export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
+/** آزمایشگاه کنترل کیفیت (NEXT_PUBLIC_INSPECTIONS_ENABLED): فعلاً خاموش و برای فاز بعد؛ هم‌زمان با INSPECTIONS_ENABLED بک‌اند */
+export const INSPECTIONS_ENABLED = process.env.NEXT_PUBLIC_INSPECTIONS_ENABLED === "true";
+
 /** مسیر پایه (فقط نسخه‌ی نمایشی: /partmachine)؛ برای آدرس service worker */
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 

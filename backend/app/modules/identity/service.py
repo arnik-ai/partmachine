@@ -105,6 +105,8 @@ async def register(
 ) -> IssuedSession:
     if data.invite_token:
         return await _register_with_invite(db, data, data.invite_token, client)
+    if data.role == "qc" and not settings.inspections_enabled:
+        raise field_error("role", "ثبت‌نام آزمایشگاه کنترل کیفیت فعلاً فعال نیست.")
     # پذیرش قوانین نقش در سرور هم الزامی است، نه فقط در فرم
     agreement = agreements.require_accepted(
         data.accepted_agreements, SIGNUP_AGREEMENT_BY_ROLE[data.role]

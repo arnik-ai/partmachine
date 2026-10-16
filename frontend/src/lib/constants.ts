@@ -1,3 +1,5 @@
+import { INSPECTIONS_ENABLED } from "@/lib/config";
+
 /** خدمات تولیدی قابل‌ارائه در پلتفرم */
 export const CAPABILITIES = [
   { value: "cnc", label: "ماشین‌کاری CNC" },
@@ -57,6 +59,9 @@ export const ROLES = [
   { value: "agent", label: "مأمور خرید" },
   { value: "qc", label: "آزمایشگاه کنترل کیفیت" },
 ] as const;
+
+/** نقش‌های قابل انتخاب در ثبت‌نام؛ آزمایشگاه تا روشن شدن بخش بازرسی (فاز بعد) پنهان است */
+export const SIGNUP_ROLES = ROLES.filter((r) => INSPECTIONS_ENABLED || r.value !== "qc");
 
 export type RoleValue = (typeof ROLES)[number]["value"] | "admin";
 

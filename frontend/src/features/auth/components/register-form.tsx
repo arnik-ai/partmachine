@@ -19,7 +19,7 @@ import {
 import { ApiError, errorMessage } from "@/lib/api-client";
 import { useHydrated } from "@/lib/use-hydrated";
 import { DEMO_MODE } from "@/lib/config";
-import { ROLES, roleLabel } from "@/lib/constants";
+import { SIGNUP_ROLES, roleLabel } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInviteInfo } from "@/features/organization/api";
 import { logout } from "../api";
@@ -42,7 +42,7 @@ export function RegisterForm() {
   // دکمه‌های صفحه‌ی اول نقش را پیشنهاد می‌دهند (?role=supplier)؛ کاربر می‌تواند عوضش کند
   const [role, setRole] = useState<RegisterInput["role"]>(() => {
     const wanted = params.get("role");
-    return ROLES.some((r) => r.value === wanted) ? (wanted as RegisterInput["role"]) : "buyer";
+    return SIGNUP_ROLES.some((r) => r.value === wanted) ? (wanted as RegisterInput["role"]) : "buyer";
   });
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
   // ثبت‌نام با لینک دعوت: نقش و سازمان از دعوت می‌آید و کاربر فقط اطلاعات خودش را وارد می‌کند
@@ -158,7 +158,7 @@ export function RegisterForm() {
                     setAccepted({});
                   }}
                 >
-                  {ROLES.map((r) => (
+                  {SIGNUP_ROLES.map((r) => (
                     <option key={r.value} value={r.value}>
                       {r.label}
                     </option>

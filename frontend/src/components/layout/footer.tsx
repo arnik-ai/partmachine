@@ -8,7 +8,7 @@ export function Footer() {
           <TarashinoMark className="h-4 w-4 text-primary" />
           تراشینو — سفارش ساخت قطعات صنعتی
         </span>
-        <span>اتصال امن کارفرما، قطعه‌ساز و آزمایشگاه کنترل کیفیت</span>
+        <span>اتصال امن کارفرما و قطعه‌ساز</span>
       </div>
     </footer>
   );
