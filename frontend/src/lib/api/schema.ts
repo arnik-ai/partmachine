@@ -878,6 +878,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orders/{order_id}/confirm-material": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Material
+         * @description مجری رسیدن قطعه یا مواد کارفرما را اعلام می‌کند؛ مهلت تحویل از امروز شمرده می‌شود.
+         */
+        post: operations["confirm_material_api_v1_orders__order_id__confirm_material_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders/{order_id}/confirm-delivery": {
         parameters: {
             query?: never;
@@ -1537,7 +1557,7 @@ export interface components {
              * Orderstatus
              * @enum {string}
              */
-            orderStatus: "awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
+            orderStatus: "awaiting_contract" | "awaiting_prepayment" | "awaiting_material" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
             /** Amountrials */
             amountRials: number;
             /** Buyername */
@@ -1558,7 +1578,7 @@ export interface components {
              * Previousstatus
              * @enum {string}
              */
-            previousStatus: "awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
+            previousStatus: "awaiting_contract" | "awaiting_prepayment" | "awaiting_material" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
             /**
              * Openedat
              * Format: date-time
@@ -1861,6 +1881,17 @@ export interface components {
              */
             note: string;
         };
+        /**
+         * ConfirmMaterialInput
+         * @description توضیح اختیاری مجری درباره‌ی قطعه یا مواد رسیده (مثلاً تعداد و سالم بودن).
+         */
+        ConfirmMaterialInput: {
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
         /** ContractArticleOut */
         ContractArticleOut: {
             /** Number */
@@ -1950,6 +1981,11 @@ export interface components {
             penaltyPerDayBp: number;
             /** Penaltycappercent */
             penaltyCapPercent: number;
+            /**
+             * Materialfrombuyer
+             * @default false
+             */
+            materialFromBuyer: boolean;
         };
         /** ContractVersionSummary */
         ContractVersionSummary: {
@@ -2532,7 +2568,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
+            status: "awaiting_contract" | "awaiting_prepayment" | "awaiting_material" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
             /** Title */
             title: string;
             /** Material */
@@ -2553,6 +2589,13 @@ export interface components {
             /** Isoverdue */
             isOverdue: boolean;
             /**
+             * Materialfrombuyer
+             * @default false
+             */
+            materialFromBuyer: boolean;
+            /** Materialreceivedat */
+            materialReceivedAt?: string | null;
+            /**
              * Rfqid
              * Format: uuid
              */
@@ -2570,7 +2613,7 @@ export interface components {
              */
             mySide: "buyer" | "supplier" | "qc" | "admin";
             /** Nextactions */
-            nextActions: ("cancel" | "ship" | "confirm_delivery" | "dispute" | "keep")[];
+            nextActions: ("cancel" | "confirm_material" | "ship" | "confirm_delivery" | "dispute" | "keep")[];
             inspection?: components["schemas"]["OrderInspectionSummaryOut"] | null;
             cancelRequest?: components["schemas"]["CancelRequestOut"] | null;
             /**
@@ -2627,7 +2670,7 @@ export interface components {
              * Previousstatus
              * @enum {string}
              */
-            previousStatus: "awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
+            previousStatus: "awaiting_contract" | "awaiting_prepayment" | "awaiting_material" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
             /**
              * Openedat
              * Format: date-time
@@ -2644,9 +2687,9 @@ export interface components {
             /** Action */
             action: string;
             /** Fromstatus */
-            fromStatus?: ("awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed") | null;
+            fromStatus?: ("awaiting_contract" | "awaiting_prepayment" | "awaiting_material" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed") | null;
             /** Tostatus */
-            toStatus?: ("awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed") | null;
+            toStatus?: ("awaiting_contract" | "awaiting_prepayment" | "awaiting_material" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed") | null;
             /** Actorname */
             actorName?: string | null;
             /**
@@ -2705,7 +2748,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "awaiting_contract" | "awaiting_prepayment" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
+            status: "awaiting_contract" | "awaiting_prepayment" | "awaiting_material" | "in_production" | "in_inspection" | "shipped" | "delivered" | "completed" | "cancelled" | "disputed";
             /** Title */
             title: string;
             /** Material */
@@ -2726,6 +2769,13 @@ export interface components {
             /** Isoverdue */
             isOverdue: boolean;
             /**
+             * Materialfrombuyer
+             * @default false
+             */
+            materialFromBuyer: boolean;
+            /** Materialreceivedat */
+            materialReceivedAt?: string | null;
+            /**
              * Rfqid
              * Format: uuid
              */
@@ -2743,7 +2793,7 @@ export interface components {
              */
             mySide: "buyer" | "supplier" | "qc" | "admin";
             /** Nextactions */
-            nextActions: ("cancel" | "ship" | "confirm_delivery" | "dispute" | "keep")[];
+            nextActions: ("cancel" | "confirm_material" | "ship" | "confirm_delivery" | "dispute" | "keep")[];
             inspection?: components["schemas"]["OrderInspectionSummaryOut"] | null;
             cancelRequest?: components["schemas"]["CancelRequestOut"] | null;
             /**
@@ -3543,6 +3593,11 @@ export interface components {
             penaltyPerDayBp: number;
             /** Penaltycappercent */
             penaltyCapPercent: number;
+            /**
+             * Materialfrombuyer
+             * @default false
+             */
+            materialFromBuyer: boolean;
             /**
              * Changenote
              * @default
@@ -8594,6 +8649,104 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ShipOrderInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirm_material_api_v1_orders__order_id__confirm_material_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmMaterialInput"];
             };
         };
         responses: {

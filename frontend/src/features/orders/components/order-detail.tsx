@@ -11,6 +11,7 @@ import {
   FileText,
   Hourglass,
   Microscope,
+  PackageCheck,
   ShieldAlert,
   Truck,
   XCircle,
@@ -35,6 +36,7 @@ import { faDate, faDateTime, faNumber, faToman } from "@/lib/utils";
 import {
   cancelOrder,
   confirmDelivery,
+  confirmMaterial,
   keepOrder,
   openDispute,
   shipOrder,
@@ -57,6 +59,7 @@ const EVENT_LABELS: Record<string, string> = {
   cancel: "لغو سفارش",
   ship: "ثبت ارسال",
   confirm_delivery: "تأیید تحویل",
+  confirm_material: "رسیدن قطعه به مجری",
   contract_revised: "نسخه‌ی تازه‌ی قرارداد",
   contract_signed: "امضای قرارداد",
   contract_change_requested: "درخواست اصلاح قرارداد",
@@ -139,7 +142,20 @@ function OrderHeader({ order }: { order: OrderDetail }) {
     ["متریال", order.material],
     ...(order.amountRials !== null ? [["مبلغ", faToman(order.amountRials)]] : []),
     ["زمان تولید", `${faNumber(order.leadTimeDays)} روز`],
-    ["تاریخ تحویل تعهدشده", faDate(order.deliveryDue)],
+    [
+      "تاریخ تحویل تعهدشده",
+      order.materialFromBuyer && !order.materialReceivedAt
+        ? `${faNumber(order.leadTimeDays)} روز پس از رسیدن قطعه`
+        : faDate(order.deliveryDue),
+    ],
+    ...(order.materialFromBuyer
+      ? [
+          [
+            "قطعه‌ی کارفرما",
+            order.materialReceivedAt ? `رسید ${faDate(order.materialReceivedAt)}` : "هنوز نرسیده",
+          ],
+        ]
+      : []),
     ["محل تحویل", order.deliveryCity],
   ];
   return (
@@ -203,7 +219,15 @@ function OrderHeader({ order }: { order: OrderDetail }) {
   );
 }
 
-type Dialog = "cancel" | "ship" | "confirm_delivery" | "dispute" | "agree_cancel" | "keep" | null;
+type Dialog =
+  | "cancel"
+  | "confirm_material"
+  | "ship"
+  | "confirm_delivery"
+  | "dispute"
+  | "agree_cancel"
+  | "keep"
+  | null;
 
 const EMPTY_UPLOAD: UploadState = { fileIds: [], busy: false, failed: false };
 
@@ -252,6 +276,7 @@ function NextStep({ order }: { order: OrderDetail }) {
         if (dialog === "dispute") {
           return openDispute(order.id, { reason: text, fileId: upload.fileIds[0] ?? null });
         }
+        if (dialog === "confirm_material") return confirmMaterial(order.id, text);
         return confirmDelivery(order.id, text);
       });
       setDialog(null);
@@ -314,6 +339,19 @@ function NextStep({ order }: { order: OrderDetail }) {
             : order.mySide === "supplier"
               ? "قرارداد امضا شد. پس از دریافت پیش‌پرداخت، آن را در بخش «پرداخت‌ها» تأیید کنید تا تولید شروع شود."
               : "منتظر پیش‌پرداخت کارفرما و تأیید قطعه‌ساز هستیم."}
+        </span>
+      </span>
+    );
+  } else if (order.status === "awaiting_material") {
+    message = (
+      <span className="flex items-start gap-2">
+        <PackageCheck className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <span>
+          {order.mySide === "buyer"
+            ? `قطعه یا مواد اولیه را برای قطعه‌ساز بفرستید. زمان تحویل (${faNumber(order.leadTimeDays)} روز) از روزی شمرده می‌شود که قطعه‌ساز رسیدن آن را اعلام کند.`
+            : order.mySide === "supplier"
+              ? `وقتی قطعه یا مواد کارفرما به دستتان رسید، «قطعه رسید» را بزنید؛ زمان تحویل (${faNumber(order.leadTimeDays)} روز) از همان روز شمرده می‌شود.`
+              : "منتظر رسیدن قطعه‌ی کارفرما به قطعه‌ساز هستیم."}
         </span>
       </span>
     );
@@ -432,6 +470,9 @@ function NextStep({ order }: { order: OrderDetail }) {
                 ? "مشاهده و امضای قرارداد"
                 : "مشاهده‌ی قرارداد"}
             </Link>
+            {can("confirm_material") && (
+              <Button onClick={() => open("confirm_material")}>قطعه رسید</Button>
+            )}
             {can("ship") && <Button onClick={() => open("ship")}>ثبت ارسال</Button>}
             {can("confirm_delivery") && (
               <Button onClick={() => open("confirm_delivery")}>تأیید تحویل</Button>
@@ -584,6 +625,28 @@ function NextStep({ order }: { order: OrderDetail }) {
               onChange={setUpload}
             />
           )}
+        </div>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={dialog === "confirm_material"}
+        onClose={() => setDialog(null)}
+        onConfirm={confirm}
+        pending={action.isPending}
+        error={error}
+        title="رسیدن قطعه"
+        confirmLabel="بله، قطعه به دستم رسید"
+        description={`زمان تحویل از امروز شمرده می‌شود: ${faNumber(order.leadTimeDays)} روز.`}
+      >
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="material-note">توضیح (اختیاری)</Label>
+          <Input
+            id="material-note"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            maxLength={500}
+            placeholder="مثلاً ۲۰۰ قطعه‌ی خام، بدون آسیب"
+          />
         </div>
       </ConfirmDialog>
 

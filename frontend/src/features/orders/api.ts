@@ -49,6 +49,14 @@ export function rateOrder(
   return apiFetch<OrderDetail>(`/orders/${id}/rating`, { method: "PUT", body: input });
 }
 
+/** مجری رسیدن قطعه یا مواد کارفرما را اعلام می‌کند؛ مهلت تحویل از امروز شمرده می‌شود */
+export function confirmMaterial(id: string, note: string): Promise<OrderDetail> {
+  return apiFetch<OrderDetail>(`/orders/${id}/confirm-material`, {
+    method: "POST",
+    body: { note },
+  });
+}
+
 export function confirmDelivery(id: string, note: string): Promise<OrderDetail> {
   return apiFetch<OrderDetail>(`/orders/${id}/confirm-delivery`, {
     method: "POST",

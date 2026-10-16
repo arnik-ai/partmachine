@@ -311,6 +311,7 @@ async def signed_order(
     *,
     prepayment: int = 0,
     with_drawing: bool = False,
+    material_from_buyer: bool = False,
 ) -> tuple[Deal, str]:
     """سفارشی که قراردادش با درصد پیش‌پرداخت داده‌شده توسط هر دو طرف امضا شده است."""
     deal = await make_deal(client_factory, with_drawing=with_drawing)
@@ -320,10 +321,15 @@ async def signed_order(
         await deal.buyer.client.get(f"{API}/orders/{order_id}/contract", headers=deal.buyer.auth)
     ).json()
     version = contract["version"]
-    if prepayment:
+    if prepayment or material_from_buyer:
         revised = await deal.buyer.client.put(
             f"{API}/orders/{order_id}/contract",
-            json={**contract["terms"], "prepaymentPercent": prepayment, "changeNote": ""},
+            json={
+                **contract["terms"],
+                "prepaymentPercent": prepayment,
+                "materialFromBuyer": material_from_buyer,
+                "changeNote": "",
+            },
             headers=deal.buyer.auth,
         )
         version = revised.json()["version"]

@@ -3,6 +3,7 @@ from datetime import date, datetime
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    false,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -21,6 +23,7 @@ from app.db.base import Base, TimestampMixin, UUIDPrimaryKey
 ORDER_STATUSES = (
     "awaiting_contract",
     "awaiting_prepayment",
+    "awaiting_material",
     "in_production",
     "in_inspection",
     "shipped",
@@ -88,6 +91,11 @@ class Order(Base, UUIDPrimaryKey, TimestampMixin):
     lead_time_days: Mapped[int] = mapped_column(Integer)
     # تاریخ تحویل تعهدشده؛ پیش از امضای قرارداد کارفرما می‌تواند آن را تغییر دهد (O5)
     delivery_due: Mapped[date] = mapped_column(Date)
+    # کارفرما قطعه یا مواد اولیه را برای مجری می‌فرستد ⇒ مهلت تحویل از روز رسیدن آن شمرده می‌شود
+    material_from_buyer: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=false()
+    )
+    material_received_at: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     status: Mapped[str] = mapped_column(
         String(30), default="awaiting_contract", server_default="awaiting_contract"

@@ -12,6 +12,7 @@ from app.modules.orders.lifecycle import Action, Side
 OrderStatus = Literal[
     "awaiting_contract",
     "awaiting_prepayment",
+    "awaiting_material",
     "in_production",
     "in_inspection",
     "shipped",
@@ -105,6 +106,9 @@ class OrderOut(CamelModel):
     lead_time_days: int
     delivery_due: date
     is_overdue: bool
+    # کارفرما قطعه یا مواد را می‌فرستد؛ مهلت تحویل از روز رسیدن آن شمرده می‌شود
+    material_from_buyer: bool = False
+    material_received_at: date | None = None
     rfq_id: uuid.UUID
     quotation_id: uuid.UUID
     buyer: OrderPartyOut
@@ -189,6 +193,17 @@ class ShipOrderInput(CamelModel):
 
 
 class ConfirmDeliveryInput(CamelModel):
+    note: str = Field(default="", max_length=500)
+
+    @field_validator("note")
+    @classmethod
+    def _note(cls, value: str) -> str:
+        return _clean(value)
+
+
+class ConfirmMaterialInput(CamelModel):
+    """توضیح اختیاری مجری درباره‌ی قطعه یا مواد رسیده (مثلاً تعداد و سالم بودن)."""
+
     note: str = Field(default="", max_length=500)
 
     @field_validator("note")

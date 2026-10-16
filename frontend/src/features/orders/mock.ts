@@ -15,6 +15,7 @@ export const MOCK_ORDERS: Order[] = [
     stageDates: {
       placed: "2026-05-20",
       escrow_funded: "2026-05-21",
+      material_received: "2026-05-21",
       in_production: "2026-05-23",
     },
     expectedDelivery: "2026-06-25",
@@ -32,6 +33,7 @@ export const MOCK_ORDERS: Order[] = [
     stageDates: {
       placed: "2026-06-01",
       escrow_funded: "2026-06-02",
+      material_received: "2026-06-02",
       in_production: "2026-06-05",
     },
     expectedDelivery: "2026-08-10",
@@ -49,6 +51,7 @@ export const MOCK_ORDERS: Order[] = [
     stageDates: {
       placed: "2026-04-02",
       escrow_funded: "2026-04-03",
+      material_received: "2026-04-03",
       in_production: "2026-04-05",
       qc_inspection: "2026-04-18",
       shipping: "2026-04-20",

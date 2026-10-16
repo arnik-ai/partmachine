@@ -294,6 +294,7 @@ function ContractActions({ contract }: { contract: Contract }) {
 function TermsForm({ contract }: { contract: Contract }) {
   const action = useContractAction(contract.orderId);
   const [deliveryDue, setDeliveryDue] = useState(contract.terms.deliveryDue);
+  const [material, setMaterial] = useState(Boolean(contract.terms.materialFromBuyer));
   const preset = PREPAYMENT_PRESETS.includes(contract.terms.prepaymentPercent);
   const [prepayment, setPrepayment] = useState(
     preset ? String(contract.terms.prepaymentPercent) : "custom",
@@ -320,6 +321,7 @@ function TermsForm({ contract }: { contract: Contract }) {
       await action.mutateAsync(() =>
         updateContract(contract.orderId, {
           deliveryDue,
+          materialFromBuyer: material,
           prepaymentPercent,
           penaltyPerDayBp: Number(penalty),
           penaltyCapPercent: Number(cap),
@@ -344,6 +346,21 @@ function TermsForm({ contract }: { contract: Contract }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={save} className="flex flex-col gap-4 text-sm">
+          <label className="flex cursor-pointer items-start gap-2 rounded-2xl border bg-secondary/40 p-3">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-primary"
+              checked={material}
+              onChange={(e) => setMaterial(e.target.checked)}
+            />
+            <span>
+              کارفرما قطعه یا مواد اولیه را برای مجری می‌فرستد
+              <span className="block text-xs text-muted-foreground">
+                سفارش پس از امضا منتظر رسیدن قطعه می‌ماند و زمان تحویل از روزی شمرده می‌شود که
+                قطعه‌ساز رسیدن آن را اعلام کند.
+              </span>
+            </span>
+          </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <JalaliDateInput
@@ -355,6 +372,11 @@ function TermsForm({ contract }: { contract: Contract }) {
                 onChange={setDeliveryDue}
               />
               <FieldError message={fieldErrors.deliveryDue} />
+              {material && (
+                <p className="text-xs text-muted-foreground">
+                  با قطعه‌ی کارفرما، مهلت واقعی از روز رسیدن قطعه شمرده می‌شود.
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="prepayment">شرایط پرداخت</Label>

@@ -6396,6 +6396,135 @@
         }
       }
     },
+    "/api/v1/orders/{order_id}/confirm-material": {
+      "post": {
+        "tags": [
+          "orders"
+        ],
+        "summary": "Confirm Material",
+        "description": "مجری رسیدن قطعه یا مواد کارفرما را اعلام می‌کند؛ مهلت تحویل از امروز شمرده می‌شود.",
+        "operationId": "confirm_material_api_v1_orders__order_id__confirm_material_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmMaterialInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
     "/api/v1/orders/{order_id}/confirm-delivery": {
       "post": {
         "tags": [
@@ -10997,6 +11126,7 @@
             "enum": [
               "awaiting_contract",
               "awaiting_prepayment",
+              "awaiting_material",
               "in_production",
               "in_inspection",
               "shipped",
@@ -11057,6 +11187,7 @@
             "enum": [
               "awaiting_contract",
               "awaiting_prepayment",
+              "awaiting_material",
               "in_production",
               "in_inspection",
               "shipped",
@@ -11850,6 +11981,19 @@
         "type": "object",
         "title": "ConfirmDeliveryInput"
       },
+      "ConfirmMaterialInput": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "ConfirmMaterialInput",
+        "description": "توضیح اختیاری مجری درباره‌ی قطعه یا مواد رسیده (مثلاً تعداد و سالم بودن)."
+      },
       "ContractArticleOut": {
         "properties": {
           "number": {
@@ -12052,6 +12196,11 @@
           "penaltyCapPercent": {
             "type": "integer",
             "title": "Penaltycappercent"
+          },
+          "materialFromBuyer": {
+            "type": "boolean",
+            "title": "Materialfrombuyer",
+            "default": false
           }
         },
         "type": "object",
@@ -13385,6 +13534,7 @@
             "enum": [
               "awaiting_contract",
               "awaiting_prepayment",
+              "awaiting_material",
               "in_production",
               "in_inspection",
               "shipped",
@@ -13435,6 +13585,23 @@
             "type": "boolean",
             "title": "Isoverdue"
           },
+          "materialFromBuyer": {
+            "type": "boolean",
+            "title": "Materialfrombuyer",
+            "default": false
+          },
+          "materialReceivedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Materialreceivedat"
+          },
           "rfqId": {
             "type": "string",
             "format": "uuid",
@@ -13466,6 +13633,7 @@
               "type": "string",
               "enum": [
                 "cancel",
+                "confirm_material",
                 "ship",
                 "confirm_delivery",
                 "dispute",
@@ -13667,6 +13835,7 @@
             "enum": [
               "awaiting_contract",
               "awaiting_prepayment",
+              "awaiting_material",
               "in_production",
               "in_inspection",
               "shipped",
@@ -13712,6 +13881,7 @@
                 "enum": [
                   "awaiting_contract",
                   "awaiting_prepayment",
+                  "awaiting_material",
                   "in_production",
                   "in_inspection",
                   "shipped",
@@ -13734,6 +13904,7 @@
                 "enum": [
                   "awaiting_contract",
                   "awaiting_prepayment",
+                  "awaiting_material",
                   "in_production",
                   "in_inspection",
                   "shipped",
@@ -13876,6 +14047,7 @@
             "enum": [
               "awaiting_contract",
               "awaiting_prepayment",
+              "awaiting_material",
               "in_production",
               "in_inspection",
               "shipped",
@@ -13926,6 +14098,23 @@
             "type": "boolean",
             "title": "Isoverdue"
           },
+          "materialFromBuyer": {
+            "type": "boolean",
+            "title": "Materialfrombuyer",
+            "default": false
+          },
+          "materialReceivedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Materialreceivedat"
+          },
           "rfqId": {
             "type": "string",
             "format": "uuid",
@@ -13957,6 +14146,7 @@
               "type": "string",
               "enum": [
                 "cancel",
+                "confirm_material",
                 "ship",
                 "confirm_delivery",
                 "dispute",
@@ -16038,6 +16228,11 @@
             "maximum": 100.0,
             "minimum": 0.0,
             "title": "Penaltycappercent"
+          },
+          "materialFromBuyer": {
+            "type": "boolean",
+            "title": "Materialfrombuyer",
+            "default": false
           },
           "changeNote": {
             "type": "string",

@@ -1,5 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { PASSWORD, createRfq, inDays, pickJalaliDate, quote, register, stamp } from "./helpers";
+import {
+  PASSWORD,
+  awardWinner,
+  createRfq,
+  inDays,
+  pickJalaliDate,
+  quote,
+  register,
+  signContract,
+  stamp,
+} from "./helpers";
 
 /** سفارش (گام 3a): ساخت خودکار پس از انتخاب برنده، دید مشترک دو طرف، لغو با دلیل پیش از قرارداد. */
 
@@ -140,4 +150,39 @@ test("both owners sign the contract, the order is shipped, delivered and paid", 
   await buyer.waitForURL("**/suppliers/**");
   await expect(buyer.getByText("تحویل به‌موقع: ۱ از ۱")).toBeVisible();
   await expect(buyer.getByRole("img", { name: "امتیاز کارفرماها: ۵ از ۵ (۱ امتیاز)" })).toBeVisible();
+});
+
+test("with the buyer's part, the deadline starts when the supplier confirms it arrived", async ({
+  browser,
+}) => {
+  const title = `قطعه‌ی کارفرما ${stamp}`;
+  const company = `کارگاه قطعه ${stamp}`;
+  const buyer = await register(browser, "buyer", "کارفرمای قطعه");
+  const rfqUrl = await createRfq(buyer, title);
+  const supplier = await register(browser, "supplier", "قطعه‌ساز قطعه", company);
+  await supplier.goto(rfqUrl);
+  await quote(supplier, "90000000", "10");
+  const orderUrl = await awardWinner(buyer, rfqUrl, company);
+
+  // کارفرما گزینه‌ی قطعه‌ی کارفرما را در قرارداد می‌زند ⇒ نسخه‌ی تازه با بند تحویل پس از رسیدن قطعه
+  await buyer.goto(`${orderUrl}/contract`);
+  await buyer.getByLabel("کارفرما قطعه یا مواد اولیه را برای مجری می‌فرستد").check();
+  await buyer.getByRole("button", { name: "ذخیره‌ی شرایط" }).click();
+  await expect(buyer.getByText("نسخه‌ی تازه‌ی قرارداد ذخیره شد.")).toBeVisible();
+  await expect(buyer.getByText("پس از رسیدن آن").first()).toBeVisible();
+  await signContract(buyer, orderUrl);
+  await signContract(supplier, orderUrl);
+
+  // سفارش منتظر قطعه است؛ مجری رسیدنش را اعلام می‌کند و تولید شروع می‌شود
+  await supplier.goto(orderUrl);
+  await expect(supplier.getByText("در انتظار رسیدن قطعه به مجری").first()).toBeVisible();
+  await supplier.getByRole("button", { name: "قطعه رسید" }).click();
+  const dialog = supplier.getByRole("dialog", { name: "رسیدن قطعه" });
+  await dialog.getByLabel("توضیح (اختیاری)").fill("قطعات خام سالم رسید");
+  await dialog.getByRole("button", { name: "بله، قطعه به دستم رسید" }).click();
+  await expect(supplier.getByText("در حال تولید").first()).toBeVisible();
+  await expect(supplier.getByText("قطعات خام سالم رسید").first()).toBeVisible();
+
+  await buyer.goto(orderUrl);
+  await expect(buyer.getByText("در حال تولید").first()).toBeVisible();
 });

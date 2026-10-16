@@ -10,7 +10,7 @@ worker یادآوری تکراری نمی‌سازد.
 
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +41,8 @@ async def send_delivery_reminders(db: AsyncSession, *, today: date) -> dict[str,
         select(Order)
         .where(
             Order.status.in_(lifecycle.DELIVERY_PENDING),
+            # با قطعه‌ی کارفرما، مهلت تحویل پس از رسیدن قطعه شروع می‌شود
+            or_(Order.material_from_buyer.is_(False), Order.material_received_at.is_not(None)),
             Order.delivery_due <= today + timedelta(days=DUE_SOON_DAYS),
         )
         .order_by(Order.delivery_due)
