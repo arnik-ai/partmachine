@@ -99,7 +99,7 @@ export function QuotationBoard({ rfq }: { rfq: Rfq }) {
         </div>
       </div>
 
-      <p className="flex items-start gap-2 text-xs text-white/70">
+      <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
         {SCORE_FORMULA_TEXT}. تصمیم نهایی با شماست.
       </p>
@@ -122,7 +122,7 @@ export function QuotationBoard({ rfq }: { rfq: Rfq }) {
       )}
 
       {ranked.length === 0 ? (
-        <p className="py-6 text-center text-sm text-white/65">
+        <p className="py-6 text-center text-sm text-muted-foreground">
           پیشنهادی از قطعه‌ساز تأییدشده وجود ندارد.
         </p>
       ) : (

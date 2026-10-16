@@ -93,7 +93,7 @@ export function OrderDetailView({ orderId }: { orderId: string }) {
   }
   if (!order) {
     return (
-      <div className="flex flex-col items-center gap-3 py-12 text-center text-white/70">
+      <div className="flex flex-col items-center gap-3 py-12 text-center text-muted-foreground">
         <p>سفارش موردنظر پیدا نشد یا اجازه‌ی دیدن آن را ندارید.</p>
         <Link href="/orders" className={buttonVariants({ variant: "outline" })}>
           بازگشت به سفارش‌ها

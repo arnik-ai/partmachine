@@ -100,7 +100,7 @@ export function OpenRfqList() {
         <ErrorState error={error} onRetry={() => refetch()} />
       ) : data && data.items.length > 0 ? (
         <>
-          <p className="text-sm text-white/65">{faNumber(data.total)} درخواست باز</p>
+          <p className="text-sm text-muted-foreground">{faNumber(data.total)} درخواست باز</p>
           <div
             className="flex flex-col gap-4 transition-opacity"
             style={{ opacity: isFetching ? 0.6 : 1 }}
@@ -114,7 +114,7 @@ export function OpenRfqList() {
               <Button variant="outline" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
                 صفحه‌ی قبل
               </Button>
-              <span className="text-sm text-white/75">
+              <span className="text-sm text-muted-foreground">
                 صفحه‌ی {faNumber(page + 1)} از {faNumber(pages)}
               </span>
               <Button
@@ -128,7 +128,7 @@ export function OpenRfqList() {
           )}
         </>
       ) : (
-        <p className="py-12 text-center text-white/65">
+        <p className="py-12 text-center text-muted-foreground">
           فعلاً درخواست بازی با این فیلترها وجود ندارد.
         </p>
       )}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, UserRound } from "lucide-react";
 import { TarashinoMark } from "@/components/brand/tarashino-mark";
@@ -12,6 +12,8 @@ import { NotificationBell } from "@/features/notifications/components/notificati
 import { DEMO_MODE } from "@/lib/config";
 import { roleLabel } from "@/lib/constants";
 import { useHydrated } from "@/lib/use-hydrated";
+import { cn } from "@/lib/utils";
+import { MobileTabBar } from "./mobile-tab-bar";
 
 type NavLink = { href: string; label: string; roles?: readonly string[]; demoOnly?: boolean };
 
@@ -42,6 +44,8 @@ export function Header() {
   const status = useAuthStore((s) => s.status);
   const hydrated = useHydrated();
   const links = linksFor(user?.role);
+  const pathname = usePathname();
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   async function handleLogout() {
     await logout();
@@ -50,19 +54,24 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-card/95 text-card-foreground backdrop-blur">
+    <>
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 text-foreground backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 font-bold">
             <TarashinoMark className="h-7 w-7 text-primary" />
             تراشینو
           </Link>
-          <nav aria-label="منوی اصلی" className="hidden items-center gap-5 text-sm lg:flex">
+          <nav aria-label="منوی اصلی" className="hidden items-center gap-1 text-sm lg:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:bg-card hover:text-foreground",
+                  isActive(link.href) && "bg-card font-semibold text-foreground shadow-soft",
+                )}
               >
                 {link.label}
               </Link>
@@ -90,13 +99,14 @@ export function Header() {
                 href="/account"
                 aria-label="حساب کاربری"
                 title="حساب کاربری"
-                className={buttonVariants({ variant: "ghost", size: "icon" })}
+                className={cn(buttonVariants({ variant: "outline", size: "icon" }), "shadow-soft")}
               >
                 <UserRound className="h-4 w-4" />
               </Link>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon"
+                className="shadow-soft"
                 aria-label="خروج"
                 title="خروج"
                 onClick={handleLogout}
@@ -119,21 +129,9 @@ export function Header() {
           )}
         </div>
       </div>
-      {/* موبایل و تبلت (زیر ۱۰۲۴ پیکسل): همان لینک‌ها در یک ردیف ساده‌ی قابل‌لغزش، بدون منوی کشویی */}
-      <nav
-        aria-label="منوی اصلی"
-        className="mx-auto flex max-w-6xl gap-5 overflow-x-auto px-4 pb-3 text-sm lg:hidden"
-      >
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
     </header>
+    {/* موبایل و تبلت: منوی پایینِ معلق، بیرون از سرصفحه تا جایش ثابت بماند */}
+    {hydrated && user && <MobileTabBar links={links} />}
+    </>
   );
 }

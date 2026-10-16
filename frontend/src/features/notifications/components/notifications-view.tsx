@@ -53,7 +53,7 @@ export function NotificationsView() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
+        <h1 className="flex items-center gap-2 text-2xl font-bold">
           <Bell className="h-6 w-6" aria-hidden />
           اعلان‌ها
         </h1>
@@ -95,7 +95,7 @@ export function NotificationsView() {
       ) : isError ? (
         <ErrorState error={error} onRetry={() => refetch()} title="اعلان‌ها بارگذاری نشد" />
       ) : !data || data.items.length === 0 ? (
-        <p className="py-10 text-center text-white/70">
+        <p className="py-10 text-center text-muted-foreground">
           {unreadOnly ? "اعلان خوانده‌نشده‌ای ندارید." : "هنوز اعلانی ندارید."}
         </p>
       ) : (
@@ -136,7 +136,7 @@ export function NotificationsView() {
             </CardContent>
           </Card>
           {pages > 1 && (
-            <div className="flex items-center justify-between gap-3 text-sm text-white/70">
+            <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
               <Button
                 variant="outline"
                 size="sm"
@@ -161,7 +161,7 @@ export function NotificationsView() {
         </>
       )}
 
-      <p className="text-xs text-white/60">
+      <p className="text-xs text-muted-foreground">
         اعلان‌های خوانده‌شده پس از ۶ ماه پاک می‌شوند. تاریخچه‌ی کامل هر سفارش در صفحه‌ی همان سفارش
         می‌ماند.
       </p>

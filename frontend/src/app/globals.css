@@ -1,22 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  /* تم سورمه‌ای + طلایی — روشنایی متوسط */
-  /* پس‌زمینه‌ی سورمه‌ای — متن روی شِل روشن، داخل کارت‌ها تیره */
-  --background: oklch(0.3 0.052 266);
-  --shell-foreground: oklch(0.95 0.012 265);
-  --foreground: oklch(0.25 0.035 265);
+  /* تم آبی کم‌رنگ — پس‌زمینه‌ی روشن، کارت‌های سفید شناور، دکمه‌های کپسولی */
+  --background: oklch(0.975 0.008 237);
+  /* متن مستقیم روی پس‌زمینه */
+  --shell-foreground: oklch(0.25 0.035 245);
+  --foreground: oklch(0.25 0.035 245);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.035 265);
-  --primary: oklch(0.38 0.085 265);
-  --primary-deep: oklch(0.28 0.075 268);
+  --card-foreground: oklch(0.25 0.035 245);
+  --primary: oklch(0.59 0.15 240);
+  --primary-deep: oklch(0.45 0.12 242);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.9 0.02 265);
-  --secondary-foreground: oklch(0.32 0.06 265);
-  --muted: oklch(0.91 0.014 265);
-  --muted-foreground: oklch(0.44 0.025 265);
-  --accent: oklch(0.89 0.03 265);
-  --accent-foreground: oklch(0.32 0.06 265);
+  --secondary: oklch(0.955 0.025 233);
+  --secondary-foreground: oklch(0.45 0.12 242);
+  --muted: oklch(0.96 0.01 237);
+  --muted-foreground: oklch(0.5 0.03 242);
+  --accent: oklch(0.94 0.03 233);
+  --accent-foreground: oklch(0.45 0.12 242);
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
   --success: oklch(0.6 0.15 150);
@@ -24,10 +24,10 @@
   --warning: oklch(0.75 0.15 80);
   --gold: oklch(0.66 0.13 82);
   --gold-soft: oklch(0.94 0.05 90);
-  --border: oklch(0.84 0.016 265);
-  --input: oklch(0.84 0.016 265);
-  --ring: oklch(0.46 0.09 265);
-  --radius: 0.625rem;
+  --border: oklch(0.915 0.014 237);
+  --input: oklch(0.885 0.018 237);
+  --ring: oklch(0.7 0.13 235);
+  --radius: 1.125rem;
 }
 
 @theme inline {
@@ -58,11 +58,13 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* سایه‌ی نرم کارت‌های شناور */
+  --shadow-soft: 0 12px 26px -18px rgb(22 86 130 / 0.36), 0 2px 6px -3px rgb(22 86 130 / 0.1);
 }
 
 body {
   background-color: var(--background);
-  /* متن مستقیم روی پس‌زمینه‌ی سورمه‌ای روشن است؛ کارت‌ها رنگ خود را ست می‌کنند */
+  /* متن مستقیم روی پس‌زمینه؛ کارت‌ها رنگ خود را ست می‌کنند */
   color: var(--shell-foreground);
   /* آیفون‌های با بریدگی و نوار خانه (viewport-fit=cover)؛ در دستگاه‌های دیگر صفر است */
   padding-right: env(safe-area-inset-right);

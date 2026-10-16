@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  ArrowUpLeft,
   Bell,
   CheckCircle2,
   ClipboardList,
@@ -37,9 +36,12 @@ import { DEMO_MODE } from "@/lib/config";
 import { roleLabel, type RoleValue } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useHydrated } from "@/lib/use-hydrated";
+import { initialOf } from "@/features/suppliers/avatar";
+import { ServicesRow, SupplierStrip } from "./discover";
 import { InstallCard } from "./install-card";
 import { LiveStats, RecentNotifications } from "./live-stats";
 import { StatCard, type StatCardProps } from "./stat-card";
+import { TipsCarousel } from "./tips-carousel";
 
 /** آمار نمایشی هر نقش — فقط نسخه‌ی نمایشی؛ نسخه‌ی واقعی از API می‌خواند (LiveStats) */
 const ROLE_STATS: Record<string, StatCardProps[]> = {
@@ -289,6 +291,15 @@ const RECENT_ACTIVITY: Record<
   ],
 };
 
+/** دکمه‌ی گرد کار اصلی هر نقش در کارت سلام */
+const PRIMARY_ACTION: Partial<
+  Record<string, { href: string; label: string; icon: React.ComponentType<{ className?: string }> }>
+> = {
+  buyer: { href: "/rfqs/new", label: "درخواست تازه", icon: Plus },
+  agent: { href: "/rfqs/new", label: "درخواست تازه", icon: Plus },
+  supplier: { href: "/rfqs/open", label: "دیدن درخواست‌های باز بازار", icon: Search },
+};
+
 export function DashboardView() {
   const { user, isDemo } = useAuthStore();
   // در نسخه‌ی نمایشی کاربر از localStorage می‌آید؛ قبل از hydration چیزی رندر نمی‌شود
@@ -323,47 +334,64 @@ export function DashboardView() {
   const unverified =
     !isDemo && user.verified === false && (role === "agent" || role === "qc");
 
+  const primary = PRIMARY_ACTION[role];
+
   return (
     <div className="flex flex-col gap-6">
-      {/* بنر خوش‌آمد — سورمه‌ای با لمسه‌های طلایی */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-l from-primary-deep via-primary to-primary p-6 text-primary-foreground shadow-lg ring-1 ring-white/15 sm:p-8">
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-bold">سلام، {user.fullName} 👋</h1>
-            <p className="text-sm text-primary-foreground/80">
+      {/* کارت سلام: کپسولی، با دکمه‌ی گرد کار اصلی نقش (مثل اپ‌های موبایل) */}
+      <section className="relative overflow-hidden rounded-[2rem] border bg-card p-4 text-card-foreground shadow-soft sm:p-5">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[repeating-radial-gradient(circle_at_10%_-30%,transparent_0_24px,rgb(14_165_233/0.07)_24px_25.5px)] [mask-image:linear-gradient(to_bottom,#000,transparent)]"
+        />
+        <div className="relative flex items-center gap-3">
+          <span
+            aria-hidden
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-sky-300 to-sky-600 text-lg font-bold text-white ring-4 ring-secondary"
+          >
+            {initialOf(user.fullName)}
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <h1 className="truncate text-lg font-bold sm:text-xl">سلام، {user.fullName} 👋</h1>
+            <p className="truncate text-xs text-muted-foreground sm:text-sm">
               {roleLabel(role)}
               {/* بدون نام شرکت، نام سازمان همان نام کاربر است؛ تکرارش نمی‌کنیم */}
-              {user.companyName && user.companyName !== user.fullName
-                ? ` — ${user.companyName}`
-                : ""}
+              {user.companyName && user.companyName !== user.fullName ? ` — ${user.companyName}` : ""}
             </p>
-            {unverified && (
-              <p className="text-xs text-primary-foreground/75">
-                حساب شما هنوز توسط تراشینو تأیید نشده است؛ کارشناسان ما پس از بررسی، آن را تأیید می‌کنند.
-              </p>
-            )}
-            <div className="mt-1 h-1 w-16 rounded-full bg-gold" />
           </div>
-          <div className="flex flex-col items-end gap-2">
+          {primary && (
+            <Link
+              href={primary.href}
+              aria-label={primary.label}
+              title={primary.label}
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-sky-300 to-sky-500 text-sky-950 shadow-[0_8px_16px_-8px_rgb(2_132_199)] transition-transform active:scale-95"
+            >
+              <primary.icon className="h-5 w-5" aria-hidden />
+            </Link>
+          )}
+        </div>
+        {(unverified || isDemo) && (
+          <div className="relative mt-3 flex flex-wrap gap-2">
             {unverified && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/50 bg-gold/15 px-3 py-1 text-xs font-medium text-gold-soft">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-soft px-3 py-1 text-xs font-medium text-gold">
                 <ShieldAlert className="h-3.5 w-3.5" />
                 حساب تأییدنشده
               </span>
             )}
             {isDemo && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/50 bg-gold/15 px-3 py-1 text-xs font-medium text-gold-soft">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-soft px-3 py-1 text-xs font-medium text-gold">
                 <Sparkles className="h-3.5 w-3.5" />
                 حالت دمو — بک‌اند متصل نیست
               </span>
             )}
           </div>
-        </div>
-        {/* المان‌های تزئینی */}
-        <Factory className="absolute -left-6 -bottom-8 h-44 w-44 rotate-12 text-white/[0.06]" />
-        <div className="absolute -top-20 -right-20 h-56 w-56 rounded-full bg-gold/15 blur-3xl" />
-        <div className="absolute -bottom-24 left-1/3 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-      </div>
+        )}
+        {unverified && (
+          <p className="relative mt-2 text-xs text-muted-foreground">
+            حساب شما هنوز توسط تراشینو تأیید نشده است؛ کارشناسان ما پس از بررسی، آن را تأیید می‌کنند.
+          </p>
+        )}
+      </section>
 
       <InstallCard />
 
@@ -380,47 +408,44 @@ export function DashboardView() {
         <LiveStats />
       )}
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* دسترسی سریع */}
-        <Card className="rounded-2xl lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="h-5 w-1 rounded-full bg-gold" />
-              دسترسی سریع
-            </CardTitle>
-            <CardDescription>کارهای پرتکرار نقش شما</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            {actions.map((action) => (
-              <Link
-                key={action.href + action.label}
-                href={action.href}
-                className="group flex items-start gap-3 rounded-xl border p-4 transition-all hover:border-gold/60 hover:bg-gold-soft/30 hover:shadow-sm"
-              >
-                <div className="rounded-lg bg-primary/[0.08] p-2.5 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground">
-                  <action.icon className="h-5 w-5" />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="flex items-center gap-1 text-sm font-semibold">
-                    {action.label}
-                    <ArrowUpLeft className="h-3.5 w-3.5 text-gold opacity-0 transition-opacity group-hover:opacity-100" />
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {action.description}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
+      {/* دسترسی سریع: کاشی‌های آیکن‌دار */}
+      <section aria-labelledby="quick-actions" className="flex flex-col gap-3">
+        <h2 id="quick-actions" className="text-base font-bold">
+          دسترسی سریع
+        </h2>
+        <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 lg:grid-cols-6">
+          {actions.map((action) => (
+            <Link
+              key={action.href + action.label}
+              href={action.href}
+              title={action.description}
+              className="group flex flex-col items-center gap-2 text-center text-[11px] font-medium leading-snug sm:text-sm"
+            >
+              <span className="grid aspect-square w-full max-w-20 place-items-center rounded-[1.4rem] border bg-card shadow-soft transition-transform group-hover:-translate-y-0.5 group-active:scale-95">
+                <action.icon className="h-[38%] w-[38%] fill-sky-100 text-sky-600" aria-hidden />
+              </span>
+              {action.label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
-        {/* فعالیت‌های اخیر: نسخه‌ی واقعی آخرین اعلان‌ها؛ نسخه‌ی نمایشی داده‌ی نمونه */}
-        {!DEMO_MODE && <RecentNotifications className="lg:col-span-2" />}
-        {DEMO_MODE && (
-        <Card className="rounded-2xl lg:col-span-2">
+      {role !== "admin" && <TipsCarousel role={role} />}
+
+      {(role === "buyer" || role === "agent") && (
+        <>
+          <SupplierStrip />
+          <ServicesRow />
+        </>
+      )}
+
+      {/* فعالیت‌های اخیر: نسخه‌ی واقعی آخرین اعلان‌ها؛ نسخه‌ی نمایشی داده‌ی نمونه */}
+      {!DEMO_MODE && <RecentNotifications className="rounded-3xl" />}
+      {DEMO_MODE && (
+        <Card className="rounded-3xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <span className="h-5 w-1 rounded-full bg-gold" />
+              <span className="h-5 w-1 rounded-full bg-primary" />
               فعالیت‌های اخیر
             </CardTitle>
             <CardDescription>آخرین رویدادهای حساب شما</CardDescription>
@@ -429,33 +454,26 @@ export function DashboardView() {
             {activity.map((item, i) => (
               <div
                 key={i}
-                className={cn(
-                  "flex items-start gap-3 py-3",
-                  i > 0 && "border-t border-border/60",
-                )}
+                className={cn("flex items-start gap-3 py-3", i > 0 && "border-t border-border/60")}
               >
-                <div className="mt-0.5 rounded-full bg-gold-soft p-1.5 text-gold">
+                <div className="mt-0.5 rounded-full bg-secondary p-1.5 text-primary">
                   <item.icon className="h-3.5 w-3.5" />
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <p className="text-sm leading-relaxed">{item.text}</p>
-                  <span className="text-xs text-muted-foreground">
-                    {item.time}
-                  </span>
+                  <span className="text-xs text-muted-foreground">{item.time}</span>
                 </div>
               </div>
             ))}
           </CardContent>
         </Card>
-        )}
-      </div>
+      )}
 
-      {/* گالری محصولات — فقط برای قطعه‌ساز، مانند دیوار */}
+      {/* گالری محصولات — فقط برای قطعه‌ساز */}
       {role === "supplier" && (
-        <Card className="rounded-2xl">
+        <Card className="rounded-3xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <span className="h-5 w-1 rounded-full bg-gold" />
               <Images className="h-5 w-5 text-primary" />
               گالری محصولات من
             </CardTitle>
@@ -496,7 +514,7 @@ function SupplierProfileReminder() {
   return (
     <div
       role="status"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gold/50 bg-card p-4 text-sm text-card-foreground"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-gold/50 bg-card p-4 text-sm text-card-foreground shadow-soft"
     >
       <span className="flex items-center gap-2">
         <ShieldAlert className="h-5 w-5 shrink-0 text-gold" aria-hidden />

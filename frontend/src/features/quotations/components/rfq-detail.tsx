@@ -51,7 +51,7 @@ export function RfqDetail({ rfqId }: { rfqId: string }) {
 
   if (!rfq) {
     return (
-      <div className="flex flex-col items-center gap-3 py-12 text-center text-white/65">
+      <div className="flex flex-col items-center gap-3 py-12 text-center text-muted-foreground">
         <p>درخواست موردنظر پیدا نشد، بسته شده، یا اجازه‌ی دیدن آن را ندارید.</p>
         <Link href={backHref} className={buttonVariants({ variant: "outline" })}>
           بازگشت
@@ -92,7 +92,7 @@ export function RfqDetail({ rfqId }: { rfqId: string }) {
       ) : manages ? (
         <>
           {rfq.status === "cancelled" && rfq.cancelReason && (
-            <p className="text-sm text-white/75">دلیل لغو: {rfq.cancelReason}</p>
+            <p className="text-sm text-muted-foreground">دلیل لغو: {rfq.cancelReason}</p>
           )}
           <RfqOwnerActions rfq={rfq} />
           <QuotationBoard rfq={rfq} />

@@ -82,7 +82,7 @@ export function ContractDocument({ orderId }: { orderId: string }) {
 
   if (!order) {
     return (
-      <p className="py-12 text-center text-white/65">سفارش پیدا نشد.</p>
+      <p className="py-12 text-center text-muted-foreground">سفارش پیدا نشد.</p>
     );
   }
 
@@ -107,9 +107,9 @@ export function ContractDocument({ orderId }: { orderId: string }) {
         </Link>
         <div className="flex items-center gap-2">
           {bothSigned && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-sm font-medium text-success-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-sm font-medium text-success">
               <CheckCircle2 className="h-4 w-4 text-success" />
-              <span className="text-white">قرارداد نافذ است</span>
+              <span>قرارداد نافذ است</span>
             </span>
           )}
           <Button onClick={() => window.print()} variant="secondary" size="sm">

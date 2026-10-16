@@ -110,7 +110,7 @@ export function AuditLog() {
       ) : isError ? (
         <ErrorState error={error} onRetry={() => refetch()} />
       ) : !data || data.items.length === 0 ? (
-        <p className="py-8 text-center text-white/70">رویدادی پیدا نشد.</p>
+        <p className="py-8 text-center text-muted-foreground">رویدادی پیدا نشد.</p>
       ) : (
         <>
           <Card style={{ opacity: isFetching ? 0.6 : 1 }}>

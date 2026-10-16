@@ -112,7 +112,7 @@ export function DisputeQueue() {
       ) : isError ? (
         <ErrorState error={error} onRetry={() => refetch()} />
       ) : !data || data.items.length === 0 ? (
-        <p className="py-8 text-center text-white/70">
+        <p className="py-8 text-center text-muted-foreground">
           {status === "open" ? "اختلافی در انتظار تصمیم نیست." : "موردی پیدا نشد."}
         </p>
       ) : (

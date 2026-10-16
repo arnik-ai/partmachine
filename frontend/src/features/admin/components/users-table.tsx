@@ -118,10 +118,10 @@ export function UsersTable() {
       ) : isError ? (
         <ErrorState error={error} onRetry={() => refetch()} />
       ) : !data || data.items.length === 0 ? (
-        <p className="py-8 text-center text-white/70">کاربری پیدا نشد.</p>
+        <p className="py-8 text-center text-muted-foreground">کاربری پیدا نشد.</p>
       ) : (
         <>
-          <p className="text-sm text-white/65">{faNumber(data.total)} کاربر</p>
+          <p className="text-sm text-muted-foreground">{faNumber(data.total)} کاربر</p>
           <Card style={{ opacity: isFetching ? 0.6 : 1 }}>
             <CardContent className="flex flex-col divide-y p-0">
               {data.items.map((user) => (

@@ -21,7 +21,7 @@ export function CompanyProfile() {
 
   if (!isSupplier) {
     return (
-      <p className="py-12 text-center text-white/70">
+      <p className="py-12 text-center text-muted-foreground">
         این صفحه برای قطعه‌سازهاست. برای دیدن قطعه‌سازها به{" "}
         <Link href="/suppliers" className="underline">
           فهرست قطعه‌سازان
