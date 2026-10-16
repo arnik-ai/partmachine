@@ -597,7 +597,7 @@ export function startHero(opts: {
   let drillSpin = 2;
   let drilling: THREE.Vector3 | null = null;
   let frames = 0;
-  let slowSum = 0;
+  let slowFrames = 0;
   let stopped = false;
   const loop = createLoop(host, (dt) => {
     if (!dragging) {
@@ -627,8 +627,10 @@ export function startHero(opts: {
     });
     // دستگاه کند: اگر میانگین فریم‌ها پس از گرم شدن زیر ۲۲ فریم در ثانیه بود، به نقشه‌ی ساده برمی‌گردیم
     frames++;
-    if (frames > 40 && frames <= 160) slowSum += dt;
-    if (frames === 160 && slowSum / 120 > 0.045) onSlow?.();
+    // فقط کندی مداوم: اگر بیش از دو سوم فریم‌های ۹۰ تا ۲۷۰ کندتر از ۲۰ فریم در ثانیه بود.
+    // افت لحظه‌ای (مثلاً هنگام ساخته شدن صحنه‌ی دیگری) نباید سه‌بعدی را خاموش کند.
+    if (frames > 90 && frames <= 270 && dt > 0.05) slowFrames++;
+    if (frames === 270 && slowFrames > 120) onSlow?.();
   });
   const wait = (ms: number) => loop.tween(ms, () => {});
   const moveDrill = (ms: number, to: () => THREE.Vector3) => {

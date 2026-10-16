@@ -58,19 +58,30 @@ export function Configurator({ copy, lang }: { copy: ConfiguratorCopy; lang: "fa
     const weak = (navigator.hardwareConcurrency || 8) <= 2 || (device.deviceMemory ?? 8) <= 2;
     if (reduce || weak) return;
     let cancelled = false;
-    void import("./scene3d")
-      .then(({ startConfigurator }) => {
-        const canvas = canvasRef.current;
-        const host = stageRef.current;
-        if (cancelled || !canvas || !host) return;
-        const scene = startConfigurator({ canvas, host });
-        scene.set(configRef.current);
-        sceneRef.current = scene;
-        setLive3d(true);
-      })
-      .catch(() => setLive3d(false));
+    const host = stageRef.current;
+    if (!host) return;
+    // صحنه فقط وقتی ساخته می‌شود که به این بخش نزدیک شوید، تا بار صفحه و سه‌بعدی سرصفحه سبک بماند
+    const near = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        near.disconnect();
+        void import("./scene3d")
+          .then(({ startConfigurator }) => {
+            const canvas = canvasRef.current;
+            if (cancelled || !canvas) return;
+            const scene = startConfigurator({ canvas, host });
+            scene.set(configRef.current);
+            sceneRef.current = scene;
+            setLive3d(true);
+          })
+          .catch(() => setLive3d(false));
+      },
+      { rootMargin: "300px 0px" },
+    );
+    near.observe(host);
     return () => {
       cancelled = true;
+      near.disconnect();
       sceneRef.current?.stop();
       sceneRef.current = null;
     };
