@@ -17,6 +17,7 @@ import {
 } from "@/features/agreements/terms";
 import { MOCK_ORDERS } from "@/features/orders/mock";
 import { faDate, faNumber, faToman } from "@/lib/utils";
+import { INSPECTIONS_ENABLED } from "@/lib/config";
 import { useHydrated } from "@/lib/use-hydrated";
 import { useSignatureStore } from "../signature-store";
 
@@ -188,8 +189,8 @@ export function ContractDocument({ orderId }: { orderId: string }) {
         </Article>
 
         <Article number={7} title="کنترل کیفیت و معیار پذیرش">
-          بازرسی توسط آزمایشگاه کنترل کیفیت مرضی‌الطرفین معرفی‌شده در پلتفرم
-          انجام می‌شود. معیار پذیرش، انطباق با نقشه و تلرانس‌های پیوست است.
+          {INSPECTIONS_ENABLED && "بازرسی توسط آزمایشگاه کنترل کیفیت مرضی‌الطرفین معرفی‌شده در پلتفرم انجام می‌شود. "}
+          معیار پذیرش، انطباق با نقشه و تلرانس‌های پیوست است.
           در صورت رد بخشی از محموله، مجری موظف به اصلاح یا تولید مجدد همان
           بخش بدون هزینه‌ی اضافی است.
         </Article>

@@ -16,11 +16,13 @@ export const CITIES: Record<string, { lat: number; lon: number; fa: string; en: 
   kerman: { lat: 30.28, lon: 57.08, fa: "کرمان", en: "Kerman" },
 };
 
-/** مسیرهای نمونه: درخواست ← ساخت ← بازرسی */
-export const ROUTES: [string, string, string][] = [
-  ["tehran", "isfahan", "tabriz"],
-  ["mashhad", "yazd", "tehran"],
-  ["ahvaz", "arak", "shiraz"],
-  ["rasht", "tabriz", "kermanshah"],
-  ["bandarAbbas", "shiraz", "kerman"],
+/** مسیرهای نمونه: درخواست ← ساخت */
+export const ROUTES: [string, string][] = [
+  ["tehran", "isfahan"],
+  ["mashhad", "yazd"],
+  ["ahvaz", "arak"],
+  ["rasht", "tabriz"],
+  ["bandarAbbas", "shiraz"],
+  ["kermanshah", "tehran"],
+  ["kerman", "mashhad"],
 ];

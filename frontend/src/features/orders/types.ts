@@ -1,3 +1,5 @@
+import { INSPECTIONS_ENABLED } from "@/lib/config";
+
 /** مراحل سفارش در داده‌ی نمونه‌ی نسخه‌ی نمایشی (پول از پلتفرم عبور نمی‌کند؛ O6) */
 export type OrderStage =
   | "placed"
@@ -8,7 +10,7 @@ export type OrderStage =
   | "delivered"
   | "released";
 
-export const ORDER_STAGES: {
+const ALL_ORDER_STAGES: {
   key: OrderStage;
   label: string;
   description: string;
@@ -49,6 +51,11 @@ export const ORDER_STAGES: {
     description: "کارفرما تسویه‌ی پایانی را پرداخت کرد و قطعه‌ساز دریافت را تأیید کرد",
   },
 ];
+
+/** مرحله‌ی «کنترل کیفیت» فقط وقتی آزمایشگاه‌ها روشن باشند (فاز بعد) */
+export const ORDER_STAGES = ALL_ORDER_STAGES.filter(
+  (stage) => INSPECTIONS_ENABLED || stage.key !== "qc_inspection",
+);
 
 export interface Order {
   id: string;

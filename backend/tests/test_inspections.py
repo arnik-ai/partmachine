@@ -2,14 +2,18 @@
 همان سفارش را (بدون مبلغ، پرداخت و قرارداد) و نقشه‌ها را پس از تعهد عدم افشا می‌بیند، رد بازرسی
 سفارش را به تولید برمی‌گرداند و ارسال پیش از قبولی ممکن نیست."""
 
+import uuid
 from collections.abc import Callable
 from typing import Any
 
 import httpx
+import pytest
 
+from app.core.config import settings
 from app.modules.agreements.catalog import INSPECTION_NDA, RFQ_NDA
 from tests.helpers import (
     API,
+    PASSWORD,
     PDF_BYTES,
     Account,
     Deal,
@@ -20,6 +24,7 @@ from tests.helpers import (
     order_of,
     register,
     signed_order,
+    signup_agreements,
     upload_file,
     verified_lab,
 )
@@ -325,3 +330,25 @@ async def test_inspection_rules_hold_for_cancelled_orders(
     closed = await _choose(deal.buyer, order_id, lab)
     assert closed.status_code == 409 and closed.json()["code"] == "inspection_locked"
     assert (await _inspection(deal.buyer, order_id))["canChooseLab"] is False
+
+
+async def test_switched_off_until_next_phase(
+    client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """با کلید خاموش (پیش‌فرض فعلی): ثبت‌نام آزمایشگاه رد می‌شود و مسیرهای بازرسی ۴۰۴ می‌دهند."""
+    monkeypatch.setattr(settings, "inspections_enabled", False)
+    buyer = await register(client)
+    assert (await client.get(f"{API}/qc-labs", headers=buyer.auth)).status_code == 404
+    response = await client.post(
+        f"{API}/auth/register",
+        json={
+            "email": f"qc-{uuid.uuid4().hex[:10]}@example.com",
+            "password": PASSWORD,
+            "fullName": "مدیر آزمایشگاه",
+            "role": "qc",
+            "companyName": "آزمایشگاه نمونه",
+            "acceptedAgreements": signup_agreements("qc"),
+        },
+    )
+    assert response.status_code == 422
+    assert response.json()["errors"][0]["field"] == "role"

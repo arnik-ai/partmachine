@@ -159,6 +159,9 @@ jobs:
       # ادمین آزمون فقط در پایگاه موقت همین job ساخته می‌شود (رمز واقعی نیست)
       E2E_ADMIN_EMAIL: admin-e2e@example.com
       E2E_ADMIN_PASSWORD: e2e-only-admin-password
+      # آزمایشگاه کنترل کیفیت در تولید فعلاً خاموش است؛ آزمون مرورگر کدش را روشن می‌آزماید
+      INSPECTIONS_ENABLED: "true"
+      NEXT_PUBLIC_INSPECTIONS_ENABLED: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

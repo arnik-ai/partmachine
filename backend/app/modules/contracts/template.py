@@ -11,10 +11,11 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
+from app.core.config import settings
 from app.core.jalali import format_jalali
 from app.core.text import fa_digits
 
-TEMPLATE_VERSION = "2026-10-14"
+TEMPLATE_VERSION = "2026-10-16"
 NDA_YEARS = 5
 DRAFT_NOTICE = "این متن پیش‌نویس است و پیش از استفاده‌ی واقعی باید توسط وکیل بازبینی شود."
 
@@ -142,9 +143,13 @@ def render(facts: ContractFacts, terms: ContractTerms) -> list[dict[str, Any]]:
         _article(
             7,
             "کنترل کیفیت و معیار پذیرش",
-            "معیار پذیرش، انطباق با نقشه‌ها و تلرانس‌های پیوست است. کارفرما می‌تواند پیش از ارسال، "
-            "بازرسی توسط آزمایشگاهی تأییدشده در پلتفرم را درخواست کند؛ در این صورت ارسال پس از "
-            "قبولی بازرسی انجام می‌شود.",
+            "معیار پذیرش، انطباق با نقشه‌ها و تلرانس‌های پیوست است."
+            + (
+                " کارفرما می‌تواند پیش از ارسال، بازرسی توسط آزمایشگاهی تأییدشده در پلتفرم را "
+                "درخواست کند؛ در این صورت ارسال پس از قبولی بازرسی انجام می‌شود."
+                if settings.inspections_enabled
+                else ""
+            ),
             "در صورت رد بخشی از کالا، مجری موظف به اصلاح یا ساخت دوباره‌ی همان بخش بدون هزینه‌ی "
             "اضافی است.",
         ),

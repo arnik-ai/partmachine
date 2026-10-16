@@ -119,7 +119,7 @@ export const LANDING: Record<Lang, LandingCopy> = {
         },
         {
           title: "تحویل",
-          text: "پیشرفت کار، پرداخت‌ها و بازرسی کیفیتِ اختیاری در صفحه‌ی سفارش ثبت می‌شوند تا قطعه به دستتان برسد.",
+          text: "پیشرفت کار و پرداخت‌ها در صفحه‌ی سفارش ثبت می‌شوند تا قطعه به دستتان برسد.",
         },
       ],
     },
@@ -153,7 +153,6 @@ export const LANDING: Record<Lang, LandingCopy> = {
         steps: [
           { label: "قرارداد امضا شد", state: "done" },
           { label: "تولید", note: "۱۴ روز", state: "done" },
-          { label: "بازرسی کیفیت", note: "اختیاری، قبول", state: "done" },
           { label: "ارسال", note: "در راه", state: "now" },
           { label: "تحویل" },
         ],
@@ -176,14 +175,14 @@ export const LANDING: Record<Lang, LandingCopy> = {
     network: {
       eyebrow: "شبکه",
       title: "از هر شهر، تا قطعه‌ساز مناسب",
-      lead: "درخواست از یک شهر ثبت می‌شود، ساخت در شهر دیگری انجام می‌شود و بازرسی در شهر سوم؛ همه در یک پرونده.",
-      caption: "درخواست از {a} ← ساخت در {b} ← بازرسی در {c}",
+      lead: "درخواست از یک شهر ثبت می‌شود و ساخت در شهر دیگری انجام می‌شود؛ همه در یک پرونده.",
+      caption: "درخواست از {a} ← ساخت در {b}",
       note: "مسیرها نمونه‌اند.",
     },
     roles: {
       eyebrow: "راهکارها",
-      title: "یک سفارش، سه نقش هماهنگ",
-      lead: "کارفرما سفارش می‌دهد، قطعه‌ساز تولید می‌کند و آزمایشگاه کیفیت را می‌سنجد؛ همه در یک پرونده‌ی مشترک.",
+      title: "یک سفارش، دو طرف هماهنگ",
+      lead: "کارفرما سفارش می‌دهد و قطعه‌ساز تولید می‌کند؛ همه در یک پرونده‌ی مشترک.",
       items: [
         {
           who: "کارفرمایان",
@@ -207,13 +206,6 @@ export const LANDING: Record<Lang, LandingCopy> = {
           ],
           cta: "ثبت‌نام قطعه‌سازان",
           href: "/register?role=supplier",
-        },
-        {
-          who: "آزمایشگاه‌های کنترل کیفیت",
-          title: "بازرسی یکپارچه با سفارش",
-          points: ["بازرسی سفارش‌هایی که کارفرما به شما می‌سپارد", "ثبت نتیجه و گزارش در همان سفارش"],
-          cta: "ثبت‌نام آزمایشگاه‌ها",
-          href: "/register?role=qc",
         },
       ],
     },
@@ -332,7 +324,7 @@ export const LANDING: Record<Lang, LandingCopy> = {
         },
         {
           title: "Delivery",
-          text: "Progress, payments and optional quality inspection are recorded on the order page until the part reaches you.",
+          text: "Progress and payments are recorded on the order page until the part reaches you.",
         },
       ],
     },
@@ -372,7 +364,6 @@ export const LANDING: Record<Lang, LandingCopy> = {
         steps: [
           { label: "Contract signed", state: "done" },
           { label: "Production", note: "14 days", state: "done" },
-          { label: "Quality inspection", note: "optional, passed", state: "done" },
           { label: "Shipping", note: "in transit", state: "now" },
           { label: "Delivered" },
         ],
@@ -395,14 +386,14 @@ export const LANDING: Record<Lang, LandingCopy> = {
     network: {
       eyebrow: "Network",
       title: "From any city to the right manufacturer",
-      lead: "A request is posted in one city, made in another and inspected in a third, all in one order file.",
-      caption: "Requested in {a} → made in {b} → inspected in {c}",
+      lead: "A request is posted in one city and made in another, all in one order file.",
+      caption: "Requested in {a} → made in {b}",
       note: "Routes are examples.",
     },
     roles: {
       eyebrow: "Solutions",
-      title: "One order, three coordinated roles",
-      lead: "Buyers order, manufacturers produce and labs verify quality, all in one shared order file.",
+      title: "One order, two sides in sync",
+      lead: "Buyers order and manufacturers produce, all in one shared order file.",
       items: [
         {
           who: "Buyers",
@@ -426,13 +417,6 @@ export const LANDING: Record<Lang, LandingCopy> = {
           ],
           cta: "Join as a manufacturer",
           href: "/register?role=supplier",
-        },
-        {
-          who: "Quality-control labs",
-          title: "Inspection built into the order",
-          points: ["Inspect the orders that buyers assign to you", "Record results and reports on the same order"],
-          cta: "Join as a lab",
-          href: "/register?role=qc",
         },
       ],
     },
