@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import type { Scene3D } from "./scene3d";
 
 type Point = { x: number; y: number };
 
@@ -163,6 +164,11 @@ export function LandingEffects() {
       if (visual && hero) {
         visual.style.transition = "transform .6s cubic-bezier(.22,1,.36,1)";
         on(hero, "pointermove", (e) => {
+          // قطعه‌ی سه‌بعدی خودش با کشیدن می‌چرخد؛ کج شدن قاب فقط برای نقشه‌ی SVG است
+          if (visual.classList.contains("is-3d")) {
+            visual.style.transform = "";
+            return;
+          }
           const r = hero.getBoundingClientRect();
           const x = (e.clientX - r.left) / r.width - 0.5;
           const y = (e.clientY - r.top) / r.height - 0.5;
@@ -352,7 +358,9 @@ export function LandingEffects() {
       // تا صحنه دیده نشود حرکت نمی‌کند (در پس‌زمینه پردازنده مصرف نمی‌شود)
       const whenVisible = () =>
         new Promise<void>((resolve) => {
-          const check = () => (sceneVisible || disposed ? resolve() : later(check, 300));
+          // وقتی قطعه‌ی سه‌بعدی فعال است، مته‌ی SVG منتظر می‌ماند
+          const svgActive = () => sceneVisible && !$(".visual")?.classList.contains("is-3d");
+          const check = () => (svgActive() || disposed ? resolve() : later(check, 300));
           check();
         });
       const moveTo = async (target: Point, ms: number) => {
@@ -444,6 +452,69 @@ export function LandingEffects() {
         if (document.readyState === "complete") void run();
         else on(window, "load", () => void run(), { once: true });
       }
+    }
+
+    // ---- قطعه‌ی سه‌بعدی: پس از بار کامل صفحه و فقط اگر «کاهش حرکت» خاموش است و دستگاه خیلی ضعیف نیست.
+    //      three.js تکه‌ی جدایی است که فقط همین‌جا بار می‌شود؛ اگر WebGL نباشد یا کند باشد، نقشه‌ی SVG می‌ماند.
+    const visual3d = $(".visual");
+    const section3d = $(".explode");
+    const device = navigator as Navigator & { deviceMemory?: number };
+    const weak = (navigator.hardwareConcurrency || 8) <= 2 || (device.deviceMemory ?? 8) <= 2;
+    if (!reduce && visual3d && section3d && !weak) {
+      let scenes: Scene3D[] = [];
+      const off = () => {
+        scenes.forEach((scene) => scene.stop());
+        scenes = [];
+        visual3d.classList.remove("is-3d");
+        section3d.classList.remove("is-3d");
+      };
+      cleanups.push(off);
+      const boot = async () => {
+        try {
+          const { startHero, startExplode } = await import("./scene3d");
+          const heroCanvas = $<HTMLCanvasElement>("#heroCanvas");
+          const explodeCanvas = $<HTMLCanvasElement>("#explodeCanvas");
+          const view = $("#explodeView");
+          const pin = $("#explodePin");
+          const stage = $(".explode-stage");
+          if (disposed || !heroCanvas || !explodeCanvas || !view || !pin || !stage) return;
+          scenes.push(
+            startHero({
+              canvas: heroCanvas,
+              host: visual3d,
+              dims: $$(".dim3d"),
+              hint: $(".drag-hint"),
+              onSlow: off,
+            }),
+          );
+          visual3d.classList.add("is-3d");
+          section3d.classList.add("is-3d");
+          let stickyTop = 0;
+          const measure = () => {
+            stickyTop = parseFloat(getComputedStyle(stage).top) || 0;
+          };
+          measure();
+          on(window, "resize", measure, { passive: true });
+          scenes.push(
+            startExplode({
+              canvas: explodeCanvas,
+              host: view,
+              labels: $$(".xlabel"),
+              bar: $("#explodeBar"),
+              progress: () => {
+                const r = pin.getBoundingClientRect();
+                const total = r.height - stage.offsetHeight;
+                return total > 0 ? (stickyTop - r.top) / total : 0;
+              },
+            }),
+          );
+        } catch (err) {
+          console.warn("Tarashino 3D off:", err);
+          off();
+        }
+      };
+      if (document.readyState === "complete") void boot();
+      else on(window, "load", () => void boot(), { once: true });
     }
 
     return () => {
