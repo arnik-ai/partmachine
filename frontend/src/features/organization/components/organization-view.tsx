@@ -33,7 +33,7 @@ export function OrganizationView() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-bold">{organization.name}</h1>
-        <p className="text-sm text-white/70">
+        <p className="text-sm text-muted-foreground">
           نقش شما: {ORG_ROLE_LABELS[organization.myOrgRole]}
         </p>
       </div>

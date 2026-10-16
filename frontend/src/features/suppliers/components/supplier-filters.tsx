@@ -70,7 +70,7 @@ export function SupplierFiltersBar({
         ))}
       </Select>
     </div>
-    <label className="flex cursor-pointer items-center gap-2 self-start text-sm text-white/85">
+    <label className="flex cursor-pointer items-center gap-2 self-start text-sm text-foreground">
       <input
         type="checkbox"
         className="h-4 w-4 accent-primary"

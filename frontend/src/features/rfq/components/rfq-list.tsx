@@ -58,7 +58,7 @@ export function RfqList() {
               >
                 صفحه‌ی قبل
               </Button>
-              <span className="text-sm text-white/75">
+              <span className="text-sm text-muted-foreground">
                 صفحه‌ی {faNumber(page + 1)} از {faNumber(pages)}
               </span>
               <Button
@@ -72,7 +72,7 @@ export function RfqList() {
           )}
         </>
       ) : (
-        <div className="flex flex-col items-center gap-3 py-12 text-center text-white/65">
+        <div className="flex flex-col items-center gap-3 py-12 text-center text-muted-foreground">
           <p>هنوز درخواستی ثبت نکرده‌اید.</p>
           {canCreate && (
             <Link href="/rfqs/new" className={buttonVariants({ variant: "outline" })}>

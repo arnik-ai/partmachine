@@ -50,7 +50,7 @@ export function SuppliersList() {
         <ErrorState error={error} onRetry={() => refetch()} />
       ) : data && data.items.length > 0 ? (
         <>
-          <p className="text-sm text-white/65">
+          <p className="text-sm text-muted-foreground">
             {faNumber(data.total)} قطعه‌ساز پیدا شد
           </p>
           <div
@@ -70,7 +70,7 @@ export function SuppliersList() {
               >
                 صفحه‌ی قبل
               </Button>
-              <span className="text-sm text-white/75">
+              <span className="text-sm text-muted-foreground">
                 صفحه‌ی {faNumber(page + 1)} از {faNumber(pages)}
               </span>
               <Button
@@ -84,7 +84,7 @@ export function SuppliersList() {
           )}
         </>
       ) : (
-        <p className="py-12 text-center text-white/65">
+        <p className="py-12 text-center text-muted-foreground">
           قطعه‌سازی با این فیلترها پیدا نشد. فیلترها را تغییر دهید.
         </p>
       )}

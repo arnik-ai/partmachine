@@ -36,7 +36,7 @@ export function OrdersView() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl font-bold">سفارش‌ها</h1>
-        <p className="mt-1 text-sm text-white/65">
+        <p className="mt-1 text-sm text-muted-foreground">
           هر سفارش پس از انتخاب برنده ساخته می‌شود و مراحل قرارداد، تولید، ارسال و تحویل از همین‌جا
           پیگیری می‌شود.
         </p>
@@ -70,7 +70,7 @@ export function OrdersView() {
       ) : isError ? (
         <ErrorState error={error} onRetry={() => refetch()} />
       ) : !data || data.items.length === 0 ? (
-        <p className="py-10 text-center text-white/70">
+        <p className="py-10 text-center text-muted-foreground">
           {group === "active"
             ? "سفارش در جریانی ندارید. پس از انتخاب برنده‌ی یک درخواست، سفارش این‌جا نمایش داده می‌شود."
             : "سفارشی پیدا نشد."}
@@ -85,7 +85,7 @@ export function OrdersView() {
               <Button variant="outline" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
                 صفحه‌ی قبل
               </Button>
-              <span className="text-sm text-white/75">
+              <span className="text-sm text-muted-foreground">
                 صفحه‌ی {faNumber(page + 1)} از {faNumber(pages)}
               </span>
               <Button

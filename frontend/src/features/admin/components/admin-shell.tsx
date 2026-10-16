@@ -27,7 +27,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname().replace(/\/$/, "") || "/";
 
   if (role !== "admin") {
-    return <p className="py-12 text-center text-white/70">صفحه‌ی موردنظر پیدا نشد.</p>;
+    return <p className="py-12 text-center text-muted-foreground">صفحه‌ی موردنظر پیدا نشد.</p>;
   }
   if (options.isLoading) return <Skeleton className="h-40" />;
   // ادمین بدون ورود دومرحله‌ای به بخش مدیریت راه ندارد (سرور هم همین را اجرا می‌کند)
@@ -103,7 +103,7 @@ export function Pager({
       >
         صفحه‌ی قبل
       </button>
-      {label && <span className="text-sm text-white/75">{label}</span>}
+      {label && <span className="text-sm text-muted-foreground">{label}</span>}
       <button
         type="button"
         className={buttonVariants({ variant: "outline", size: "sm" })}

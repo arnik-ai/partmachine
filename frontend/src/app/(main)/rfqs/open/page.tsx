@@ -13,7 +13,7 @@ export default function OpenRfqsPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-bold">درخواست‌های باز</h1>
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-muted-foreground">
             درخواست‌هایی که هنوز پیشنهاد قیمت می‌پذیرند. برای دیدن جزئیات و ثبت قیمت، روی هر درخواست
             بزنید.
           </p>

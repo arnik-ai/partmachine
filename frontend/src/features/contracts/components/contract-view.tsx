@@ -62,7 +62,7 @@ export function ContractView({ orderId }: { orderId: string }) {
   }
   if (!contract) {
     return (
-      <p className="py-12 text-center text-white/70">
+      <p className="py-12 text-center text-muted-foreground">
         قرارداد پیدا نشد یا اجازه‌ی دیدن آن را ندارید.
       </p>
     );

@@ -77,7 +77,7 @@ export function OrdersList() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl font-bold">سفارش‌های من</h1>
-        <p className="mt-1 text-sm text-white/65">
+        <p className="mt-1 text-sm text-muted-foreground">
           مرحله‌ی فعلی هر سفارش را به‌صورت زنده ببینید — از قرارداد و
           پیش‌پرداخت تا تسویه.
         </p>
