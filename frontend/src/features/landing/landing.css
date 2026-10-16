@@ -504,7 +504,7 @@ html:has(.lp), html:has(.lp) body { background: #0d0c12; }
   .lp .cfg-chip { font: 600 13px/1 var(--font); color: var(--fg-2); background: transparent; border: 1px solid var(--line-strong); border-radius: 99px; padding: 9px 13px; cursor: pointer; transition: background-color .2s, color .2s, border-color .2s; }
   .lp .cfg-chip[aria-pressed="true"] { color: #fff; background: rgba(139, 92, 246, .35); border-color: var(--violet-light); }
   .lp .cfg-chip:focus-visible, .lp .cfg-row input:focus-visible { outline: 2px solid var(--violet-light); outline-offset: 3px; }
-  .lp .cfg-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .lp .cfg-facts { display: grid; grid-template-columns: 1fr; gap: 8px; }
   .lp .cfg-facts div { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(139, 92, 246, .08); }
   .lp .cfg-facts small { display: block; color: var(--fg-3); font-size: 12.5px; }
   .lp .cfg-facts b { font-size: 17px; font-variant-numeric: tabular-nums; }

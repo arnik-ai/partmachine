@@ -5,9 +5,6 @@ import { useRouter } from "next/navigation";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { estimatePrice, judgeQuotePrice } from "@/features/pricing/engine";
-import type { ComplexityValue } from "@/features/pricing/data";
-import type { CapabilityValue } from "@/lib/constants";
 import { useAwardStore } from "../award-store";
 import { SCORE_FORMULA_TEXT, bestValues, rankQuotations } from "../ranking";
 import type { Quotation } from "../types";
@@ -18,33 +15,16 @@ export function QuotationCompare({
   rfqId,
   rfqTitle,
   quotes,
-  capability,
-  material,
-  quantity,
 }: {
   rfqId: string;
   rfqTitle: string;
   quotes: Quotation[];
-  capability: CapabilityValue;
-  material: string;
-  quantity: number;
 }) {
   const router = useRouter();
   const { awardedQuotationId, award } = useAwardStore();
   const [pending, setPending] = useState<string | null>(null);
 
   const ranked = useMemo(() => rankQuotations(quotes), [quotes]);
-  // برآورد قیمت منطقی برای سنجش هر پیشنهاد (پیچیدگی متوسط فرض می‌شود)
-  const estimate = useMemo(
-    () =>
-      estimatePrice({
-        capability,
-        material,
-        quantity,
-        complexity: "normal" as ComplexityValue,
-      }),
-    [capability, material, quantity],
-  );
   const currentAward = awardedQuotationId[rfqId];
 
   function handleAward(quote: Quotation) {
@@ -83,7 +63,6 @@ export function QuotationCompare({
             best={best}
             recommended={index === 0}
             awarded={currentAward === quote.id}
-            assessment={judgeQuotePrice(quote.totalPriceRials, estimate)}
             action={
               <Button size="sm" onClick={() => handleAward(quote)} disabled={pending !== null}>
                 {pending === quote.id ? "در حال ثبت..." : "انتخاب و عقد قرارداد"}

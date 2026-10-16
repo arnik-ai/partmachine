@@ -24,12 +24,6 @@ export interface Quotation {
   /** active: معتبر؛ withdrawn: پس‌گرفته‌شده */
   status?: "active" | "withdrawn";
   revision?: number;
-  /** فقط برای صاحب درخواست: مقایسه با برآورد منطقی */
-  priceAssessment?: {
-    verdict: "low" | "fair" | "high";
-    deviationPercent: number;
-    message: string;
-  } | null;
   /** آیا این پیشنهاد برنده شده است (از سرور) */
   isAwarded?: boolean;
 }

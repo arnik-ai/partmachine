@@ -25,8 +25,6 @@ import type { CapabilityValue } from "@/lib/constants";
 import { acceptanceOf, useAgreement } from "@/features/agreements/api";
 import { AgreementChecklist } from "@/features/agreements/components/agreement-checklist";
 import { allTermsAccepted } from "@/features/agreements/components/terms-checklist";
-import { PriceEstimator } from "@/features/pricing/components/price-estimator";
-import type { ComplexityValue } from "@/features/pricing/data";
 import { useCreateRfq } from "../hooks";
 import { RfqFileUpload, type UploadState } from "./file-upload";
 
@@ -66,7 +64,6 @@ export function RfqForm() {
   const [quantity, setQuantity] = useState<number>(
     Number.isInteger(presetQuantity) && presetQuantity > 0 && presetQuantity <= 100_000 ? presetQuantity : 0,
   );
-  const [complexity, setComplexity] = useState<ComplexityValue>("normal");
   const [deadline, setDeadline] = useState("");
   // اختیاری: اگر خالی بماند سرور ۷ روز بعد (و نه دیرتر از مهلت تحویل) را می‌گذارد
   const [quotesDue, setQuotesDue] = useState("");
@@ -229,14 +226,6 @@ export function RfqForm() {
               <FieldError message={fieldErrors.quotesDue} />
             </div>
           </div>
-
-          <PriceEstimator
-            capability={capability}
-            material={material}
-            quantity={quantity}
-            complexity={complexity}
-            onComplexityChange={setComplexity}
-          />
 
           <div className="flex flex-col gap-2">
             <Label>فایل‌های فنی (نقشه، CAD، PDF)</Label>

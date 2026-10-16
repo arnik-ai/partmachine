@@ -6,9 +6,9 @@ import httpx
 import pytest
 from redis.asyncio import Redis
 
+from app import main
 from app.core import health, rate_limit
 from app.core.config import settings
-from app.modules.pricing import router as pricing_router
 from tests.helpers import API
 
 
@@ -104,13 +104,11 @@ async def test_unknown_route_is_persian_404(client: httpx.AsyncClient) -> None:
 async def test_unexpected_errors_hide_internals(
     client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def boom(**_: object) -> None:
+    async def boom() -> NoReturn:
         raise RuntimeError("database password is hunter2")
 
-    monkeypatch.setattr(pricing_router, "estimate_price", boom)
-    response = await client.post(
-        f"{API}/pricing/estimate", json={"capability": "cnc", "material": "x", "quantity": 1}
-    )
+    monkeypatch.setattr(main, "components", boom)
+    response = await client.get(f"{API}/status")
     assert response.status_code == 500
     body = response.json()
     assert body["code"] == "internal_error"

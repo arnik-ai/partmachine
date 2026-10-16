@@ -7,25 +7,21 @@
 
 import uuid
 from datetime import date
-from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import Conflict, NotFound
-from app.core.text import fa_digits
 from app.core.time import business_today, utcnow
 from app.modules.audit import service as audit
 from app.modules.identity.deps import CurrentUser
 from app.modules.notifications import service as notifications
 from app.modules.orders import service as orders
-from app.modules.pricing.engine import estimate_price, judge_quote_price
 from app.modules.quotations.models import Quotation
 from app.modules.quotations.schemas import (
     CreateQuotationInput,
     MyQuotationOut,
-    PriceAssessmentOut,
     QuotationOut,
     QuotationOutcome,
     RfqBrief,
@@ -48,7 +44,6 @@ def to_out(
     quotation: Quotation,
     supplier: Supplier,
     rfq: Rfq,
-    price_assessment: PriceAssessmentOut | None = None,
 ) -> QuotationOut:
     return QuotationOut(
         id=quotation.id,
@@ -67,22 +62,6 @@ def to_out(
         submitted_at=quotation.created_at,
         updated_at=quotation.updated_at,
         is_awarded=rfq.awarded_quotation_id == quotation.id,
-        price_assessment=price_assessment,
-    )
-
-
-def assess_price(total_rials: int, estimate: dict[str, Any]) -> PriceAssessmentOut:
-    judged = judge_quote_price(total_rials, estimate)
-    percent = fa_digits(abs(judged["deviation_percent"]))
-    messages = {
-        "low": f"حدود {percent}٪ کمتر از برآورد منطقی؛ کیفیت و شرایط را بررسی کنید",
-        "high": f"حدود {percent}٪ بیشتر از برآورد منطقی",
-        "fair": "در محدوده‌ی برآورد منطقی",
-    }
-    return PriceAssessmentOut(
-        verdict=judged["verdict"],
-        deviation_percent=judged["deviation_percent"],
-        message=messages[judged["verdict"]],
     )
 
 
@@ -148,10 +127,7 @@ async def list_for_rfq(
     )
     if view is RfqView.FULL:
         rows = await db.execute(stmt.where(Quotation.status == "active"))
-        estimate = estimate_price(
-            capability=rfq.capability, material=rfq.material, quantity=rfq.quantity
-        )
-        return [to_out(q, s, rfq, assess_price(q.total_price_rials, estimate)) for q, s in rows]
+        return [to_out(q, s, rfq) for q, s in rows]
     # قطعه‌ساز فقط پیشنهاد خودش را می‌بیند (حتی اگر پس گرفته باشد) — هرگز قیمت رقبا
     own = await supplier_for_organization(db, user.organization_id)
     if own is None:

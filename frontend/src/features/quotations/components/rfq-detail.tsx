@@ -153,9 +153,6 @@ function DemoQuotations({ rfq }: { rfq: Rfq }) {
         rfqId={rfq.id}
         rfqTitle={rfq.title}
         quotes={quotes}
-        capability={rfq.capability}
-        material={rfq.material}
-        quantity={rfq.quantity}
       />
     </div>
   );

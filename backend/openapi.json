@@ -9389,117 +9389,6 @@
         }
       }
     },
-    "/api/v1/pricing/estimate": {
-      "post": {
-        "tags": [
-          "pricing"
-        ],
-        "summary": "Estimate",
-        "operationId": "estimate_api_v1_pricing_estimate_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EstimateInput"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PriceEstimate"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Content Too Large",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Content",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/admin/verifications": {
       "get": {
         "tags": [
@@ -12221,34 +12110,6 @@
         ],
         "title": "ContractVersionSummary"
       },
-      "CostComponent": {
-        "properties": {
-          "key": {
-            "type": "string",
-            "title": "Key"
-          },
-          "label": {
-            "type": "string",
-            "title": "Label"
-          },
-          "amountRials": {
-            "type": "integer",
-            "title": "Amountrials"
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": [
-          "key",
-          "label",
-          "amountRials",
-          "detail"
-        ],
-        "title": "CostComponent"
-      },
       "CreateQuotationInput": {
         "properties": {
           "totalPriceRials": {
@@ -12478,68 +12339,6 @@
         ],
         "title": "ErrorResponse",
         "description": "شکل یکسان همه‌ی پاسخ‌های خطا — `detail` همیشه یک پیام فارسی قابل‌نمایش است."
-      },
-      "EstimateInput": {
-        "properties": {
-          "capability": {
-            "type": "string",
-            "enum": [
-              "cnc",
-              "injection_molding",
-              "sheet_metal",
-              "casting",
-              "welding",
-              "tooling",
-              "plastic_manufacturing",
-              "forging",
-              "heat_treatment",
-              "surface_treatment"
-            ],
-            "title": "Capability"
-          },
-          "material": {
-            "type": "string",
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Material"
-          },
-          "quantity": {
-            "type": "integer",
-            "maximum": 10000000.0,
-            "exclusiveMinimum": 0.0,
-            "title": "Quantity"
-          },
-          "complexity": {
-            "type": "string",
-            "enum": [
-              "simple",
-              "normal",
-              "complex"
-            ],
-            "title": "Complexity",
-            "default": "normal"
-          },
-          "kgPerPiece": {
-            "anyOf": [
-              {
-                "type": "number",
-                "maximum": 10000.0,
-                "exclusiveMinimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Kgperpiece"
-          }
-        },
-        "type": "object",
-        "required": [
-          "capability",
-          "material",
-          "quantity"
-        ],
-        "title": "EstimateInput"
       },
       "FieldError": {
         "properties": {
@@ -13099,16 +12898,6 @@
           "isAwarded": {
             "type": "boolean",
             "title": "Isawarded"
-          },
-          "priceAssessment": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PriceAssessmentOut"
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "rfq": {
             "$ref": "#/components/schemas/RfqBrief"
@@ -14675,76 +14464,6 @@
         "title": "PortfolioImageOut",
         "description": "`url` نسبی به آدرس API است و تصویر را مستقیم (بدون ورود) نمایش می‌دهد."
       },
-      "PriceAssessmentOut": {
-        "properties": {
-          "verdict": {
-            "type": "string",
-            "enum": [
-              "low",
-              "fair",
-              "high"
-            ],
-            "title": "Verdict"
-          },
-          "deviationPercent": {
-            "type": "integer",
-            "title": "Deviationpercent"
-          },
-          "message": {
-            "type": "string",
-            "title": "Message"
-          }
-        },
-        "type": "object",
-        "required": [
-          "verdict",
-          "deviationPercent",
-          "message"
-        ],
-        "title": "PriceAssessmentOut",
-        "description": "مقایسه‌ی قیمت پیشنهادی با برآورد منطقی (فقط برای صاحب RFQ)."
-      },
-      "PriceEstimate": {
-        "properties": {
-          "unitPriceRials": {
-            "type": "integer",
-            "title": "Unitpricerials"
-          },
-          "totalPriceRials": {
-            "type": "integer",
-            "title": "Totalpricerials"
-          },
-          "rangeLowRials": {
-            "type": "integer",
-            "title": "Rangelowrials"
-          },
-          "rangeHighRials": {
-            "type": "integer",
-            "title": "Rangehighrials"
-          },
-          "totalHours": {
-            "type": "number",
-            "title": "Totalhours"
-          },
-          "components": {
-            "items": {
-              "$ref": "#/components/schemas/CostComponent"
-            },
-            "type": "array",
-            "title": "Components"
-          }
-        },
-        "type": "object",
-        "required": [
-          "unitPriceRials",
-          "totalPriceRials",
-          "rangeLowRials",
-          "rangeHighRials",
-          "totalHours",
-          "components"
-        ],
-        "title": "PriceEstimate"
-      },
       "QcLabList": {
         "properties": {
           "items": {
@@ -14845,16 +14564,6 @@
           "isAwarded": {
             "type": "boolean",
             "title": "Isawarded"
-          },
-          "priceAssessment": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PriceAssessmentOut"
-              },
-              {
-                "type": "null"
-              }
-            ]
           }
         },
         "type": "object",

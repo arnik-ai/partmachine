@@ -6,7 +6,7 @@ import {
   CONFIG_MATERIALS,
   QUANTITY_OPTIONS,
   TEETH_OPTIONS,
-  gearEstimate,
+  gearWeightKg,
   rfqPrefill,
   type GearConfig,
 } from "./gear-config";
@@ -17,18 +17,15 @@ export type ConfiguratorCopy = {
   material: string;
   quantity: string;
   weight: string;
-  estimate: string;
   kg: string;
-  million: string;
   cta: string;
-  note: string;
   drag: string;
 };
 
 type Scene = { set: (c: GearConfig) => void; stop: () => void };
 
 /**
- * پیکربندی زنده‌ی چرخ‌دنده: قطر بیرونی، تعداد دندانه، جنس و تعداد. وزن و برآورد با همان فرمول شفاف پلتفرم؛
+ * پیکربندی زنده‌ی چرخ‌دنده: قطر بیرونی، تعداد دندانه، جنس و تعداد. وزن قطعه همان لحظه محاسبه می‌شود؛
  * دکمه، فرم ثبت درخواست را با همین مشخصات پر می‌کند. نمای سه‌بعدی فقط اگر WebGL و حرکت مجاز باشد.
  */
 export function Configurator({ copy, lang }: { copy: ConfiguratorCopy; lang: "fa" | "en" }) {
@@ -39,7 +36,7 @@ export function Configurator({ copy, lang }: { copy: ConfiguratorCopy; lang: "fa
   const [live3d, setLive3d] = useState(false);
   const material = CONFIG_MATERIALS.find((m) => m.key === materialKey) ?? CONFIG_MATERIALS[0];
   const config = useMemo<GearConfig>(() => ({ diameter, teeth, material, quantity }), [diameter, teeth, material, quantity]);
-  const est = gearEstimate(config);
+  const kg = gearWeightKg(config);
   const fmt = (n: number, digits = 0) => new Intl.NumberFormat(lang === "fa" ? "fa-IR" : "en-US", { maximumFractionDigits: digits }).format(n);
 
   const stageRef = useRef<HTMLDivElement>(null);
@@ -144,20 +141,13 @@ export function Configurator({ copy, lang }: { copy: ConfiguratorCopy; lang: "fa
           <div>
             <small>{copy.weight}</small>
             <b>
-              {fmt(est.kg, 1)} {copy.kg}
-            </b>
-          </div>
-          <div>
-            <small>{copy.estimate}</small>
-            <b>
-              {fmt(est.lowToman / 1e6, 1)}–{fmt(est.highToman / 1e6, 1)} {copy.million}
+              {fmt(kg, 1)} {copy.kg}
             </b>
           </div>
         </div>
         <Link className="btn btn-primary" href={`/rfqs/new?${rfqPrefill(config)}`}>
           {copy.cta}
         </Link>
-        <p className="cfg-note">{copy.note}</p>
       </div>
     </div>
   );

@@ -1,21 +1,10 @@
-import { Award, BadgeCheck, Clock, Scale, Wallet } from "lucide-react";
+import { Award, BadgeCheck, Clock, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { StarRating, scoreToStars } from "@/components/ui/star-rating";
 import { cn, faDate, faNumber, faToman } from "@/lib/utils";
 import type { BestValues } from "../ranking";
 import type { Quotation } from "../types";
-
-export interface PriceAssessmentView {
-  verdict: "low" | "fair" | "high";
-  message: string;
-}
-
-const ASSESSMENT_STYLE: Record<PriceAssessmentView["verdict"], string> = {
-  fair: "bg-success/10 text-success",
-  low: "bg-destructive/10 text-destructive",
-  high: "bg-warning/15 text-foreground",
-};
 
 /** کارت نمایش یک پیشنهاد در مقایسه — فقط نمایش؛ اقدام (انتخاب برنده) از بیرون می‌آید */
 export function QuotationCard({
@@ -24,7 +13,6 @@ export function QuotationCard({
   best,
   recommended,
   awarded,
-  assessment,
   action,
 }: {
   quote: Quotation;
@@ -32,7 +20,6 @@ export function QuotationCard({
   best: BestValues;
   recommended: boolean;
   awarded: boolean;
-  assessment?: PriceAssessmentView | null;
   action?: React.ReactNode;
 }) {
   return (
@@ -89,18 +76,6 @@ export function QuotationCard({
             bestLabel="معتبرترین"
           />
         </div>
-
-        {assessment && (
-          <div
-            className={cn(
-              "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium",
-              ASSESSMENT_STYLE[assessment.verdict],
-            )}
-          >
-            <Scale className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {assessment.message}
-          </div>
-        )}
 
         {quote.note && (
           <p className="rounded-lg bg-muted/50 p-2.5 text-xs leading-relaxed text-muted-foreground">
