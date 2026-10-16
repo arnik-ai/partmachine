@@ -32,7 +32,12 @@ from app.modules.rfqs.models import Rfq
 from app.modules.rfqs.policies import RfqView, can_manage
 from app.modules.suppliers import track_record
 from app.modules.suppliers.models import Supplier
-from app.modules.suppliers.service import supplier_for_organization, trust_score
+from app.modules.suppliers.service import (
+    image_url,
+    logos,
+    supplier_for_organization,
+    trust_score,
+)
 
 QUOTATION_NOT_FOUND = "پیشنهاد موردنظر پیدا نشد."
 DUPLICATE_QUOTE = "شما قبلاً برای این درخواست قیمت داده‌اید."
@@ -44,6 +49,7 @@ def to_out(
     quotation: Quotation,
     supplier: Supplier,
     rfq: Rfq,
+    logo_id: uuid.UUID | None = None,
 ) -> QuotationOut:
     return QuotationOut(
         id=quotation.id,
@@ -52,6 +58,9 @@ def to_out(
         supplier_name=supplier.company_name,
         supplier_city=supplier.city,
         supplier_score=trust_score(supplier)["trust"],
+        supplier_logo_url=image_url(supplier.id, logo_id) if logo_id else None,
+        supplier_rating_average=track_record.of(supplier).rating_average,
+        supplier_rating_count=supplier.rating_count,
         verified=supplier.verified,
         total_price_rials=quotation.total_price_rials,
         lead_time_days=quotation.lead_time_days,
@@ -126,8 +135,9 @@ async def list_for_rfq(
         .order_by(Quotation.total_price_rials, Quotation.created_at)
     )
     if view is RfqView.FULL:
-        rows = await db.execute(stmt.where(Quotation.status == "active"))
-        return [to_out(q, s, rfq) for q, s in rows]
+        active = (await db.execute(stmt.where(Quotation.status == "active"))).tuples().all()
+        logo_ids = await logos(db, [s.organization_id for _, s in active])
+        return [to_out(q, s, rfq, logo_ids.get(s.organization_id)) for q, s in active]
     # قطعه‌ساز فقط پیشنهاد خودش را می‌بیند (حتی اگر پس گرفته باشد) — هرگز قیمت رقبا
     own = await supplier_for_organization(db, user.organization_id)
     if own is None:

@@ -44,6 +44,10 @@ class QuotationOut(CamelModel):
     supplier_name: str
     supplier_city: str
     supplier_score: float
+    supplier_logo_url: str | None = None
+    # ستاره‌ی کارفرماها (۱ تا ۵) و تعداد امتیاز؛ بدون امتیاز میانگین null است
+    supplier_rating_average: float | None = None
+    supplier_rating_count: int = 0
     verified: bool
     total_price_rials: int = Field(description="قیمت کل به ریال")
     lead_time_days: int

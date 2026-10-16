@@ -10,6 +10,10 @@ export interface Quotation {
   supplierCity: string;
   /** امتیاز اعتماد قطعه‌ساز (۰–۱۰۰) — از موتور Trust Score */
   supplierScore: number;
+  supplierLogoUrl?: string | null;
+  /** ستاره‌ی کارفرماها (۱ تا ۵)؛ بدون امتیاز null */
+  supplierRatingAverage?: number | null;
+  supplierRatingCount?: number;
   verified: boolean;
   /** قیمت کل پیشنهادی به ریال */
   totalPriceRials: number;

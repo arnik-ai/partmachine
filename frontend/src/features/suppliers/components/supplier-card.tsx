@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { capabilityLabel } from "@/lib/constants";
 import { faNumber } from "@/lib/utils";
 import type { Supplier } from "../types";
+import { BuyerRating } from "./buyer-rating";
+import { SupplierAvatar } from "./supplier-avatar";
 import { TrustScoreBadge } from "./trust-score";
 
 export function SupplierCard({ supplier }: { supplier: Supplier }) {
@@ -12,17 +14,23 @@ export function SupplierCard({ supplier }: { supplier: Supplier }) {
     <Link href={`/suppliers/${supplier.id}`} className="block">
       <Card className="h-full transition-shadow hover:shadow-md">
         <CardContent className="flex flex-col gap-3 p-5">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="flex items-center gap-1.5 font-semibold">
-              {supplier.companyName}
-              {supplier.verified && (
-                <BadgeCheck
-                  className="h-4 w-4 shrink-0 text-primary"
-                  aria-label="تأیید شده"
-                />
-              )}
-            </h3>
-            <TrustScoreBadge score={supplier.score} />
+          <div className="flex items-start gap-3">
+            <SupplierAvatar name={supplier.companyName} logoUrl={supplier.logo?.url} />
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="flex items-center gap-1.5 font-semibold">
+                  {supplier.companyName}
+                  {supplier.verified && (
+                    <BadgeCheck
+                      className="h-4 w-4 shrink-0 text-primary"
+                      aria-label="تأیید شده"
+                    />
+                  )}
+                </h3>
+                <TrustScoreBadge score={supplier.score} />
+              </div>
+              <BuyerRating average={supplier.ratingAverage} count={supplier.ratingCount} />
+            </div>
           </div>
 
           <p className="line-clamp-2 text-sm text-muted-foreground">

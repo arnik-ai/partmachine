@@ -66,7 +66,9 @@ def image_url(supplier_id: uuid.UUID, file_id: uuid.UUID) -> str:
     return f"/suppliers/{supplier_id}/images/{file_id}"
 
 
-def to_out(supplier: Supplier, portfolio: Sequence[uuid.UUID] = ()) -> SupplierOut:
+def to_out(
+    supplier: Supplier, portfolio: Sequence[uuid.UUID] = (), logo: uuid.UUID | None = None
+) -> SupplierOut:
     return SupplierOut.model_validate(
         {
             "id": supplier.id,
@@ -97,6 +99,7 @@ def to_out(supplier: Supplier, portfolio: Sequence[uuid.UUID] = ()) -> SupplierO
                 PortfolioImageOut(id=file_id, url=image_url(supplier.id, file_id))
                 for file_id in portfolio
             ],
+            "logo": PortfolioImageOut(id=logo, url=image_url(supplier.id, logo)) if logo else None,
         }
     )
 
@@ -119,6 +122,20 @@ async def portfolios(
     for organization_id, file_id in rows.all():
         result[organization_id].append(file_id)
     return result
+
+
+async def logos(
+    db: AsyncSession, organization_ids: Sequence[uuid.UUID]
+) -> dict[uuid.UUID, uuid.UUID]:
+    """عکس پروفایل هر سازمان (تازه‌ترین)، با یک کوئری برای کل صفحه."""
+    if not organization_ids:
+        return {}
+    rows = await db.execute(
+        select(StoredFile.organization_id, StoredFile.id)
+        .where(StoredFile.organization_id.in_(organization_ids), StoredFile.purpose == "logo")
+        .order_by(StoredFile.created_at, StoredFile.id)
+    )
+    return dict(rows.tuples().all())
 
 
 async def list_suppliers(
@@ -152,7 +169,10 @@ async def list_suppliers(
         )
     )
     images = await portfolios(db, [s.organization_id for s in rows])
-    return [to_out(s, images.get(s.organization_id, [])) for s in rows], total
+    logo_ids = await logos(db, [s.organization_id for s in rows])
+    return [
+        to_out(s, images.get(s.organization_id, []), logo_ids.get(s.organization_id)) for s in rows
+    ], total
 
 
 async def get_supplier(db: AsyncSession, supplier_id: uuid.UUID) -> Supplier:
@@ -164,7 +184,10 @@ async def get_supplier(db: AsyncSession, supplier_id: uuid.UUID) -> Supplier:
 
 async def supplier_out(db: AsyncSession, supplier: Supplier) -> SupplierOut:
     images = await portfolios(db, [supplier.organization_id])
-    return to_out(supplier, images.get(supplier.organization_id, []))
+    logo_ids = await logos(db, [supplier.organization_id])
+    return to_out(
+        supplier, images.get(supplier.organization_id, []), logo_ids.get(supplier.organization_id)
+    )
 
 
 async def supplier_for_organization(
@@ -249,13 +272,13 @@ async def update_my_supplier(
 async def open_portfolio_image(
     db: AsyncSession, supplier_id: uuid.UUID, file_id: uuid.UUID
 ) -> tuple[StoredFile, AsyncIterator[bytes]]:
-    """فقط تصویر نمونه‌کارِ همان قطعه‌ساز؛ هیچ فایل دیگری از این مسیر خوانده نمی‌شود."""
+    """فقط نمونه‌کار یا عکس پروفایل همان قطعه‌ساز؛ نه هیچ فایل دیگری."""
     supplier = await db.get(Supplier, supplier_id)
     stored = await db.get(StoredFile, file_id)
     if (
         supplier is None
         or stored is None
-        or stored.purpose != "portfolio_image"
+        or stored.purpose not in ("portfolio_image", "logo")
         or stored.organization_id != supplier.organization_id
     ):
         raise NotFound("تصویر موردنظر پیدا نشد.")

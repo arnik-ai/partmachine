@@ -2094,7 +2094,7 @@ export interface components {
              * Purpose
              * @enum {string}
              */
-            purpose: "rfq_attachment" | "verification_document" | "portfolio_image" | "order_document";
+            purpose: "rfq_attachment" | "verification_document" | "portfolio_image" | "order_document" | "logo";
             /**
              * Createdat
              * Format: date-time
@@ -2318,6 +2318,15 @@ export interface components {
             supplierCity: string;
             /** Supplierscore */
             supplierScore: number;
+            /** Supplierlogourl */
+            supplierLogoUrl?: string | null;
+            /** Supplierratingaverage */
+            supplierRatingAverage?: number | null;
+            /**
+             * Supplierratingcount
+             * @default 0
+             */
+            supplierRatingCount: number;
             /** Verified */
             verified: boolean;
             /**
@@ -2461,6 +2470,7 @@ export interface components {
              * @default []
              */
             portfolio: components["schemas"]["PortfolioImageOut"][];
+            logo?: components["schemas"]["PortfolioImageOut"] | null;
             /** Listed */
             listed: boolean;
             /** Canedit */
@@ -2962,6 +2972,15 @@ export interface components {
             supplierCity: string;
             /** Supplierscore */
             supplierScore: number;
+            /** Supplierlogourl */
+            supplierLogoUrl?: string | null;
+            /** Supplierratingaverage */
+            supplierRatingAverage?: number | null;
+            /**
+             * Supplierratingcount
+             * @default 0
+             */
+            supplierRatingCount: number;
             /** Verified */
             verified: boolean;
             /**
@@ -3363,6 +3382,7 @@ export interface components {
              * @default []
              */
             portfolio: components["schemas"]["PortfolioImageOut"][];
+            logo?: components["schemas"]["PortfolioImageOut"] | null;
         };
         /** SupplierPage */
         SupplierPage: {
@@ -5788,7 +5808,7 @@ export interface operations {
     upload_file_api_v1_files_post: {
         parameters: {
             query: {
-                purpose: "rfq_attachment" | "verification_document" | "portfolio_image" | "order_document";
+                purpose: "rfq_attachment" | "verification_document" | "portfolio_image" | "order_document" | "logo";
                 name: string;
             };
             header?: never;

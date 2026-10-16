@@ -2564,7 +2564,8 @@
                 "rfq_attachment",
                 "verification_document",
                 "portfolio_image",
-                "order_document"
+                "order_document",
+                "logo"
               ],
               "type": "string",
               "title": "Purpose"
@@ -12389,7 +12390,8 @@
               "rfq_attachment",
               "verification_document",
               "portfolio_image",
-              "order_document"
+              "order_document",
+              "logo"
             ],
             "title": "Purpose"
           },
@@ -12844,6 +12846,33 @@
             "type": "number",
             "title": "Supplierscore"
           },
+          "supplierLogoUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplierlogourl"
+          },
+          "supplierRatingAverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplierratingaverage"
+          },
+          "supplierRatingCount": {
+            "type": "integer",
+            "title": "Supplierratingcount",
+            "default": 0
+          },
           "verified": {
             "type": "boolean",
             "title": "Verified"
@@ -13185,6 +13214,16 @@
             "type": "array",
             "title": "Portfolio",
             "default": []
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortfolioImageOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "listed": {
             "type": "boolean",
@@ -14510,6 +14549,33 @@
             "type": "number",
             "title": "Supplierscore"
           },
+          "supplierLogoUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplierlogourl"
+          },
+          "supplierRatingAverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplierratingaverage"
+          },
+          "supplierRatingCount": {
+            "type": "integer",
+            "title": "Supplierratingcount",
+            "default": 0
+          },
           "verified": {
             "type": "boolean",
             "title": "Verified"
@@ -15521,6 +15587,16 @@
             "type": "array",
             "title": "Portfolio",
             "default": []
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PortfolioImageOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

@@ -63,6 +63,8 @@ export interface Supplier {
   galleryTitles?: string[];
   /** تصاویر واقعی نمونه‌کار */
   portfolio?: PortfolioImage[];
+  /** عکس پروفایل (لوگو)؛ بدون عکس، حرف اول نام نمایش داده می‌شود */
+  logo?: PortfolioImage | null;
 }
 
 /** پروفایل سازمان خود قطعه‌ساز، با وضعیت‌هایی که فقط خودش می‌بیند */

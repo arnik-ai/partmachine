@@ -73,6 +73,8 @@ class SupplierOut(CamelModel):
     score: TrustScoreOut
     gallery_titles: list[str] = []
     portfolio: list[PortfolioImageOut] = []
+    # عکس پروفایل (لوگو)؛ بدون عکس null و حرف اول نام نمایش داده می‌شود
+    logo: PortfolioImageOut | None = None
 
 
 class MySupplierOut(SupplierOut):

@@ -9,6 +9,7 @@ import { useAuthStore } from "@/features/auth/store";
 import { VerificationPanel } from "@/features/verification/components/verification-panel";
 import { useMySupplier } from "../hooks";
 import type { MySupplier } from "../types";
+import { LogoUploader } from "./logo-uploader";
 import { PortfolioManager } from "./portfolio-manager";
 import { ProfileForm } from "./profile-form";
 
@@ -80,6 +81,7 @@ function ProfileHeader({ supplier }: { supplier: MySupplier }) {
           </Link>
         )}
       </div>
+      <LogoUploader supplier={supplier} />
       <ul className="flex flex-col gap-2 text-sm">
         {steps.map((step) => (
           <li key={step.label} className="flex items-center gap-2">

@@ -18,7 +18,7 @@ class StoredFile(Base, UUIDPrimaryKey):
     __table_args__ = (
         CheckConstraint(
             "purpose IN ('rfq_attachment', 'verification_document', 'portfolio_image', "
-            "'order_document')",
+            "'order_document', 'logo')",
             name="purpose_valid",
         ),
         CheckConstraint("kind IN ('pdf', 'cad', 'drawing', 'image')", name="kind_valid"),
