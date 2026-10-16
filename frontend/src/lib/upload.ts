@@ -15,7 +15,8 @@ export type FilePurpose =
   | "rfq_attachment"
   | "verification_document"
   | "portfolio_image"
-  | "order_document";
+  | "order_document"
+  | "logo";
 
 export interface UploadedFile {
   id: string;

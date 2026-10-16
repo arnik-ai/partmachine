@@ -12,7 +12,6 @@ import {
   MapPin,
   Package,
   Phone,
-  Star,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +23,6 @@ import {
 } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StarRating, scoreToStars } from "@/components/ui/star-rating";
 import { ApiError } from "@/lib/api-client";
 import { DEMO_MODE } from "@/lib/config";
 import { buttonVariants } from "@/components/ui/button";
@@ -33,7 +31,9 @@ import { capabilityLabel } from "@/lib/constants";
 import { faDate, faNumber } from "@/lib/utils";
 import { portfolioImageSrc } from "../api";
 import { useSupplier } from "../hooks";
-import { TrustScoreBreakdown } from "./trust-score";
+import { BuyerRating } from "./buyer-rating";
+import { SupplierAvatar } from "./supplier-avatar";
+import { TrustScoreBadge, TrustScoreBreakdown } from "./trust-score";
 
 export function SupplierProfile({ id }: { id: string }) {
   const { data: supplier, isLoading, isError, error, refetch } = useSupplier(id);
@@ -65,18 +65,24 @@ export function SupplierProfile({ id }: { id: string }) {
       <Card>
         <CardContent className="flex flex-col gap-4 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex flex-col gap-2">
-              <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
-                {supplier.companyName}
-                {supplier.verified && (
-                  <Badge variant="success">
-                    <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
-                    تأییدشده
-                  </Badge>
-                )}
-              </h1>
-              <StarRating value={scoreToStars(supplier.score.trust)} />
-              <p className="text-muted-foreground">{supplier.description}</p>
+            <div className="flex items-start gap-4">
+              <SupplierAvatar name={supplier.companyName} logoUrl={supplier.logo?.url} size="lg" />
+              <div className="flex min-w-0 flex-col gap-2">
+                <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
+                  {supplier.companyName}
+                  {supplier.verified && (
+                    <Badge variant="success">
+                      <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
+                      تأییدشده
+                    </Badge>
+                  )}
+                </h1>
+                <div className="flex flex-wrap items-center gap-2">
+                  <BuyerRating average={supplier.ratingAverage} count={supplier.ratingCount} size="md" />
+                  <TrustScoreBadge score={supplier.score} />
+                </div>
+                <p className="text-muted-foreground">{supplier.description}</p>
+              </div>
             </div>
             <Link
               href="/rfqs/new"
@@ -118,14 +124,6 @@ export function SupplierProfile({ id }: { id: string }) {
                 {supplier.deliveredJobs
                   ? `تحویل به‌موقع: ${faNumber(supplier.onTimeJobs ?? 0)} از ${faNumber(supplier.deliveredJobs)}`
                   : "هنوز سفارشی در تراشینو تحویل نداده است"}
-              </span>
-            )}
-            {supplier.ratingCount !== undefined && (
-              <span className="inline-flex items-center gap-1.5">
-                <Star className="h-4 w-4" />
-                {supplier.ratingAverage != null && supplier.ratingCount
-                  ? `امتیاز کارفرماها: ${faNumber(Math.round(supplier.ratingAverage * 10) / 10)} از ۵ (${faNumber(supplier.ratingCount)} امتیاز)`
-                  : "هنوز امتیازی از کارفرماها ندارد"}
               </span>
             )}
             {supplier.phone && (

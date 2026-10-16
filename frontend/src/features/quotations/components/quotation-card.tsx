@@ -1,7 +1,8 @@
 import { Award, BadgeCheck, Clock, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { StarRating, scoreToStars } from "@/components/ui/star-rating";
+import { BuyerRating } from "@/features/suppliers/components/buyer-rating";
+import { SupplierAvatar } from "@/features/suppliers/components/supplier-avatar";
 import { cn, faDate, faNumber, faToman } from "@/lib/utils";
 import type { BestValues } from "../ranking";
 import type { Quotation } from "../types";
@@ -36,8 +37,9 @@ export function QuotationCard({
         </div>
       )}
       <CardContent className="flex flex-col gap-4 p-5 pt-7">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col gap-1">
+        <div className="flex items-start gap-3">
+          <SupplierAvatar name={quote.supplierName} logoUrl={quote.supplierLogoUrl} />
+          <div className="flex min-w-0 flex-col gap-1">
             <h3 className="flex items-center gap-1.5 font-semibold">
               {quote.supplierName}
               {quote.verified ? (
@@ -49,8 +51,8 @@ export function QuotationCard({
               )}
             </h3>
             <span className="text-xs text-muted-foreground">{quote.supplierCity}</span>
+            <BuyerRating average={quote.supplierRatingAverage} count={quote.supplierRatingCount} />
           </div>
-          <StarRating value={scoreToStars(quote.supplierScore)} size="sm" />
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-center">

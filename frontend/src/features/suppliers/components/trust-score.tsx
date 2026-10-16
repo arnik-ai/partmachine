@@ -1,5 +1,4 @@
 import { ShieldCheck } from "lucide-react";
-import { StarRating, scoreToStars } from "@/components/ui/star-rating";
 import { cn, faNumber } from "@/lib/utils";
 import type { TrustScore } from "../types";
 
@@ -9,8 +8,17 @@ function scoreColor(value: number): string {
   return "text-destructive";
 }
 
+/** امتیاز اعتماد (۰ تا ۱۰۰) به‌صورت عدد؛ ستاره فقط برای امتیاز کارفرماهاست */
 export function TrustScoreBadge({ score }: { score: TrustScore }) {
-  return <StarRating value={scoreToStars(score.trust)} size="sm" />;
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+      title="امتیاز اعتماد از ۱۰۰، بر اساس سابقه‌ی کار در تراشینو"
+    >
+      <ShieldCheck className={cn("h-3.5 w-3.5", scoreColor(score.trust))} aria-hidden />
+      اعتماد {faNumber(score.trust)}
+    </span>
+  );
 }
 
 /** نمایش کامل و قابل‌توضیح امتیازها — خروجی فرمول شفاف امتیاز اعتماد سرور (نه هوش مصنوعی) */
@@ -24,9 +32,12 @@ export function TrustScoreBreakdown({ score }: { score: TrustScore }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* امتیاز کلی به‌صورت ستاره */}
+      {/* امتیاز کلی اعتماد از ۱۰۰ */}
       <div className="flex flex-col items-center gap-1 rounded-xl bg-gradient-to-l from-amber-50 to-orange-50 p-4">
-        <StarRating value={scoreToStars(score.trust)} size="lg" />
+        <span className="text-3xl font-bold text-slate-900">
+          {faNumber(score.trust)}
+          <span className="text-base font-medium text-slate-500"> از ۱۰۰</span>
+        </span>
         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5 text-success" />
           امتیاز اعتماد بر اساس سابقه‌ی کار در تراشینو

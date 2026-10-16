@@ -110,6 +110,19 @@ async def upload(
             code="portfolio_full",
         )
 
+    # عکس پروفایل یکی است: عکس تازه جای قبلی را می‌گیرد
+    replaced = (
+        list(
+            await db.scalars(
+                select(StoredFile).where(
+                    StoredFile.organization_id == user.organization_id,
+                    StoredFile.purpose == "logo",
+                )
+            )
+        )
+        if purpose == "logo"
+        else []
+    )
     stored = StoredFile(
         id=file_id,
         organization_id=user.organization_id,
@@ -124,6 +137,11 @@ async def upload(
         created_at=utcnow(),
     )
     db.add(stored)
+    for old in replaced:
+        await db.delete(old)
+    details: dict[str, object] = {"purpose": purpose, "kind": kind, "size": written.size}
+    if replaced:
+        details["replaced"] = [str(old.id) for old in replaced]
     audit.record(
         db,
         action="file.uploaded",
@@ -131,13 +149,15 @@ async def upload(
         entity_id=file_id,
         actor_user_id=user.id,
         organization_id=user.organization_id,
-        data={"purpose": purpose, "kind": kind, "size": written.size},
+        data=details,
     )
     try:
         await db.commit()
     except Exception:
         await storage.delete(key)  # فایل یتیم نماند
         raise
+    for old in replaced:
+        await storage.delete(old.storage_key)
     return to_out(stored)
 
 

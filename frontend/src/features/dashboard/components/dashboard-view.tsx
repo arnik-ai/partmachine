@@ -63,7 +63,7 @@ const ROLE_STATS: Record<string, StatCardProps[]> = {
     },
     { label: "استعلام ارسالی", value: 3, icon: MessageSquareQuote },
     { label: "سفارش فعال", value: 1, icon: Factory },
-    { label: "امتیاز اعتماد", value: 92, icon: ShieldCheck, asStars: true },
+    { label: "امتیاز اعتماد", value: 92, icon: ShieldCheck },
   ],
   agent: [
     { label: "پروژه‌ی خرید فعال", value: 4, icon: ClipboardList },

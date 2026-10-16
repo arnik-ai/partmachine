@@ -139,5 +139,5 @@ test("both owners sign the contract, the order is shipped, delivered and paid", 
   await buyer.getByRole("link", { name: company }).click();
   await buyer.waitForURL("**/suppliers/**");
   await expect(buyer.getByText("تحویل به‌موقع: ۱ از ۱")).toBeVisible();
-  await expect(buyer.getByText("امتیاز کارفرماها: ۵ از ۵ (۱ امتیاز)")).toBeVisible();
+  await expect(buyer.getByRole("img", { name: "امتیاز کارفرماها: ۵ از ۵ (۱ امتیاز)" })).toBeVisible();
 });

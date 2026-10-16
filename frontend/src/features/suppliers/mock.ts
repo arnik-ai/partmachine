@@ -86,6 +86,8 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     responseTimeHours: 2,
     verified: true,
     score: score(92, 8, 94, 91, 0.96, 93, 2),
+    ratingAverage: 4.8,
+    ratingCount: 32,
     galleryTitles: [
       "فلنج استیل ۳۰۴",
       "شفت CNC فولادی",
@@ -119,6 +121,8 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     responseTimeHours: 5,
     verified: true,
     score: score(85, 13, 88, 86, 0.91, 88, 5),
+    ratingAverage: 4.5,
+    ratingCount: 19,
     galleryTitles: [
       "قالب دو حفره‌ای بدنه",
       "قطعات ABS تولید انبوه",
@@ -149,6 +153,8 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     responseTimeHours: 3,
     verified: true,
     score: score(81, 17, 84, 80, 0.88, 84, 3),
+    ratingAverage: 4.3,
+    ratingCount: 11,
   },
   {
     id: "sup-1004",
@@ -174,6 +180,8 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     responseTimeHours: 8,
     verified: true,
     score: score(87, 11, 90, 89, 0.93, 90, 8),
+    ratingAverage: 4.6,
+    ratingCount: 24,
   },
   {
     id: "sup-1005",
@@ -195,6 +203,8 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     responseTimeHours: 1,
     verified: false,
     score: score(72, 26, 75, 70, 0.82, 78, 1),
+    ratingAverage: 3.9,
+    ratingCount: 7,
   },
   {
     id: "sup-1006",
@@ -219,6 +229,8 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     responseTimeHours: 6,
     verified: true,
     score: score(83, 15, 86, 84, 0.9, 86, 6),
+    ratingAverage: 4.4,
+    ratingCount: 15,
   },
   {
     id: "sup-1007",
@@ -244,6 +256,8 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     responseTimeHours: 12,
     verified: true,
     score: score(90, 9, 93, 92, 0.95, 91, 12),
+    ratingAverage: 4.7,
+    ratingCount: 28,
   },
   {
     id: "sup-1008",
@@ -265,5 +279,7 @@ export const MOCK_SUPPLIERS: Supplier[] = [
     responseTimeHours: 4,
     verified: false,
     score: score(74, 24, 78, 73, 0.85, 80, 4),
+    ratingAverage: 4.1,
+    ratingCount: 9,
   },
 ];
