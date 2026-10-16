@@ -13,6 +13,7 @@ import { DEMO_MODE } from "@/lib/config";
 import { roleLabel } from "@/lib/constants";
 import { useHydrated } from "@/lib/use-hydrated";
 import { cn } from "@/lib/utils";
+import { BackButton } from "./back-button";
 import { MobileTabBar } from "./mobile-tab-bar";
 
 type NavLink = { href: string; label: string; roles?: readonly string[]; demoOnly?: boolean };
@@ -58,10 +59,13 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 text-foreground backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2 font-bold">
-            <TarashinoMark className="h-7 w-7 text-primary" />
-            تراشینو
-          </Link>
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <Link href="/" className="flex items-center gap-2 font-bold">
+              <TarashinoMark className="h-7 w-7 text-primary" />
+              تراشینو
+            </Link>
+          </div>
           <nav aria-label="منوی اصلی" className="hidden items-center gap-1 text-sm lg:flex">
             {links.map((link) => (
               <Link

@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { Fragment } from "react";
+import { BackButton } from "@/components/layout/back-button";
 import { CAPABILITIES } from "@/lib/constants";
 import { HeroScene } from "./components/hero-scene";
 import { Mark, MarkDefs } from "./components/mark";
@@ -52,13 +53,16 @@ export async function LandingPage({ lang }: { lang: Lang }) {
 
       <header className="site-header" id="siteHeader">
         <div className="wrap">
-          <a className="brand" href="#top" aria-label={c.brand.home}>
-            <Mark width={38} height={36} className="mark-light" />
-            <span className="brand-text">
-              <span className="brand-name">{c.brand.name}</span>
-              <span className="brand-sub">{c.brand.sub}</span>
-            </span>
-          </a>
+          <div className="head-start">
+            <BackButton label={en ? "Back" : "بازگشت"} dir={en ? "ltr" : "rtl"} fallback={null} className="back-btn" />
+            <a className="brand" href="#top" aria-label={c.brand.home}>
+              <Mark width={38} height={36} className="mark-light" />
+              <span className="brand-text">
+                <span className="brand-name">{c.brand.name}</span>
+                <span className="brand-sub">{c.brand.sub}</span>
+              </span>
+            </a>
+          </div>
           <nav className="nav" aria-label={c.nav.label}>
             <a href="#how">{c.nav.how}</a>
             <a href="#roles">{c.nav.roles}</a>
