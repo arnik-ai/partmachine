@@ -7,6 +7,7 @@
  */
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { flangeDims, type FlangeConfig } from "./flange-config";
 
 /** ابعاد فلنج (واحد صحنه ≈ دسی‌متر) */
 export const D = {
@@ -913,6 +914,116 @@ export function startExplode(opts: {
       canvas.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("pointermove", onHover);
       closeBtn?.removeEventListener("click", onClose);
+      dispose();
+    },
+  };
+}
+
+/**
+ * پیکربندی زنده: فلنجی که با قطر، تعداد سوراخ و جنس انتخاب‌شده دوباره ساخته می‌شود؛ با کشیدن می‌چرخد.
+ */
+export function startConfigurator(opts: { canvas: HTMLCanvasElement; host: HTMLElement }): Scene3D & {
+  set: (config: FlangeConfig) => void;
+} {
+  const { canvas, host } = opts;
+  const { renderer, scene, dispose } = makeRenderer(canvas, false);
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
+  const material = new THREE.MeshPhysicalMaterial({ color: 0xc9c7d3, metalness: 1, roughness: 0.28, side: THREE.DoubleSide });
+  const holder = new THREE.Group();
+  scene.add(holder);
+  let radius = 1.2;
+  const set = (config: FlangeConfig) => {
+    holder.children.forEach((child) => (child as THREE.Mesh).geometry.dispose());
+    holder.clear();
+    const { R, t, bore, boltR, holeR, hubBase, hubTop, hubH } = flangeDims(config.diameter);
+    radius = R;
+    const shape = new THREE.Shape();
+    shape.absarc(0, 0, R, 0, Math.PI * 2, false);
+    const boreHole = new THREE.Path();
+    boreHole.absarc(0, 0, bore, 0, Math.PI * 2, true);
+    shape.holes.push(boreHole);
+    for (let i = 0; i < config.holes; i++) {
+      const a = (i / config.holes) * Math.PI * 2 + Math.PI / config.holes;
+      const hole = new THREE.Path();
+      hole.absarc(Math.cos(a) * boltR, Math.sin(a) * boltR, holeR, 0, Math.PI * 2, true);
+      shape.holes.push(hole);
+    }
+    const disk = new THREE.ExtrudeGeometry(shape, { depth: t, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelSegments: 2, curveSegments: 64 });
+    disk.rotateX(-Math.PI / 2);
+    const hub = new THREE.LatheGeometry(
+      [
+        [hubBase, 0],
+        [hubTop, hubH - 0.06],
+        [hubTop, hubH],
+        [bore + 0.02, hubH],
+        [bore, 0],
+      ].map(([r, y]) => new THREE.Vector2(r, y)),
+      96,
+    );
+    hub.translate(0, t, 0);
+    holder.add(new THREE.Mesh(disk, material), new THREE.Mesh(hub, material));
+    material.color.setHex(config.material.color);
+    material.metalness = config.material.metalness;
+    material.roughness = config.material.roughness;
+  };
+  const resize = () => {
+    const w = host.clientWidth;
+    const h = host.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  };
+  resize();
+  const ro = new ResizeObserver(resize);
+  ro.observe(host);
+  let yaw = 0;
+  let vyaw = 0;
+  let dragging = false;
+  let lastX = 0;
+  const onDown = (e: PointerEvent) => {
+    dragging = true;
+    lastX = e.clientX;
+  };
+  const onMove = (e: PointerEvent) => {
+    if (!dragging) return;
+    vyaw = (e.clientX - lastX) * 0.01;
+    yaw += vyaw;
+    lastX = e.clientX;
+  };
+  const onUp = () => {
+    dragging = false;
+  };
+  canvas.addEventListener("pointerdown", onDown);
+  canvas.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  let dist = 6;
+  const target = new THREE.Vector3();
+  const loop = createLoop(host, (dt) => {
+    if (!dragging) {
+      vyaw *= 0.94;
+      yaw += vyaw + dt * 0.25;
+    }
+    holder.rotation.y = yaw;
+    const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const half = radius * 1.35 + 0.15;
+    const need = Math.max(half / tanV, half / (tanV * camera.aspect));
+    dist += (need - dist) * Math.min(1, dt * 5);
+    target.set(0, radius * 0.22, 0);
+    const el = THREE.MathUtils.degToRad(30);
+    const az = THREE.MathUtils.degToRad(-30);
+    camera.position.set(dist * Math.cos(el) * Math.sin(az), target.y + dist * Math.sin(el), dist * Math.cos(el) * Math.cos(az));
+    camera.lookAt(target);
+    renderer.render(scene, camera);
+  });
+  return {
+    set,
+    stop: () => {
+      loop.stop();
+      ro.disconnect();
+      canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
       dispose();
     },
   };

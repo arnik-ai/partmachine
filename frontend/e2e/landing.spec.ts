@@ -26,3 +26,14 @@ test("the English home page is left-to-right and links to the platform", async (
   await page.getByRole("link", { name: "Log in", exact: true }).first().click();
   await page.waitForURL("**/login");
 });
+
+test("the configurator links to a prefilled request form", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("group", { name: "تعداد سوراخ" }).getByRole("button", { name: "۸" }).click();
+  const cta = page.getByRole("link", { name: "ثبت درخواست با همین مشخصات" });
+  await expect(cta).toHaveAttribute("href", /\/rfqs\/new\?.*quantity=50/);
+  const href = (await cta.getAttribute("href")) ?? "";
+  const params = new URLSearchParams(href.split("?")[1]);
+  expect(params.get("title")).toContain("با 8 سوراخ");
+  expect(params.get("material")).toBe("فولاد St37");
+});

@@ -454,6 +454,93 @@ export function LandingEffects() {
       }
     }
 
+    // ---- تیتر حک‌شده با لیزر: پرتو از ابتدای سطر (راست در فارسی) تا انتها می‌رود و پشتش متن پیدا می‌شود
+    const engrave = $(".engrave");
+    const title = $("#hero-title");
+    const beam = $(".laser-beam");
+    const sparkCv = $<HTMLCanvasElement>(".laser-sparks");
+    const sparkCtx = sparkCv?.getContext("2d");
+    if (!reduce && engrave && title && beam && sparkCv && sparkCtx) {
+      const rtl = root.dir !== "ltr";
+      engrave.classList.add("engraving");
+      type Bit = { x: number; y: number; vx: number; vy: number; l: number };
+      let bits: Bit[] = [];
+      let start = 0;
+      let raf = 0;
+      const duration = 1700;
+      const step = (now: number) => {
+        if (disposed) return;
+        if (!start) start = now;
+        const p = Math.min(1, (now - start) / duration);
+        const w = engrave.clientWidth;
+        const h = engrave.clientHeight;
+        const dpr = Math.min(devicePixelRatio || 1, 2);
+        if (sparkCv.width !== Math.round(w * dpr)) {
+          sparkCv.width = Math.round(w * dpr);
+          sparkCv.height = Math.round(h * dpr);
+          sparkCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        // مرز پیدا شدن متن، درصد از چپ
+        const edge = rtl ? 100 * (1 - p) : 100 * p;
+        const mask = rtl
+          ? `linear-gradient(to right, transparent ${edge}%, #000 ${edge + 1.5}%)`
+          : `linear-gradient(to right, #000 ${edge - 1.5}%, transparent ${edge}%)`;
+        title.style.maskImage = mask;
+        title.style.webkitMaskImage = mask;
+        beam.style.left = `${edge}%`;
+        const x = (edge / 100) * w;
+        if (p < 1) for (let i = 0; i < 4; i++) bits.push({ x, y: Math.random() * h, vx: (rtl ? 1 : -1) * (40 + Math.random() * 140), vy: -60 - Math.random() * 120, l: 1 });
+        sparkCtx.clearRect(0, 0, w, h);
+        sparkCtx.globalCompositeOperation = "lighter";
+        bits = bits.filter((b) => (b.l -= 0.03) > 0);
+        for (const b of bits) {
+          b.vy += 6;
+          b.x += b.vx / 60;
+          b.y += b.vy / 60;
+          sparkCtx.fillStyle = `rgba(255, ${Math.round(150 + 100 * b.l)}, 60, ${b.l})`;
+          sparkCtx.fillRect(b.x, b.y, 2, 2);
+        }
+        sparkCtx.globalCompositeOperation = "source-over";
+        if (p < 1 || bits.length) raf = requestAnimationFrame(step);
+        else {
+          title.style.maskImage = "";
+          title.style.webkitMaskImage = "";
+          engrave.classList.remove("engraving");
+        }
+      };
+      later(() => {
+        raf = requestAnimationFrame(step);
+      }, 250);
+      cleanups.push(() => {
+        cancelAnimationFrame(raf);
+        title.style.maskImage = "";
+        title.style.webkitMaskImage = "";
+        engrave.classList.remove("engraving");
+      });
+    }
+
+    // ---- وزن قلم تیترهای بخش با اسکرول: نزدیک وسط صفحه پررنگ‌تر (قلم متغیر وزیرمتن)
+    const headings = $$("section .section-head h2");
+    if (!reduce && headings.length) {
+      let queued = false;
+      const weigh = () => {
+        queued = false;
+        const mid = innerHeight / 2;
+        for (const h of headings) {
+          const r = h.getBoundingClientRect();
+          const d = Math.min(1, Math.abs(r.top + r.height / 2 - mid) / (innerHeight * 0.6));
+          h.style.fontVariationSettings = `"wght" ${Math.round(560 + 340 * (1 - d))}`;
+        }
+      };
+      on(window, "scroll", () => {
+        if (!queued) {
+          queued = true;
+          requestAnimationFrame(weigh);
+        }
+      }, { passive: true });
+      weigh();
+    }
+
     // ---- جرقه‌هایی که لوگو را می‌سازند (بخش پایانی): هزاران ذره که جمع می‌شوند، با نشانگر پخش
     //      می‌شوند و با کلیک دوباره مثل جرقه‌ی سنگ‌فرز می‌پاشند. Canvas دوبعدی، فقط وقتی دیده می‌شود.
     const sparkHost = $(".spark-logo");
