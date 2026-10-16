@@ -933,6 +933,33 @@ export function startConfigurator(opts: { canvas: HTMLCanvasElement; host: HTMLE
   const material = new THREE.MeshPhysicalMaterial({ color: 0xc9c7d3, metalness: 1, roughness: 0.28, side: THREE.DoubleSide });
   const holder = new THREE.Group();
   scene.add(holder);
+  // نور گرادیانی: دو نور رنگی (بنفش و کهربایی) که دور قطعه می‌چرخند و هاله‌ای گرادیانی زیر آن
+  const violet = new THREE.PointLight(0x8b5cf6, 6, 0, 2);
+  const amber = new THREE.PointLight(0xf5a623, 4, 0, 2);
+  scene.add(violet, amber);
+  const glowCanvas = document.createElement("canvas");
+  glowCanvas.width = glowCanvas.height = 256;
+  const gctx = glowCanvas.getContext("2d");
+  if (gctx) {
+    const grad = gctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    grad.addColorStop(0, "rgba(196, 181, 253, .9)");
+    grad.addColorStop(0.35, "rgba(139, 92, 246, .45)");
+    grad.addColorStop(0.7, "rgba(245, 166, 35, .12)");
+    grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    gctx.fillStyle = grad;
+    gctx.fillRect(0, 0, 256, 256);
+  }
+  const glowTex = new THREE.CanvasTexture(glowCanvas);
+  glowTex.colorSpace = THREE.SRGBColorSpace;
+  const glow = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }),
+  );
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.y = -0.02;
+  scene.add(glow);
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let lightTime = 0;
   let radius = 0.6;
   // هندسه بر حسب میلی‌متر است؛ در صحنه هر واحد ۱۰۰ میلی‌متر
   const u = (mm: number) => mm / 100;
@@ -1007,6 +1034,11 @@ export function startConfigurator(opts: { canvas: HTMLCanvasElement; host: HTMLE
       yaw += vyaw + dt * 0.25;
     }
     holder.rotation.y = yaw;
+    lightTime += still ? 0 : dt;
+    const orbitR = radius * 1.6 + 0.3;
+    violet.position.set(Math.cos(lightTime * 0.7) * orbitR, radius * 0.9 + 0.25, Math.sin(lightTime * 0.7) * orbitR);
+    amber.position.set(Math.cos(lightTime * 0.7 + Math.PI) * orbitR, radius * 0.6 + 0.2, Math.sin(lightTime * 0.7 + Math.PI) * orbitR);
+    glow.scale.setScalar(radius * 3.6);
     const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     const half = radius * 1.3 + 0.12;
     const need = Math.max(half / tanV, half / (tanV * camera.aspect));
@@ -1026,6 +1058,7 @@ export function startConfigurator(opts: { canvas: HTMLCanvasElement; host: HTMLE
       canvas.removeEventListener("pointerdown", onDown);
       canvas.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      glowTex.dispose();
       dispose();
     },
   };
