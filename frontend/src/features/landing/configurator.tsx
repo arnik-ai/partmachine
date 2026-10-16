@@ -4,16 +4,16 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CONFIG_MATERIALS,
-  HOLE_OPTIONS,
   QUANTITY_OPTIONS,
-  flangeEstimate,
+  TEETH_OPTIONS,
+  gearEstimate,
   rfqPrefill,
-  type FlangeConfig,
-} from "./flange-config";
+  type GearConfig,
+} from "./gear-config";
 
 export type ConfiguratorCopy = {
   diameter: string;
-  holes: string;
+  teeth: string;
   material: string;
   quantity: string;
   weight: string;
@@ -25,21 +25,21 @@ export type ConfiguratorCopy = {
   drag: string;
 };
 
-type Scene = { set: (c: FlangeConfig) => void; stop: () => void };
+type Scene = { set: (c: GearConfig) => void; stop: () => void };
 
 /**
- * پیکربندی زنده‌ی فلنج: قطر، تعداد سوراخ، جنس و تعداد. وزن و برآورد با همان فرمول شفاف پلتفرم؛
+ * پیکربندی زنده‌ی چرخ‌دنده: قطر بیرونی، تعداد دندانه، جنس و تعداد. وزن و برآورد با همان فرمول شفاف پلتفرم؛
  * دکمه، فرم ثبت درخواست را با همین مشخصات پر می‌کند. نمای سه‌بعدی فقط اگر WebGL و حرکت مجاز باشد.
  */
 export function Configurator({ copy, lang }: { copy: ConfiguratorCopy; lang: "fa" | "en" }) {
-  const [diameter, setDiameter] = useState(240);
-  const [holes, setHoles] = useState<number>(6);
+  const [diameter, setDiameter] = useState(120);
+  const [teeth, setTeeth] = useState<number>(24);
   const [materialKey, setMaterialKey] = useState<string>(CONFIG_MATERIALS[0].key);
   const [quantity, setQuantity] = useState<number>(50);
   const [live3d, setLive3d] = useState(false);
   const material = CONFIG_MATERIALS.find((m) => m.key === materialKey) ?? CONFIG_MATERIALS[0];
-  const config = useMemo<FlangeConfig>(() => ({ diameter, holes, material, quantity }), [diameter, holes, material, quantity]);
-  const est = flangeEstimate(config);
+  const config = useMemo<GearConfig>(() => ({ diameter, teeth, material, quantity }), [diameter, teeth, material, quantity]);
+  const est = gearEstimate(config);
   const fmt = (n: number, digits = 0) => new Intl.NumberFormat(lang === "fa" ? "fa-IR" : "en-US", { maximumFractionDigits: digits }).format(n);
 
   const stageRef = useRef<HTMLDivElement>(null);
@@ -103,18 +103,18 @@ export function Configurator({ copy, lang }: { copy: ConfiguratorCopy; lang: "fa
           <input
             id="cfg-diameter"
             type="range"
-            min={160}
-            max={320}
+            min={60}
+            max={240}
             step={10}
             value={diameter}
             onChange={(e) => setDiameter(Number(e.target.value))}
           />
         </div>
-        <div className="cfg-row" role="group" aria-label={copy.holes}>
-          <span className="cfg-label">{copy.holes}</span>
+        <div className="cfg-row" role="group" aria-label={copy.teeth}>
+          <span className="cfg-label">{copy.teeth}</span>
           <div className="cfg-chips">
-            {HOLE_OPTIONS.map((n) => (
-              <button key={n} {...chip(holes === n)} onClick={() => setHoles(n)}>
+            {TEETH_OPTIONS.map((n) => (
+              <button key={n} {...chip(teeth === n)} onClick={() => setTeeth(n)}>
                 {fmt(n)}
               </button>
             ))}

@@ -7,7 +7,7 @@
  */
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { flangeDims, type FlangeConfig } from "./flange-config";
+import { gearGeometry, type GearConfig } from "./gear-config";
 
 /** ابعاد فلنج (واحد صحنه ≈ دسی‌متر) */
 export const D = {
@@ -922,10 +922,10 @@ export function startExplode(opts: {
 }
 
 /**
- * پیکربندی زنده: فلنجی که با قطر، تعداد سوراخ و جنس انتخاب‌شده دوباره ساخته می‌شود؛ با کشیدن می‌چرخد.
+ * پیکربندی زنده: چرخ‌دنده‌ای که با قطر، تعداد دندانه و جنس انتخاب‌شده دوباره ساخته می‌شود؛ با کشیدن می‌چرخد.
  */
 export function startConfigurator(opts: { canvas: HTMLCanvasElement; host: HTMLElement }): Scene3D & {
-  set: (config: FlangeConfig) => void;
+  set: (config: GearConfig) => void;
 } {
   const { canvas, host } = opts;
   const { renderer, scene, dispose } = makeRenderer(canvas, false);
@@ -933,37 +933,37 @@ export function startConfigurator(opts: { canvas: HTMLCanvasElement; host: HTMLE
   const material = new THREE.MeshPhysicalMaterial({ color: 0xc9c7d3, metalness: 1, roughness: 0.28, side: THREE.DoubleSide });
   const holder = new THREE.Group();
   scene.add(holder);
-  let radius = 1.2;
-  const set = (config: FlangeConfig) => {
+  let radius = 0.6;
+  // هندسه بر حسب میلی‌متر است؛ در صحنه هر واحد ۱۰۰ میلی‌متر
+  const u = (mm: number) => mm / 100;
+  const set = (config: GearConfig) => {
     holder.children.forEach((child) => (child as THREE.Mesh).geometry.dispose());
     holder.clear();
-    const { R, t, bore, boltR, holeR, hubBase, hubTop, hubH } = flangeDims(config.diameter);
-    radius = R;
-    const shape = new THREE.Shape();
-    shape.absarc(0, 0, R, 0, Math.PI * 2, false);
-    const boreHole = new THREE.Path();
-    boreHole.absarc(0, 0, bore, 0, Math.PI * 2, true);
-    shape.holes.push(boreHole);
-    for (let i = 0; i < config.holes; i++) {
-      const a = (i / config.holes) * Math.PI * 2 + Math.PI / config.holes;
+    const g = gearGeometry(config.diameter, config.teeth);
+    radius = u(g.ra);
+    const shape = new THREE.Shape(g.outline.map(([x, y]) => new THREE.Vector2(u(x), u(y))));
+    shape.holes.push(new THREE.Path(g.bore.map(([x, y]) => new THREE.Vector2(u(x), u(y)))));
+    for (const h of g.lightening) {
       const hole = new THREE.Path();
-      hole.absarc(Math.cos(a) * boltR, Math.sin(a) * boltR, holeR, 0, Math.PI * 2, true);
+      hole.absarc(u(h.x), u(h.y), u(h.r), 0, Math.PI * 2, true);
       shape.holes.push(hole);
     }
-    const disk = new THREE.ExtrudeGeometry(shape, { depth: t, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelSegments: 2, curveSegments: 64 });
-    disk.rotateX(-Math.PI / 2);
+    const t = u(g.thickness);
+    const body = new THREE.ExtrudeGeometry(shape, { depth: t, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: 2, curveSegments: 32 });
+    body.rotateX(-Math.PI / 2);
+    // توپی روی یک رو
     const hub = new THREE.LatheGeometry(
       [
-        [hubBase, 0],
-        [hubTop, hubH - 0.06],
-        [hubTop, hubH],
-        [bore + 0.02, hubH],
-        [bore, 0],
+        [u(g.hub.r), 0],
+        [u(g.hub.r), u(g.hub.h) - 0.01],
+        [u(g.hub.r) - 0.01, u(g.hub.h)],
+        [u(g.boreR) + 0.01, u(g.hub.h)],
+        [u(g.boreR), 0],
       ].map(([r, y]) => new THREE.Vector2(r, y)),
-      96,
+      72,
     );
     hub.translate(0, t, 0);
-    holder.add(new THREE.Mesh(disk, material), new THREE.Mesh(hub, material));
+    holder.add(new THREE.Mesh(body, material), new THREE.Mesh(hub, material));
     material.color.setHex(config.material.color);
     material.metalness = config.material.metalness;
     material.roughness = config.material.roughness;
@@ -1008,10 +1008,10 @@ export function startConfigurator(opts: { canvas: HTMLCanvasElement; host: HTMLE
     }
     holder.rotation.y = yaw;
     const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    const half = radius * 1.35 + 0.15;
+    const half = radius * 1.3 + 0.12;
     const need = Math.max(half / tanV, half / (tanV * camera.aspect));
     dist += (need - dist) * Math.min(1, dt * 5);
-    target.set(0, radius * 0.22, 0);
+    target.set(0, radius * 0.12, 0);
     const el = THREE.MathUtils.degToRad(30);
     const az = THREE.MathUtils.degToRad(-30);
     camera.position.set(dist * Math.cos(el) * Math.sin(az), target.y + dist * Math.sin(el), dist * Math.cos(el) * Math.cos(az));
