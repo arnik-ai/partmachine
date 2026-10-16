@@ -5,6 +5,8 @@ import { CAPABILITIES } from "@/lib/constants";
 import { HeroScene } from "./components/hero-scene";
 import { Mark, MarkDefs } from "./components/mark";
 import { Stage } from "./components/stage";
+import { Configurator } from "./configurator";
+import { NetworkMap } from "./network-map";
 import { FOOTER_SERVICES, LANDING, type Lang } from "./content";
 import { LandingEffects } from "./landing-effects";
 import { landingJsonLd } from "./metadata";
@@ -92,6 +94,7 @@ export async function LandingPage({ lang }: { lang: Lang }) {
                 <Mark width={18} height={17} />
                 <span>{c.hero.eyebrow}</span>
               </span>
+              <div className="engrave">
               <h1 id="hero-title">
                 <span className="l1">
                   {line1.map((word, i) => (
@@ -114,6 +117,10 @@ export async function LandingPage({ lang }: { lang: Lang }) {
                   ))}
                 </span>
               </h1>
+              {/* پرتو لیزری که تیتر را حک می‌کند (landing-effects) */}
+              <span className="laser-beam" aria-hidden="true" />
+              <canvas className="laser-sparks" aria-hidden="true" />
+              </div>
               <p className="lead">{c.hero.lead}</p>
             </div>
             <div className="visual" aria-hidden="true">
@@ -162,6 +169,19 @@ export async function LandingPage({ lang }: { lang: Lang }) {
           </div>
         </section>
 
+        <section className="block" id="configure" aria-labelledby="configure-title">
+          <div className="wrap">
+            <div className="section-head" data-reveal>
+              <span className="eyebrow">{c.config.eyebrow}</span>
+              <h2 id="configure-title" className="split">
+                <Words text={c.config.title} />
+              </h2>
+              <p>{c.config.lead}</p>
+            </div>
+            <Configurator copy={c.config} lang={lang} />
+          </div>
+        </section>
+
         <section className="block" id="roles" aria-labelledby="roles-title" style={{ paddingBlock: "48px 24px" }}>
           <div className="panel-light">
             <div className="wrap deck">
@@ -197,6 +217,20 @@ export async function LandingPage({ lang }: { lang: Lang }) {
                 ))}
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="block" id="network" aria-labelledby="network-title">
+          <div className="wrap">
+            <div className="section-head" data-reveal>
+              <span className="eyebrow">{c.network.eyebrow}</span>
+              <h2 id="network-title" className="split">
+                <Words text={c.network.title} />
+              </h2>
+              <p>{c.network.lead}</p>
+            </div>
+            <NetworkMap copy={{ caption: c.network.caption }} lang={lang} />
+            <p className="net-note">{c.network.note}</p>
           </div>
         </section>
 

@@ -1,4 +1,5 @@
 import { CAPABILITIES, type CapabilityValue } from "@/lib/constants";
+import type { ConfiguratorCopy } from "./configurator";
 
 /** متن صفحه‌ی اول به دو زبان؛ فارسی نشانی «/» و انگلیسی نشانی «/en» دارد. */
 
@@ -45,6 +46,10 @@ export type LandingCopy = {
     order: { title: string; steps: { label: string; note?: string; state?: "done" | "now" }[]; paid: string };
   };
   roles: { eyebrow: string; title: string; lead: string; items: Role[] };
+  /** پیکربندی زنده‌ی فلنج */
+  config: { eyebrow: string; title: string; lead: string } & ConfiguratorCopy;
+  /** نقشه‌ی شبکه‌ی ایران؛ {a}، {b} و {c} نام شهرها */
+  network: { eyebrow: string; title: string; lead: string; caption: string; note: string };
   services: { eyebrow: string; title: string; labels: Record<CapabilityValue, string> };
   /** نمای انفجاری: هر جزء اتصال فلنجی با خدمت تولیدش (at = آستانه‌ی نمایش برچسب) */
   explode: { title: string; lead: string; hint: string; pickHint: string; cta: string; close: string; parts: ExplodePart[] };
@@ -154,6 +159,29 @@ export const LANDING: Record<Lang, LandingCopy> = {
         ],
         paid: "✓ پیش‌پرداخت ثبت و تأیید شد",
       },
+    },
+    config: {
+      eyebrow: "پیکربندی",
+      title: "قطعه‌ی خودتان را بسازید",
+      lead: "قطر، تعداد سوراخ، جنس و تعداد را انتخاب کنید. وزن و برآورد با همان فرمول شفاف پلتفرم محاسبه می‌شود.",
+      diameter: "قطر فلنج",
+      holes: "تعداد سوراخ",
+      material: "جنس",
+      quantity: "تعداد سفارش",
+      weight: "وزن هر قطعه",
+      estimate: "برآورد کل سفارش",
+      kg: "کیلوگرم",
+      million: "میلیون تومان",
+      cta: "ثبت درخواست با همین مشخصات",
+      note: "برآورد تقریبی است؛ قیمت نهایی را قطعه‌سازان در پیشنهادهایشان می‌دهند.",
+      drag: "بکشید تا بچرخد",
+    },
+    network: {
+      eyebrow: "شبکه",
+      title: "از هر شهر، تا قطعه‌ساز مناسب",
+      lead: "درخواست از یک شهر ثبت می‌شود، ساخت در شهر دیگری انجام می‌شود و بازرسی در شهر سوم؛ همه در یک پرونده.",
+      caption: "درخواست از {a} ← ساخت در {b} ← بازرسی در {c}",
+      note: "مسیرها نمونه‌اند.",
     },
     roles: {
       eyebrow: "راهکارها",
@@ -353,6 +381,29 @@ export const LANDING: Record<Lang, LandingCopy> = {
         ],
         paid: "✓ Prepayment recorded and confirmed",
       },
+    },
+    config: {
+      eyebrow: "Configure",
+      title: "Configure your part",
+      lead: "Pick the diameter, hole count, material and quantity. Weight and estimate use the platform's transparent formula.",
+      diameter: "Flange diameter",
+      holes: "Bolt holes",
+      material: "Material",
+      quantity: "Order quantity",
+      weight: "Weight per part",
+      estimate: "Order estimate",
+      kg: "kg",
+      million: "M Toman",
+      cta: "Request with these specs",
+      note: "This is an approximate estimate; manufacturers set the final price in their quotes.",
+      drag: "Drag to rotate",
+    },
+    network: {
+      eyebrow: "Network",
+      title: "From any city to the right manufacturer",
+      lead: "A request is posted in one city, made in another and inspected in a third, all in one order file.",
+      caption: "Requested in {a} → made in {b} → inspected in {c}",
+      note: "Routes are examples.",
     },
     roles: {
       eyebrow: "Solutions",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -56,8 +56,16 @@ export function RfqForm() {
   const [capability, setCapability] = useState<CapabilityValue>(
     CAPABILITIES[0].value,
   );
-  const [material, setMaterial] = useState<string>(MATERIALS[0]);
-  const [quantity, setQuantity] = useState<number>(0);
+  // پیکربندی صفحه‌ی اول فرم را با همان مشخصات پر می‌کند (?title=&material=&quantity=&spec=)
+  const params = useSearchParams();
+  const presetMaterial = params.get("material");
+  const presetQuantity = Number(params.get("quantity"));
+  const [material, setMaterial] = useState<string>(
+    presetMaterial && (MATERIALS as readonly string[]).includes(presetMaterial) ? presetMaterial : MATERIALS[0],
+  );
+  const [quantity, setQuantity] = useState<number>(
+    Number.isInteger(presetQuantity) && presetQuantity > 0 && presetQuantity <= 100_000 ? presetQuantity : 0,
+  );
   const [complexity, setComplexity] = useState<ComplexityValue>("normal");
   const [deadline, setDeadline] = useState("");
   // اختیاری: اگر خالی بماند سرور ۷ روز بعد (و نه دیرتر از مهلت تحویل) را می‌گذارد
@@ -116,6 +124,7 @@ export function RfqForm() {
               id="title"
               name="title"
               required
+              defaultValue={params.get("title")?.slice(0, 200) ?? undefined}
               placeholder="مثلاً: ساخت ۵۰۰ عدد فلنج استیل طبق نقشه"
             />
             <FieldError message={fieldErrors.title} />
@@ -127,6 +136,7 @@ export function RfqForm() {
               id="description"
               name="description"
               required
+              defaultValue={params.get("spec")?.slice(0, 2000) ?? undefined}
               placeholder="تلرانس‌ها، استاندارد، پرداخت سطح، بسته‌بندی و سایر الزامات..."
             />
             <FieldError message={fieldErrors.description} />

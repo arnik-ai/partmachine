@@ -18,7 +18,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!DEMO_MODE && status === "anonymous") {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      router.replace(`/login?next=${encodeURIComponent(pathname + window.location.search)}`);
     }
   }, [status, router, pathname]);
 
