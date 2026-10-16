@@ -13,6 +13,8 @@ type ExplodePart = {
   part: "pipe" | "bolts" | "flangeA" | "gasket" | "flangeB" | "nuts";
   capability: CapabilityValue;
   name: string;
+  /** مشخصات نمونه‌ی جزء برای کارت «کلیک روی جزء» */
+  spec: string;
   at: number;
   lift?: boolean;
 };
@@ -45,7 +47,7 @@ export type LandingCopy = {
   roles: { eyebrow: string; title: string; lead: string; items: Role[] };
   services: { eyebrow: string; title: string; labels: Record<CapabilityValue, string> };
   /** نمای انفجاری: هر جزء اتصال فلنجی با خدمت تولیدش (at = آستانه‌ی نمایش برچسب) */
-  explode: { title: string; lead: string; hint: string; parts: ExplodePart[] };
+  explode: { title: string; lead: string; hint: string; pickHint: string; cta: string; close: string; parts: ExplodePart[] };
   trust: { eyebrow: string; title: string; cards: Card[] };
   faq: { eyebrow: string; title: string; items: Faq[] };
   closing: { title: string; cta: string };
@@ -195,13 +197,16 @@ export const LANDING: Record<Lang, LandingCopy> = {
       title: "یک مجموعه، شش فرایند تولید",
       lead: "اتصال فلنجی از شش جزء ساخته می‌شود و هر جزء را قطعه‌سازِ همان رشته می‌سازد.",
       hint: "اسکرول کنید",
+      pickHint: "روی هر جزء بزنید تا مشخصاتش را ببینید",
+      cta: "دیدن قطعه‌سازان این رشته",
+      close: "بستن",
       parts: [
-        { part: "pipe", capability: "welding", name: "لوله و جوش", at: 0.3 },
-        { part: "bolts", capability: "forging", name: "پیچ‌های اتصال", at: 0.38, lift: true },
-        { part: "flangeA", capability: "cnc", name: "فلنج گلودار", at: 0.46 },
-        { part: "gasket", capability: "injection_molding", name: "واشر آب‌بندی", at: 0.54, lift: true },
-        { part: "flangeB", capability: "casting", name: "فلنج مقابل", at: 0.62 },
-        { part: "nuts", capability: "heat_treatment", name: "مهره‌ها", at: 0.7, lift: true },
+        { part: "pipe", capability: "welding", name: "لوله و جوش", spec: "لوله‌ی فولادی به گلوی فلنج جوش لب‌به‌لب می‌شود و جوش بازرسی چشمی می‌شود.", at: 0.3 },
+        { part: "bolts", capability: "forging", name: "پیچ‌های اتصال", spec: "شش پیچ M16 از فولاد گرید ۸.۸؛ سر شش‌گوش فورج‌شده و رزوه‌ی نورد.", at: 0.38, lift: true },
+        { part: "flangeA", capability: "cnc", name: "فلنج گلودار", spec: "فولاد St37، قطر ۲۴۰ میلی‌متر، شش سوراخ Ø18 با تلرانس ±0.05.", at: 0.46 },
+        { part: "gasket", capability: "injection_molding", name: "واشر آب‌بندی", spec: "واشر حلقوی لاستیکی برای فشار کاری تا ۱۶ بار.", at: 0.54, lift: true },
+        { part: "flangeB", capability: "casting", name: "فلنج مقابل", spec: "چدن داکتیل ریخته‌گری‌شده؛ رویه‌ی تماس تراش‌کاری می‌شود.", at: 0.62 },
+        { part: "nuts", capability: "heat_treatment", name: "مهره‌ها", spec: "مهره‌های سخت‌کاری‌شده؛ رنگ آبی و طلایی اثر بازپخت فولاد است.", at: 0.7, lift: true },
       ],
     },
     trust: {
@@ -406,13 +411,16 @@ export const LANDING: Record<Lang, LandingCopy> = {
       title: "One assembly, six manufacturing processes",
       lead: "A flange joint has six parts, and each one is made by a manufacturer in that field.",
       hint: "Scroll",
+      pickHint: "Tap a part to see its details",
+      cta: "See manufacturers in this field",
+      close: "Close",
       parts: [
-        { part: "pipe", capability: "welding", name: "Pipe and weld", at: 0.3 },
-        { part: "bolts", capability: "forging", name: "Bolts", at: 0.38, lift: true },
-        { part: "flangeA", capability: "cnc", name: "Weld-neck flange", at: 0.46 },
-        { part: "gasket", capability: "injection_molding", name: "Sealing gasket", at: 0.54, lift: true },
-        { part: "flangeB", capability: "casting", name: "Mating flange", at: 0.62 },
-        { part: "nuts", capability: "heat_treatment", name: "Nuts", at: 0.7, lift: true },
+        { part: "pipe", capability: "welding", name: "Pipe and weld", spec: "A steel pipe butt-welded to the flange neck; the weld is visually inspected.", at: 0.3 },
+        { part: "bolts", capability: "forging", name: "Bolts", spec: "Six M16 grade 8.8 steel bolts with forged hex heads and rolled threads.", at: 0.38, lift: true },
+        { part: "flangeA", capability: "cnc", name: "Weld-neck flange", spec: "St37 steel, 240 mm diameter, six Ø18 holes at ±0.05 tolerance.", at: 0.46 },
+        { part: "gasket", capability: "injection_molding", name: "Sealing gasket", spec: "A rubber ring gasket for working pressures up to 16 bar.", at: 0.54, lift: true },
+        { part: "flangeB", capability: "casting", name: "Mating flange", spec: "Cast ductile iron with a machined sealing face.", at: 0.62 },
+        { part: "nuts", capability: "heat_treatment", name: "Nuts", spec: "Hardened nuts; the blue and gold come from tempering the steel.", at: 0.7, lift: true },
       ],
     },
     trust: {

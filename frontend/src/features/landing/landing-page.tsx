@@ -222,6 +222,7 @@ export async function LandingPage({ lang }: { lang: Lang }) {
                       className={p.lift ? "xlabel lift" : "xlabel"}
                       data-part={p.part}
                       data-at={p.at}
+                      data-spec={p.spec}
                       href={`/suppliers?capability=${p.capability}`}
                       tabIndex={-1}
                     >
@@ -230,7 +231,25 @@ export async function LandingPage({ lang }: { lang: Lang }) {
                     </Link>
                   ))}
                 </div>
+                {/* کارت مشخصات جزئی که رویش زده شده (پر شدن در scene3d) */}
+                <div className="xinfo" id="explodeInfo">
+                  <div className="xinfo-head">
+                    <b data-name="" />
+                    <span className="tag">{c.panels.sample}</span>
+                  </div>
+                  <span className="xinfo-proc" data-proc="" />
+                  <p data-spec="" />
+                  <div className="xinfo-actions">
+                    <a className="btn btn-primary btn-sm" data-link="" href="#services-list" tabIndex={-1}>
+                      {c.explode.cta}
+                    </a>
+                    <button type="button" className="btn-text" data-close="" tabIndex={-1}>
+                      {c.explode.close}
+                    </button>
+                  </div>
+                </div>
                 <span className="scroll-hint">{c.explode.hint}</span>
+                <span className="pick-hint">{c.explode.pickHint}</span>
                 <span className="xbar">
                   <i id="explodeBar" />
                 </span>
@@ -301,7 +320,9 @@ export async function LandingPage({ lang }: { lang: Lang }) {
         <section className="closing" aria-labelledby="closing-title" data-pointer>
           <div className="aurora" aria-hidden="true" />
           <div className="wrap" data-reveal>
-            <div className="closing-mark" aria-hidden="true">
+            {/* جرقه‌هایی که لوگو را می‌سازند (Canvas دوبعدی)؛ تا آماده شدن، همان لوگوی ثابت */}
+            <div className="spark-logo" aria-hidden="true">
+              <canvas data-sparklogo="" />
               <Mark width={96} height={90} />
             </div>
             <h2 id="closing-title">{c.closing.title}</h2>
