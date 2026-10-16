@@ -37,14 +37,6 @@ class CreateQuotationInput(CamelModel):
         return normalize_text(value) or None if value else None
 
 
-class PriceAssessmentOut(CamelModel):
-    """مقایسه‌ی قیمت پیشنهادی با برآورد منطقی (فقط برای صاحب RFQ)."""
-
-    verdict: Literal["low", "fair", "high"]
-    deviation_percent: int
-    message: str
-
-
 class QuotationOut(CamelModel):
     id: uuid.UUID
     rfq_id: uuid.UUID
@@ -62,7 +54,6 @@ class QuotationOut(CamelModel):
     submitted_at: datetime
     updated_at: datetime
     is_awarded: bool
-    price_assessment: PriceAssessmentOut | None = None
 
 
 class RfqBrief(CamelModel):

@@ -315,20 +315,3 @@ async def test_my_quotations_show_outcomes(
     statuses = {item["rfq"]["id"]: item["rfq"]["status"] for item in page["items"]}
     assert statuses[won["id"]] == "awarded" and statuses[pending["id"]] == "published"
     assert (await _get(buyer, "/quotations/mine")).status_code == 403
-
-
-async def test_owner_sees_price_assessment_only(
-    client_factory: Callable[[], httpx.AsyncClient],
-) -> None:
-    buyer = await register(client_factory())
-    supplier = await register(client_factory(), role="supplier")
-    rfq = await create_rfq(buyer)
-    await submit_quote(supplier, rfq["id"], price=1_000)
-
-    owner_view = (await _get(buyer, f"/rfqs/{rfq['id']}/quotations")).json()[0]
-    assessment = owner_view["priceAssessment"]
-    assert assessment["verdict"] == "low"
-    assert assessment["deviationPercent"] < 0
-    assert any("۰" <= ch <= "۹" for ch in assessment["message"])  # ارقام فارسی
-    supplier_view = (await _get(supplier, f"/rfqs/{rfq['id']}/quotations")).json()[0]
-    assert supplier_view["priceAssessment"] is None

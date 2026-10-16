@@ -1,5 +1,3 @@
-import { estimatePrice } from "@/features/pricing/engine";
-
 /** جنس‌های پیکربندی صفحه‌ی اول؛ نام فارسی همان نام فهرست متریال پلتفرم است */
 export const CONFIG_MATERIALS = [
   { key: "st37", fa: "فولاد St37", en: "St37 steel", density: 7.85, color: 0xc9c7d3, metalness: 1, roughness: 0.28 },
@@ -66,19 +64,6 @@ export function gearWeightKg(config: Pick<GearConfig, "diameter" | "teeth" | "ma
   const area = shoelace(g.outline) - shoelace(g.bore) - g.lightening.reduce((s, h) => s + Math.PI * h.r * h.r, 0);
   const hub = Math.PI * (g.hub.r * g.hub.r - g.boreR * g.boreR) * g.hub.h;
   return ((area * g.thickness + hub) * config.material.density) / 1e6;
-}
-
-/** برآورد کل سفارش با همان فرمول شفاف پلتفرم (ماشین‌کاری CNC)، به تومان */
-export function gearEstimate(config: GearConfig) {
-  const kg = gearWeightKg(config);
-  const estimate = estimatePrice({
-    capability: "cnc",
-    material: config.material.fa,
-    quantity: config.quantity,
-    complexity: config.teeth >= 36 ? "complex" : config.teeth <= 12 ? "simple" : "normal",
-    kgPerPiece: kg,
-  });
-  return { kg, lowToman: estimate.rangeLowRials / 10, highToman: estimate.rangeHighRials / 10 };
 }
 
 /** پارامترهای فرم ثبت درخواست تا با همین مشخصات پر شود (فرم پلتفرم فارسی است) */

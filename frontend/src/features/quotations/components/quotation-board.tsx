@@ -135,7 +135,6 @@ export function QuotationBoard({ rfq }: { rfq: Rfq }) {
               best={bestValues(ranked.map((r) => r.quote))}
               recommended={ranked.length > 1 && composite === topComposite}
               awarded={rfq.awardedQuotationId === quote.id}
-              assessment={quote.priceAssessment}
               action={
                 canAward ? (
                   <Button

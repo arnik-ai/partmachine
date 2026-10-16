@@ -34,7 +34,6 @@ from app.modules.notifications.router import router as notifications_router
 from app.modules.orders.router import router as orders_router
 from app.modules.organizations.router import router as organizations_router
 from app.modules.payments.router import router as payments_router
-from app.modules.pricing.router import router as pricing_router
 from app.modules.quotations.router import router as quotations_router
 from app.modules.ratings.router import router as ratings_router
 from app.modules.rfqs.router import router as rfqs_router
@@ -73,7 +72,6 @@ def build_api_router() -> APIRouter:
         dashboard_router,
         disputes_router,
         ratings_router,
-        pricing_router,
         admin_router,
     ):
         api.include_router(router)

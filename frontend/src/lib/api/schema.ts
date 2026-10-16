@@ -1262,23 +1262,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/pricing/estimate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Estimate */
-        post: operations["estimate_api_v1_pricing_estimate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/verifications": {
         parameters: {
             query?: never;
@@ -1986,17 +1969,6 @@ export interface components {
             /** Signatures */
             signatures: components["schemas"]["ContractSignatureOut"][];
         };
-        /** CostComponent */
-        CostComponent: {
-            /** Key */
-            key: string;
-            /** Label */
-            label: string;
-            /** Amountrials */
-            amountRials: number;
-            /** Detail */
-            detail: string;
-        };
         /**
          * CreateQuotationInput
          * @description ورودی ثبت، ثبت دوباره و ویرایش پیشنهاد.
@@ -2094,26 +2066,6 @@ export interface components {
             errors?: components["schemas"]["FieldError"][] | null;
             /** Requestid */
             requestId?: string | null;
-        };
-        /** EstimateInput */
-        EstimateInput: {
-            /**
-             * Capability
-             * @enum {string}
-             */
-            capability: "cnc" | "injection_molding" | "sheet_metal" | "casting" | "welding" | "tooling" | "plastic_manufacturing" | "forging" | "heat_treatment" | "surface_treatment";
-            /** Material */
-            material: string;
-            /** Quantity */
-            quantity: number;
-            /**
-             * Complexity
-             * @default normal
-             * @enum {string}
-             */
-            complexity: "simple" | "normal" | "complex";
-            /** Kgperpiece */
-            kgPerPiece?: number | null;
         };
         /** FieldError */
         FieldError: {
@@ -2401,7 +2353,6 @@ export interface components {
             updatedAt: string;
             /** Isawarded */
             isAwarded: boolean;
-            priceAssessment?: components["schemas"]["PriceAssessmentOut"] | null;
             rfq: components["schemas"]["RfqBrief"];
             /**
              * Outcome
@@ -2981,36 +2932,6 @@ export interface components {
             url: string;
         };
         /**
-         * PriceAssessmentOut
-         * @description مقایسه‌ی قیمت پیشنهادی با برآورد منطقی (فقط برای صاحب RFQ).
-         */
-        PriceAssessmentOut: {
-            /**
-             * Verdict
-             * @enum {string}
-             */
-            verdict: "low" | "fair" | "high";
-            /** Deviationpercent */
-            deviationPercent: number;
-            /** Message */
-            message: string;
-        };
-        /** PriceEstimate */
-        PriceEstimate: {
-            /** Unitpricerials */
-            unitPriceRials: number;
-            /** Totalpricerials */
-            totalPriceRials: number;
-            /** Rangelowrials */
-            rangeLowRials: number;
-            /** Rangehighrials */
-            rangeHighRials: number;
-            /** Totalhours */
-            totalHours: number;
-            /** Components */
-            components: components["schemas"]["CostComponent"][];
-        };
-        /**
          * QcLabList
          * @description آزمایشگاه‌های تأییدشده که کارفرما می‌تواند برای بازرسی انتخاب کند.
          */
@@ -3076,7 +2997,6 @@ export interface components {
             updatedAt: string;
             /** Isawarded */
             isAwarded: boolean;
-            priceAssessment?: components["schemas"]["PriceAssessmentOut"] | null;
         };
         /** RatingInput */
         RatingInput: {
@@ -10968,102 +10888,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderDetailOut"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Content Too Large */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Unprocessable Content */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Too Many Requests */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    estimate_api_v1_pricing_estimate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EstimateInput"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PriceEstimate"];
                 };
             };
             /** @description Bad Request */

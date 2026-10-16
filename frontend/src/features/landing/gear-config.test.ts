@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MATERIALS } from "@/lib/constants";
-import { CONFIG_MATERIALS, gearEstimate, gearGeometry, gearWeightKg, rfqPrefill } from "./gear-config";
+import { CONFIG_MATERIALS, gearGeometry, gearWeightKg, rfqPrefill } from "./gear-config";
 
 const steel = CONFIG_MATERIALS[0];
 const pom = CONFIG_MATERIALS.find((m) => m.key === "pom")!;
@@ -23,12 +23,6 @@ describe("gear configurator", () => {
   it("scales weight with density", () => {
     const st = gearWeightKg({ diameter: 120, teeth: 24, material: steel });
     expect(gearWeightKg({ diameter: 120, teeth: 24, material: pom }) / st).toBeCloseTo(1.41 / 7.85, 5);
-  });
-
-  it("estimates a positive range with the platform formula", () => {
-    const e = gearEstimate({ diameter: 120, teeth: 24, material: steel, quantity: 50 });
-    expect(e.highToman).toBeGreaterThan(e.lowToman);
-    expect(e.lowToman).toBeGreaterThan(0);
   });
 
   it("only offers materials the RFQ form knows", () => {
