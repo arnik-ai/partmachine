@@ -11,10 +11,19 @@ const STEP_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
 export function OrderFlow({ order }: { order: OrderDetail }) {
   // مرحله‌ی «کنترل کیفیت» فقط وقتی دیده می‌شود که کارفرما آزمایشگاه انتخاب کرده باشد
   const withInspection = Boolean(order.inspection) || order.status === "in_inspection";
-  const steps = ORDER_FLOW.filter((step) => withInspection || step.status !== "in_inspection");
-  const index = steps.findIndex(
-    (step) => step.status === (STEP_STATUS[order.status] ?? order.status),
+  // مرحله‌ی «رسیدن قطعه» فقط وقتی کارفرما قطعه یا مواد را می‌فرستد
+  const withMaterial = Boolean(order.materialFromBuyer);
+  const steps = ORDER_FLOW.filter(
+    (step) =>
+      (withInspection || step.status !== "in_inspection") &&
+      (withMaterial || step.status !== "awaiting_material"),
   );
+  // با قطعه‌ی کارفرما، پس از پیش‌پرداخت نوبت رسیدن قطعه است
+  const stepStatus =
+    order.status === "awaiting_prepayment" && withMaterial
+      ? "awaiting_material"
+      : (STEP_STATUS[order.status] ?? order.status);
+  const index = steps.findIndex((step) => step.status === stepStatus);
   const current = Math.max(index, 0);
   const finished = order.status === "completed";
   const reachedAt = new Map<string, string>();

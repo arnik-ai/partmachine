@@ -33,6 +33,8 @@ class ContractFacts:
     delivery_city: str
     # فایل‌های فنی RFQ: (نام، حجم، هش)
     files: tuple[tuple[str, int, str], ...]
+    # زمان تولید اعلام‌شده در پیشنهاد (روز)؛ برای قطعه‌ی کارفرما مبنای مهلت تحویل است
+    lead_time_days: int = 0
 
 
 @dataclass(frozen=True)
@@ -41,6 +43,7 @@ class ContractTerms:
     prepayment_percent: int
     penalty_per_day_bp: int
     penalty_cap_percent: int
+    material_from_buyer: bool = False
 
 
 def toman(rials: int) -> str:
@@ -53,6 +56,20 @@ def percent(basis_points: int) -> str:
     whole, fraction = divmod(basis_points, 100)
     text = str(whole) if fraction == 0 else f"{whole}٫{str(fraction).rjust(2, '0').rstrip('0')}"
     return fa_digits(text)
+
+
+def _delivery(facts: ContractFacts, terms: ContractTerms) -> str:
+    if terms.material_from_buyer:
+        return (
+            "کارفرما قطعه یا مواد اولیه‌ی لازم را برای مجری می‌فرستد و مجری رسیدن آن را در پلتفرم "
+            "اعلام می‌کند. مجری متعهد است موضوع قرارداد را حداکثر "
+            f"{fa_digits(facts.lead_time_days)} روز پس از رسیدن آن در {facts.delivery_city} "
+            "تحویل دهد."
+        )
+    return (
+        f"مجری متعهد است موضوع قرارداد را حداکثر تا {format_jalali(terms.delivery_due)} در "
+        f"{facts.delivery_city} تحویل دهد."
+    )
 
 
 def _article(number: int, title: str, *paragraphs: str) -> dict[str, Any]:
@@ -120,8 +137,7 @@ def render(facts: ContractFacts, terms: ContractTerms) -> list[dict[str, Any]]:
         _article(
             4,
             "زمان و محل تحویل",
-            f"مجری متعهد است موضوع قرارداد را حداکثر تا {format_jalali(terms.delivery_due)} در "
-            f"{facts.delivery_city} تحویل دهد. مسئولیت حمل تا تحویل با مجری است، مگر آنکه طرفین "
+            _delivery(facts, terms) + " مسئولیت حمل تا تحویل با مجری است، مگر آنکه طرفین "
             "به‌نحو دیگری توافق کنند.",
         ),
         _article(
@@ -195,6 +211,8 @@ def content_hash(articles: list[dict[str, Any]], terms: ContractTerms) -> str:
                 "prepayment_percent": terms.prepayment_percent,
                 "penalty_per_day_bp": terms.penalty_per_day_bp,
                 "penalty_cap_percent": terms.penalty_cap_percent,
+                # فقط وقتی روشن است؛ اثر انگشت نسخه‌های قبلی همان می‌ماند
+                **({"material_from_buyer": True} if terms.material_from_buyer else {}),
             },
             "articles": articles,
         },

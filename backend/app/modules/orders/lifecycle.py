@@ -14,14 +14,28 @@ from app.modules.orders.models import Order
 # qc: آزمایشگاهی که کارفرما برای بازرسی همین سفارش انتخاب کرده است (فقط بخش بازرسی را می‌بیند)
 Side = Literal["buyer", "supplier", "qc", "admin"]
 # keep: «ادامه‌ی سفارش» — پس گرفتن یا نپذیرفتن درخواست لغو (وضعیت عوض نمی‌شود)
-Action = Literal["cancel", "ship", "confirm_delivery", "dispute", "keep"]
+Action = Literal["cancel", "confirm_material", "ship", "confirm_delivery", "dispute", "keep"]
 
 OPEN_STATUSES = frozenset(
-    {"awaiting_contract", "awaiting_prepayment", "in_production", "in_inspection", "shipped"}
+    {
+        "awaiting_contract",
+        "awaiting_prepayment",
+        "awaiting_material",
+        "in_production",
+        "in_inspection",
+        "shipped",
+    }
 )
 # پس از امضای قرارداد و پیش از تکمیل: لغو فقط با توافق دو طرف و «اعلام مشکل» ممکن است (O11)
 SIGNED_OPEN = frozenset(
-    {"awaiting_prepayment", "in_production", "in_inspection", "shipped", "delivered"}
+    {
+        "awaiting_prepayment",
+        "awaiting_material",
+        "in_production",
+        "in_inspection",
+        "shipped",
+        "delivered",
+    }
 )
 # تعهد تحویل پس از امضای قرارداد شروع می‌شود؛ «دیرکرد» فقط در این وضعیت‌ها معنا دارد
 DELIVERY_PENDING = frozenset({"awaiting_prepayment", "in_production", "in_inspection"})
@@ -49,6 +63,14 @@ TRANSITIONS: dict[Action, Transition] = {
         frozenset({"buyer", "supplier"}),
         "این سفارش دیگر قابل لغو نیست. اگر مشکلی هست، «اعلام مشکل» کنید.",
     ),
+    # کارفرما قطعه یا مواد را فرستاده و مجری رسیدنش را اعلام می‌کند ⇒ تولید و مهلت تحویل شروع می‌شود
+    "confirm_material": Transition(
+        frozenset({"awaiting_material"}),
+        "in_production",
+        frozenset({"supplier"}),
+        "رسیدن قطعه پس از امضای قرارداد (و پیش‌پرداخت، اگر هست) اعلام می‌شود.",
+        frozenset({"in_inspection", "shipped", "delivered", "completed"}),
+    ),
     # با بازرسی کیفیت، ارسال از «در حال بازرسی» و فقط پس از قبولی است (ship_ready)
     "ship": Transition(
         frozenset({"in_production", "in_inspection"}),
@@ -72,6 +94,11 @@ TRANSITIONS: dict[Action, Transition] = {
         "اعلام مشکل پس از امضای قرارداد و پیش از تکمیل سفارش ممکن است.",
     ),
 }
+
+
+def production_start(order: Order) -> str:
+    """وضعیت پس از امضا و پیش‌پرداخت: با قطعه‌ی کارفرما اول منتظر رسیدن قطعه، وگرنه تولید."""
+    return "awaiting_material" if order.material_from_buyer else "in_production"
 
 
 def ship_ready(order: Order, inspection_status: str | None) -> bool:
@@ -102,4 +129,7 @@ def allowed_actions(
 
 
 def is_overdue(order: Order, today: date) -> bool:
+    # با قطعه‌ی کارفرما، مهلت تحویل تا رسیدن قطعه شروع نشده است
+    if order.material_from_buyer and order.material_received_at is None:
+        return False
     return order.status in DELIVERY_PENDING and today > order.delivery_due

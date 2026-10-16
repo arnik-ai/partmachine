@@ -108,6 +108,7 @@ function myTurn(order: OrderSummary): boolean {
   return (
     order.nextActions.includes("ship") ||
     order.nextActions.includes("confirm_delivery") ||
+    order.nextActions.includes("confirm_material") ||
     (Boolean(order.cancelRequest) && order.cancelRequest?.side !== order.mySide)
   );
 }
@@ -135,7 +136,9 @@ function OrderRow({ order }: { order: OrderSummary }) {
               {order.amountRials !== null && ` · ${faToman(order.amountRials)}`}
             </span>
             <span className="text-xs text-muted-foreground">
-              تحویل تعهدشده: {faDate(order.deliveryDue)}
+              {order.materialFromBuyer && !order.materialReceivedAt
+                ? `تحویل: ${faNumber(order.leadTimeDays)} روز پس از رسیدن قطعه`
+                : `تحویل تعهدشده: ${faDate(order.deliveryDue)}`}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">

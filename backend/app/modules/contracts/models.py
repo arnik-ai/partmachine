@@ -3,6 +3,7 @@ from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -58,6 +60,10 @@ class ContractVersion(Base, UUIDPrimaryKey):
     # جریمه‌ی تأخیر روزانه به «صدم درصد» (۵۰ یعنی ۰٫۵٪) تا عدد اعشاری ذخیره نشود
     penalty_per_day_bp: Mapped[int] = mapped_column(Integer)
     penalty_cap_percent: Mapped[int] = mapped_column(Integer)
+    # کارفرما قطعه یا مواد را می‌فرستد؛ مهلت تحویل از رسیدن آن شمرده می‌شود
+    material_from_buyer: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=false()
+    )
     # متن کامل مواد همان‌طور که نمایش و امضا می‌شود، و هش SHA-256 آن (شاهد)
     articles: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
     template_version: Mapped[str] = mapped_column(String(20))

@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from app.core.errors import Conflict, Forbidden, NotFound, field_error
+from app.core.jalali import format_jalali
 from app.core.time import business_today, utcnow
 from app.modules.audit import service as audit
 from app.modules.disputes.models import OrderDispute
@@ -224,6 +225,8 @@ def _out(row: Any, user: CurrentUser) -> OrderOut:
         lead_time_days=order.lead_time_days,
         delivery_due=order.delivery_due,
         is_overdue=lifecycle.is_overdue(order, business_today()),
+        material_from_buyer=order.material_from_buyer,
+        material_received_at=order.material_received_at,
         rfq_id=order.rfq_id,
         quotation_id=order.quotation_id,
         buyer=OrderPartyOut(organization_id=order.buyer_organization_id, name=buyer_name),
@@ -512,6 +515,13 @@ async def transition(
         order.shipped_at = now
     elif action == "confirm_delivery":
         order.delivered_at = now
+    elif action == "confirm_material":
+        # مهلت تحویل از روز رسیدن قطعه شمرده می‌شود
+        received = business_today()
+        order.material_received_at = received
+        order.delivery_due = received + timedelta(days=order.lead_time_days)
+        due = f"مهلت تحویل: {format_jalali(order.delivery_due)}"
+        note = f"{note} — {due}" if note else due
     elif action == "dispute":
         db.add(
             OrderDispute(
@@ -682,6 +692,9 @@ async def _notify_transition(
     elif action == "ship":
         title = f"سفارش {ref(order)} ارسال شد"
         body = note or "پس از دریافت و بررسی کالا، تحویل را تأیید کنید."
+    elif action == "confirm_material":
+        title = f"قطعه‌ی سفارش {ref(order)} به دست قطعه‌ساز رسید"
+        body = f"تولید شروع شد؛ {note}"
     elif order.status == "completed":
         title, body = f"سفارش {ref(order)} تحویل و تکمیل شد", note
     else:

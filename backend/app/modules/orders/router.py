@@ -11,6 +11,7 @@ from app.modules.orders import service
 from app.modules.orders.schemas import (
     CancelOrderInput,
     ConfirmDeliveryInput,
+    ConfirmMaterialInput,
     KeepOrderInput,
     OpenDisputeInput,
     OrderDetailOut,
@@ -89,6 +90,17 @@ async def ship_order(
     return await service.transition(
         db, user, order_id, "ship", note=payload.note, file_id=payload.file_id
     )
+
+
+@router.post("/{order_id}/confirm-material", response_model=OrderDetailOut)
+async def confirm_material(
+    order_id: uuid.UUID,
+    payload: ConfirmMaterialInput,
+    user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> OrderDetailOut:
+    """مجری رسیدن قطعه یا مواد کارفرما را اعلام می‌کند؛ مهلت تحویل از امروز شمرده می‌شود."""
+    return await service.transition(db, user, order_id, "confirm_material", note=payload.note)
 
 
 @router.post("/{order_id}/confirm-delivery", response_model=OrderDetailOut)

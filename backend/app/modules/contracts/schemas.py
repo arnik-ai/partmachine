@@ -22,6 +22,8 @@ class ContractTermsOut(CamelModel):
     prepayment_percent: int
     penalty_per_day_bp: int
     penalty_cap_percent: int
+    # کارفرما قطعه یا مواد را می‌فرستد؛ مهلت تحویل از رسیدن آن شمرده می‌شود
+    material_from_buyer: bool = False
 
 
 class ContractSignatureOut(CamelModel):
@@ -71,6 +73,7 @@ class UpdateContractInput(CamelModel):
     prepayment_percent: int = Field(ge=0, le=100)
     penalty_per_day_bp: int = Field(ge=0, le=1000)
     penalty_cap_percent: int = Field(ge=0, le=100)
+    material_from_buyer: bool = False
     change_note: str = Field(default="", max_length=500)
 
     @field_validator("change_note")

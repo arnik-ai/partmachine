@@ -29,6 +29,7 @@ from app.modules.contracts.schemas import (
 from app.modules.files.models import StoredFile
 from app.modules.identity.deps import ClientInfo, CurrentUser
 from app.modules.identity.models import User
+from app.modules.orders import lifecycle
 from app.modules.orders import service as orders
 from app.modules.orders.models import Order
 from app.modules.organizations.models import Organization
@@ -64,6 +65,7 @@ async def _facts(db: AsyncSession, order: Order) -> template.ContractFacts:
         material=order.material,
         amount_rials=order.amount_rials,
         delivery_city=order.delivery_city,
+        lead_time_days=order.lead_time_days,
         files=tuple((f.original_name, f.size_bytes, f.sha256) for f in files),
     )
 
@@ -86,6 +88,7 @@ async def _new_version(
         prepayment_percent=terms.prepayment_percent,
         penalty_per_day_bp=terms.penalty_per_day_bp,
         penalty_cap_percent=terms.penalty_cap_percent,
+        material_from_buyer=terms.material_from_buyer,
         articles=articles,
         template_version=template.TEMPLATE_VERSION,
         content_sha256=template.content_hash(articles, terms),
@@ -111,6 +114,7 @@ async def _ensure(db: AsyncSession, order: Order) -> tuple[Contract, bool]:
         prepayment_percent=DEFAULT_PREPAYMENT_PERCENT,
         penalty_per_day_bp=DEFAULT_PENALTY_PER_DAY_BP,
         penalty_cap_percent=DEFAULT_PENALTY_CAP_PERCENT,
+        material_from_buyer=order.material_from_buyer,
     )
     await _new_version(db, contract, order, 1, terms, None)
     await db.flush()
@@ -191,6 +195,7 @@ async def _out(
             prepayment_percent=current.prepayment_percent,
             penalty_per_day_bp=current.penalty_per_day_bp,
             penalty_cap_percent=current.penalty_cap_percent,
+            material_from_buyer=current.material_from_buyer,
         ),
         articles=[ContractArticleOut(**a) for a in current.articles],
         content_sha256=current.content_sha256,
@@ -255,17 +260,20 @@ async def update_contract(
         prepayment_percent=data.prepayment_percent,
         penalty_per_day_bp=data.penalty_per_day_bp,
         penalty_cap_percent=data.penalty_cap_percent,
+        material_from_buyer=data.material_from_buyer,
     )
     unchanged = (
         current.delivery_due,
         current.prepayment_percent,
         current.penalty_per_day_bp,
         current.penalty_cap_percent,
+        current.material_from_buyer,
     ) == (
         terms.delivery_due,
         terms.prepayment_percent,
         terms.penalty_per_day_bp,
         terms.penalty_cap_percent,
+        terms.material_from_buyer,
     )
     if unchanged:
         return await _out(db, user, order, side, contract)
@@ -275,6 +283,7 @@ async def update_contract(
     contract.current_version = number
     # تاریخ تحویل سفارش همان تاریخ قرارداد است
     order.delivery_due = data.delivery_due
+    order.material_from_buyer = data.material_from_buyer
     orders.record_event(db, order, "contract_revised", None, None, user, side, data.change_note)
     await orders.notify_side(
         db,
@@ -361,7 +370,12 @@ async def sign_contract(
     to_status: str | None = None
     if sides == {"buyer", "supplier"}:
         contract.signed_at = utcnow()
-        to_status = "awaiting_prepayment" if current.prepayment_percent > 0 else "in_production"
+        order.material_from_buyer = current.material_from_buyer
+        to_status = (
+            "awaiting_prepayment"
+            if current.prepayment_percent > 0
+            else lifecycle.production_start(order)
+        )
         order.status = to_status
         # اقساط طبق شرایط پرداخت همین نسخه (O7)
         await payments.create_schedule(db, order, current.prepayment_percent)

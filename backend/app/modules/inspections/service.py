@@ -42,7 +42,13 @@ from app.modules.suppliers import track_record
 
 # آزمایشگاه پیش از ارسال (و تا پیش از قبولی بازرسی) انتخاب، عوض یا حذف می‌شود
 OPEN_FOR_CHOICE = frozenset(
-    {"awaiting_contract", "awaiting_prepayment", "in_production", "in_inspection"}
+    {
+        "awaiting_contract",
+        "awaiting_prepayment",
+        "awaiting_material",
+        "in_production",
+        "in_inspection",
+    }
 )
 MAX_LABS = 200
 

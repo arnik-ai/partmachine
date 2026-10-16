@@ -18,6 +18,7 @@ from app.modules.contracts.models import Contract, ContractVersion
 from app.modules.files.models import StoredFile
 from app.modules.identity.deps import CurrentUser
 from app.modules.identity.models import User
+from app.modules.orders import lifecycle
 from app.modules.orders import service as orders
 from app.modules.orders.models import Order
 from app.modules.orders.schemas import OrderFileOut
@@ -280,7 +281,7 @@ async def confirm(
         )
     )
     if order.status == "awaiting_prepayment" and not pending_prepayment:
-        order.status = "in_production"
+        order.status = lifecycle.production_start(order)
     elif order.status == "delivered" and await orders.all_paid(db, order.id, also=payment.id):
         order.status = "completed"
         order.completed_at = now

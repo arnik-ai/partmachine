@@ -12,6 +12,8 @@ export interface ContractTerms {
   /** جریمه‌ی روزانه به صدم درصد: ۵۰ یعنی ۰٫۵٪ */
   penaltyPerDayBp: number;
   penaltyCapPercent: number;
+  /** کارفرما قطعه یا مواد را می‌فرستد؛ مهلت تحویل از رسیدن آن شمرده می‌شود */
+  materialFromBuyer?: boolean;
 }
 
 export interface ContractSignature {
@@ -53,6 +55,7 @@ export interface Contract {
 }
 
 export interface UpdateContractInput extends ContractTerms {
+  materialFromBuyer: boolean;
   changeNote: string;
 }
 

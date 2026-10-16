@@ -4,6 +4,7 @@ import { INSPECTIONS_ENABLED } from "@/lib/config";
 export type OrderStage =
   | "placed"
   | "escrow_funded"
+  | "material_received"
   | "in_production"
   | "qc_inspection"
   | "shipping"
@@ -24,6 +25,11 @@ const ALL_ORDER_STAGES: {
     key: "escrow_funded",
     label: "پیش‌پرداخت",
     description: "کارفرما پیش‌پرداخت را مستقیماً پرداخت و در پلتفرم اعلام کرد؛ قطعه‌ساز دریافت را تأیید کرد",
+  },
+  {
+    key: "material_received",
+    label: "رسیدن قطعه به مجری",
+    description: "قطعه یا مواد کارفرما به قطعه‌ساز رسید؛ زمان تحویل از همین روز شمرده می‌شود",
   },
   {
     key: "in_production",
@@ -82,6 +88,7 @@ export function stageIndex(stage: OrderStage): number {
 export type OrderStatus =
   | "awaiting_contract"
   | "awaiting_prepayment"
+  | "awaiting_material"
   | "in_production"
   | "in_inspection"
   | "shipped"
@@ -94,7 +101,13 @@ export type OrderStatus =
  * cancel: پیش از امضا لغو؛ پس از امضا «درخواست لغو» یا موافقت با درخواست طرف مقابل.
  * dispute: «اعلام مشکل». keep: «ادامه‌ی سفارش» (پس گرفتن یا نپذیرفتن درخواست لغو).
  */
-export type OrderAction = "cancel" | "ship" | "confirm_delivery" | "dispute" | "keep";
+export type OrderAction =
+  | "cancel"
+  | "confirm_material"
+  | "ship"
+  | "confirm_delivery"
+  | "dispute"
+  | "keep";
 export type PartySide = "buyer" | "supplier";
 export type InspectionStatus = "requested" | "ready" | "passed" | "failed";
 /** qc: آزمایشگاهی که کارفرما برای بازرسی همین سفارش انتخاب کرده است */
@@ -134,6 +147,9 @@ export interface OrderSummary {
   leadTimeDays: number;
   deliveryDue: string;
   isOverdue: boolean;
+  /** کارفرما قطعه یا مواد را می‌فرستد؛ مهلت تحویل از روز رسیدن آن شمرده می‌شود */
+  materialFromBuyer?: boolean;
+  materialReceivedAt?: string | null;
   rfqId: string;
   quotationId: string;
   buyer: { organizationId: string; name: string };
@@ -191,6 +207,7 @@ export interface OrderPage {
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   awaiting_contract: "در انتظار قرارداد",
   awaiting_prepayment: "در انتظار پیش‌پرداخت",
+  awaiting_material: "در انتظار رسیدن قطعه به مجری",
   in_production: "در حال تولید",
   in_inspection: "در حال بازرسی کیفیت",
   shipped: "ارسال‌شده",
@@ -206,6 +223,11 @@ export const ORDER_FLOW: Array<{ status: OrderStatus; label: string; description
     status: "awaiting_contract",
     label: "قرارداد",
     description: "تنظیم قرارداد و امضای مدیر هر دو طرف",
+  },
+  {
+    status: "awaiting_material",
+    label: "رسیدن قطعه به مجری",
+    description: "کارفرما قطعه یا مواد را می‌فرستد؛ زمان تحویل از روز رسیدن آن شمرده می‌شود",
   },
   { status: "in_production", label: "تولید", description: "قطعه‌ساز مشغول ساخت است" },
   {
