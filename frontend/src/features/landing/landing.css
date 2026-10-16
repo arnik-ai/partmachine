@@ -410,3 +410,51 @@ html:has(.lp), html:has(.lp) body { background: #0d0c12; }
   }
 
 @keyframes lp-flute { from { transform: translateY(-22px); } to { transform: translateY(0); } }
+  /* ---- قطعه‌ی سه‌بعدی (WebGL)؛ بدون آن همان نقشه‌ی SVG می‌ماند ---- */
+  .lp .visual .three { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .9s ease; touch-action: pan-y; cursor: grab; }
+  .lp .visual .three:active { cursor: grabbing; }
+  .lp .visual.is-3d .three { opacity: 1; }
+  .lp .visual.is-3d .scene { position: relative; z-index: 2; pointer-events: none; }
+  .lp .visual.is-3d #part, .lp .visual.is-3d #dims, .lp .visual.is-3d #drill, .lp .visual.is-3d #sparks, .lp .visual.is-3d #scan { opacity: 0; }
+  .lp .dims3d { position: absolute; inset: 0; z-index: 3; pointer-events: none; display: none; }
+  .lp .visual.is-3d .dims3d { display: block; }
+  .lp .dim3d { position: absolute; left: 0; top: 0; translate: -50% calc(-100% - 12px); padding: 4px 9px; border-radius: 8px; border: 1px solid var(--line-strong); background: rgba(13, 12, 18, .66); color: var(--fg-2); font: 600 12px/1.2 var(--font-latin); letter-spacing: .04em; white-space: nowrap; direction: ltr; opacity: 0; transition: opacity .5s ease; }
+  .lp .dim3d::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 12px; background: var(--line-strong); }
+  .lp .dim3d.on { opacity: 1; }
+  .lp .drag-hint { position: absolute; left: 22px; bottom: 22px; z-index: 3; display: none; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: rgba(13, 12, 18, .62); color: var(--fg-2); font-size: 12.5px; pointer-events: none; transition: opacity .6s ease; }
+  .lp .drag-hint::before { content: "\27F7"; font-family: var(--font-latin); color: var(--violet-light); }
+  .lp .visual.is-3d .drag-hint { display: inline-flex; }
+  .lp .drag-hint.gone { opacity: 0; }
+
+  /* نمای انفجاری خدمات: صحنه‌ی چسبان؛ با اسکرول اتصال فلنجی باز می‌شود */
+  .lp .explode-stage { display: flex; flex-direction: column; }
+  .lp .explode.is-3d .explode-pin { height: 300vh; }
+  .lp .explode.is-3d .explode-stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 70px); height: calc(100vh - 84px); height: calc(100svh - 84px); }
+  .lp .explode .section-head { margin-bottom: 10px; }
+  .lp .explode-view { position: relative; display: none; flex: 1; min-height: 0; }
+  .lp .explode.is-3d .explode-view { display: block; }
+  .lp .explode-view::before { content: ""; position: absolute; inset: 8% 12%; border-radius: 50%; background: radial-gradient(closest-side, rgba(139, 92, 246, .2), transparent); pointer-events: none; }
+  .lp .explode-view .three { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .lp .xlabels { position: absolute; inset: 0; pointer-events: none; }
+  .lp .xlabel { --lead: 26px; position: absolute; left: 0; top: 0; translate: -50% calc(-100% - var(--lead)); display: grid; justify-items: center; gap: 2px; padding: 7px 12px; border-radius: 12px; border: 1px solid var(--line-strong); background: rgba(21, 19, 28, .84); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--fg); text-decoration: none; white-space: nowrap; pointer-events: auto; opacity: 0; transition: opacity .45s ease, border-color .2s; }
+  .lp .xlabel.lift { --lead: 96px; }
+  .lp .xlabel::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: var(--lead); background: linear-gradient(var(--violet-light), rgba(196, 181, 253, .12)); }
+  .lp .xlabel::before { content: ""; position: absolute; left: calc(50% - 3.5px); top: calc(100% + var(--lead) - 4px); width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+  .lp .xlabel b { font-size: 14px; font-weight: 700; }
+  .lp .xlabel small { font-size: 11.5px; color: var(--fg-3); }
+  .lp .xlabel.on { opacity: 1; }
+  .lp .xlabel:hover { border-color: var(--violet-light); }
+  .lp .explode-view.vertical .xlabel, .lp .explode-view.vertical .xlabel.lift { --lead: 22px; translate: var(--lead) -50%; justify-items: start; padding: 6px 10px; }
+  .lp .explode-view.vertical .xlabel::after { left: auto; right: 100%; top: 50%; width: var(--lead); height: 1px; background: linear-gradient(270deg, var(--violet-light), rgba(196, 181, 253, .12)); }
+  .lp .explode-view.vertical .xlabel::before { left: auto; right: calc(100% + var(--lead) - 4px); top: calc(50% - 3.5px); }
+  .lp .explode-view.vertical .xlabel b { font-size: 13px; }
+  .lp .scroll-hint { position: absolute; left: 50%; bottom: 26px; translate: -50% 0; padding: 6px 14px; border-radius: 99px; border: 1px solid var(--line); background: rgba(13, 12, 18, .6); color: var(--fg-2); font-size: 13px; transition: opacity .5s ease; pointer-events: none; }
+  .lp .scroll-hint::after { content: "\2193"; margin-inline-start: 8px; font-family: var(--font-latin); color: var(--violet-light); }
+  .lp .explode-view.started .scroll-hint { opacity: 0; }
+  .lp .xbar { position: absolute; inset-inline: 12%; bottom: 10px; height: 2px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .lp .xbar i { position: absolute; inset: 0; background: var(--grad-line); transform: scaleX(0); transform-origin: right; }
+  .lp[lang="en"] .xbar i { transform-origin: left; }
+  .lp .all-label { margin: 28px 0 14px; color: var(--fg-3); font-size: 14px; }
+  @media (max-width: 520px) {
+    .lp .explode.is-3d .section-head p { display: none; }
+  }

@@ -9,6 +9,13 @@ type Role = { who: string; title: string; points: string[]; cta: string; href: s
 type Card = { title: string; text: string };
 type Faq = { q: string; a: string };
 type Quote = { name: string; meta: string; bars: [number, number, number]; best?: boolean };
+type ExplodePart = {
+  part: "pipe" | "bolts" | "flangeA" | "gasket" | "flangeB" | "nuts";
+  capability: CapabilityValue;
+  name: string;
+  at: number;
+  lift?: boolean;
+};
 
 export type LandingCopy = {
   meta: { title: string; description: string; ogTitle: string; ogDescription: string };
@@ -25,7 +32,7 @@ export type LandingCopy = {
     switchTo: string;
     switchLabel: string;
   };
-  hero: { eyebrow: string; title: [string[], string[]]; lead: string };
+  hero: { eyebrow: string; title: [string[], string[]]; lead: string; drag: string };
   sheet: { title: string; material: string; qty: string; tolerance: string; scale: string };
   how: { eyebrow: string; title: string; lead: string; steps: Step[] };
   panels: {
@@ -37,6 +44,8 @@ export type LandingCopy = {
   };
   roles: { eyebrow: string; title: string; lead: string; items: Role[] };
   services: { eyebrow: string; title: string; labels: Record<CapabilityValue, string> };
+  /** نمای انفجاری: هر جزء اتصال فلنجی با خدمت تولیدش (at = آستانه‌ی نمایش برچسب) */
+  explode: { title: string; lead: string; hint: string; parts: ExplodePart[] };
   trust: { eyebrow: string; title: string; cards: Card[] };
   faq: { eyebrow: string; title: string; items: Faq[] };
   closing: { title: string; cta: string };
@@ -77,6 +86,7 @@ export const LANDING: Record<Lang, LandingCopy> = {
         ["به", "سفارش", "شما"],
       ],
       lead: "نقشه‌ی فنی را ثبت کنید، از قطعه‌سازان تأییدشده پیشنهاد قیمت بگیرید و سفارش را از قرارداد تا تحویل یک‌جا مدیریت کنید.",
+      drag: "بکشید تا بچرخد",
     },
     sheet: {
       title: "فلنج اتصال لوله",
@@ -181,6 +191,19 @@ export const LANDING: Record<Lang, LandingCopy> = {
       ],
     },
     services: { eyebrow: "خدمات تولید", title: "قطعه‌سازان هر رشته را ببینید", labels: FA_SERVICES },
+    explode: {
+      title: "یک مجموعه، شش فرایند تولید",
+      lead: "اتصال فلنجی از شش جزء ساخته می‌شود و هر جزء را قطعه‌سازِ همان رشته می‌سازد.",
+      hint: "اسکرول کنید",
+      parts: [
+        { part: "pipe", capability: "welding", name: "لوله و جوش", at: 0.3 },
+        { part: "bolts", capability: "forging", name: "پیچ‌های اتصال", at: 0.38, lift: true },
+        { part: "flangeA", capability: "cnc", name: "فلنج گلودار", at: 0.46 },
+        { part: "gasket", capability: "injection_molding", name: "واشر آب‌بندی", at: 0.54, lift: true },
+        { part: "flangeB", capability: "casting", name: "فلنج مقابل", at: 0.62 },
+        { part: "nuts", capability: "heat_treatment", name: "مهره‌ها", at: 0.7, lift: true },
+      ],
+    },
     trust: {
       eyebrow: "چرا تراشینو",
       title: "نقشه‌ی شما سرمایه‌ی شماست",
@@ -260,6 +283,7 @@ export const LANDING: Record<Lang, LandingCopy> = {
         ["made", "to", "order."],
       ],
       lead: "Upload your drawing, get quotes from verified manufacturers, and manage every order from contract to delivery in one place.",
+      drag: "Drag to rotate",
     },
     sheet: { title: "Pipe flange", material: "Material: St37", qty: "Qty: 200 pcs", tolerance: "Tol. ±0.05", scale: "Scale: 1:2" },
     how: {
@@ -377,6 +401,19 @@ export const LANDING: Record<Lang, LandingCopy> = {
         heat_treatment: "Heat treatment",
         surface_treatment: "Coating & plating",
       },
+    },
+    explode: {
+      title: "One assembly, six manufacturing processes",
+      lead: "A flange joint has six parts, and each one is made by a manufacturer in that field.",
+      hint: "Scroll",
+      parts: [
+        { part: "pipe", capability: "welding", name: "Pipe and weld", at: 0.3 },
+        { part: "bolts", capability: "forging", name: "Bolts", at: 0.38, lift: true },
+        { part: "flangeA", capability: "cnc", name: "Weld-neck flange", at: 0.46 },
+        { part: "gasket", capability: "injection_molding", name: "Sealing gasket", at: 0.54, lift: true },
+        { part: "flangeB", capability: "casting", name: "Mating flange", at: 0.62 },
+        { part: "nuts", capability: "heat_treatment", name: "Nuts", at: 0.7, lift: true },
+      ],
     },
     trust: {
       eyebrow: "Why Tarashino",

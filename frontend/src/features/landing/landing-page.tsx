@@ -118,6 +118,14 @@ export async function LandingPage({ lang }: { lang: Lang }) {
             </div>
             <div className="visual" aria-hidden="true">
               <HeroScene sheet={c.sheet} />
+              {/* بوم قطعه‌ی سه‌بعدی؛ تا WebGL آماده نشود همان نقشه‌ی SVG دیده می‌شود */}
+              <canvas className="three" id="heroCanvas" />
+              <div className="dims3d">
+                <span className="dim3d">Ø 240 mm</span>
+                <span className="dim3d">6× Ø 18</span>
+                <span className="dim3d">±0.05</span>
+              </div>
+              <span className="drag-hint">{c.hero.drag}</span>
             </div>
           </div>
           <div className="hero-fade" />
@@ -192,15 +200,46 @@ export async function LandingPage({ lang }: { lang: Lang }) {
           </div>
         </section>
 
-        <section className="block" id="services" aria-labelledby="services-title">
-          <div className="wrap">
-            <div className="section-head" data-reveal>
-              <span className="eyebrow">{c.services.eyebrow}</span>
-              <h2 id="services-title" className="split">
-                <Words text={c.services.title} />
-              </h2>
+        <section className="block explode" id="services" aria-labelledby="services-title">
+          {/* نمای انفجاری: صحنه‌ی چسبان که با اسکرول اتصال فلنجی را باز می‌کند (فقط با WebGL) */}
+          <div className="explode-pin" id="explodePin">
+            <div className="explode-stage">
+              <div className="wrap">
+                <div className="section-head" data-reveal>
+                  <span className="eyebrow">{c.services.eyebrow}</span>
+                  <h2 id="services-title" className="split">
+                    <Words text={c.explode.title} />
+                  </h2>
+                  <p>{c.explode.lead}</p>
+                </div>
+              </div>
+              <div className="explode-view" id="explodeView" aria-hidden="true">
+                <canvas className="three" id="explodeCanvas" />
+                <div className="xlabels">
+                  {c.explode.parts.map((p) => (
+                    <Link
+                      key={p.part}
+                      className={p.lift ? "xlabel lift" : "xlabel"}
+                      data-part={p.part}
+                      data-at={p.at}
+                      href={`/suppliers?capability=${p.capability}`}
+                      tabIndex={-1}
+                    >
+                      <b>{c.services.labels[p.capability]}</b>
+                      <small>{p.name}</small>
+                    </Link>
+                  ))}
+                </div>
+                <span className="scroll-hint">{c.explode.hint}</span>
+                <span className="xbar">
+                  <i id="explodeBar" />
+                </span>
+              </div>
             </div>
-            <ul className="services" data-reveal>
+          </div>
+          <div className="wrap">
+            <p className="all-label">{c.services.title}</p>
+            <ul className="services" id="services-list" data-reveal>
               {CAPABILITIES.map((cap) => (
                 <li key={cap.value}>
                   <Link className="spot" href={`/suppliers?capability=${cap.value}`}>
