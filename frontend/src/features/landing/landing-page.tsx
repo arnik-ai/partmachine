@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import { BackButton } from "@/components/layout/back-button";
 import { CAPABILITIES } from "@/lib/constants";
 import { HeroScene } from "./components/hero-scene";
+import { MachiningScene } from "./components/machining-scene";
 import { Mark, MarkDefs } from "./components/mark";
 import { Stage } from "./components/stage";
 import { Configurator } from "./configurator";
@@ -144,6 +145,14 @@ export async function LandingPage({ lang }: { lang: Lang }) {
           <canvas className="lattice" data-lattice />
         </section>
 
+        <div className="scene-band">
+          <div className="wrap">
+            <div className="scene">
+              <MachiningScene kind="lathe" label={c.scenes.latheLabel} caption={c.scenes.latheCaption} />
+            </div>
+          </div>
+        </div>
+
         <section className="block" id="how" aria-labelledby="how-title">
           <div className="wrap">
             <div className="section-head" data-reveal>
@@ -237,6 +246,14 @@ export async function LandingPage({ lang }: { lang: Lang }) {
             <p className="net-note">{c.network.note}</p>
           </div>
         </section>
+
+        <div className="scene-band">
+          <div className="wrap">
+            <div className="scene">
+              <MachiningScene kind="laser" label={c.scenes.laserLabel} caption={c.scenes.laserCaption} />
+            </div>
+          </div>
+        </div>
 
         <section className="block explode" id="services" aria-labelledby="services-title">
           {/* نمای انفجاری: صحنه‌ی چسبان که با اسکرول اتصال فلنجی را باز می‌کند (فقط با WebGL) */}

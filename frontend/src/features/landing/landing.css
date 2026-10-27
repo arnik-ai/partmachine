@@ -49,6 +49,12 @@ html:has(.lp), html:has(.lp) body { background: #0d0c12; }
   .lp a { color: inherit; }
   .lp p, .lp li { text-wrap: pretty; }
   .lp .latin { font-family: var(--font-latin); direction: ltr; unicode-bidi: isolate; }
+  /* صحنه‌های متحرک تولید (تراش CNC، برش لیزر): بوم تمام‌عرض در قاب طلایی */
+  .lp .scene-band { padding-block: 28px; }
+  .lp .scene { border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--line); background: radial-gradient(ellipse at 50% 60%, rgba(109, 40, 217, .26), transparent 62%), linear-gradient(180deg, var(--bg-2), var(--bg)); }
+  .lp .scene-canvas { display: block; width: 100%; aspect-ratio: 3 / 1; }
+  .lp .scene-canvas[data-kind="laser"] { aspect-ratio: 3 / 1.15; }
+  @media (max-width: 640px) { .lp .scene-canvas, .lp .scene-canvas[data-kind="laser"] { aspect-ratio: 16 / 9; } }
   .lp .wrap { max-width: 1160px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .lp .grain { position: fixed; inset: 0; z-index: 70; pointer-events: none; opacity: .05; mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
