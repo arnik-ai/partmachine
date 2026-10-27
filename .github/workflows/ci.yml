@@ -7,6 +7,9 @@ on:
     branches: [master, "phase-*"]
   pull_request:
   workflow_dispatch:
+  # هفته‌ای یک بار حتی بی push: آسیب‌پذیری تازه‌ی وابستگی‌ها (pip-audit و npm audit) هم دیده شود
+  schedule:
+    - cron: "30 3 * * 1"
 
 permissions:
   contents: read
