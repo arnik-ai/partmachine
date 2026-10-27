@@ -205,8 +205,15 @@ jobs:
           exit 1
       - name: Install the browser
         working-directory: frontend
-        # chromium برای همه‌ی آزمون‌ها؛ webkit (موتور Safari) برای آزمون نمایش روی آیفون و آیپد
-        run: npx playwright install --with-deps chromium webkit
+        # chromium برای همه‌ی آزمون‌ها؛ webkit (موتور Safari) برای آزمون نمایش روی آیفون و آیپد.
+        # دانلود گاهی بی‌پایان گیر می‌کند (۲۰۲۶/۱۰/۲۷ دو بار پشت هم)؛ هر تلاش حداکثر ۵ دقیقه، سه بار
+        timeout-minutes: 20
+        run: |
+          for attempt in 1 2 3; do
+            timeout 300 npx playwright install --with-deps chromium webkit && exit 0
+            echo "::warning::browser install attempt $attempt failed or hung; retrying"
+          done
+          exit 1
       - name: Browser tests
         working-directory: frontend
         run: npm run test:e2e
