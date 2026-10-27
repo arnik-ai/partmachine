@@ -1,5 +1,7 @@
 # پروکسی معکوس با HTTPS خودکار (Let's Encrypt برای دامنه‌ی واقعی، گواهی محلی برای localhost).
 # سایت و API زیر یک دامنه: /api/* به بک‌اند، بقیه به سایت.
+# روی سرور مشترک (deploy/shared-host) همین فایل پشت Caddy سایت‌های دیگر با HTTP ساده اجرا می‌شود:
+# CADDY_SITE_SCHEME=http:// (بدون گواهی و بدون redirect) و CADDY_TRUSTED_PROXIES=private_ranges.
 
 {
 	# اتصال‌هایی که سرآیند را خیلی کند می‌فرستند (حمله‌ی slowloris) بسته می‌شوند؛ بدنه برای
@@ -10,10 +12,13 @@
 			read_body 10m
 			idle 2m
 		}
+		# X-Forwarded-For فقط از پروکسی جلویی پذیرفته می‌شود؛ روی سرور اختصاصی کسی جلوی این Caddy نیست
+		trusted_proxies static {$CADDY_TRUSTED_PROXIES:127.0.0.1/32}
+		trusted_proxies_strict
 	}
 }
 
-{$APP_DOMAIN} {
+{$CADDY_SITE_SCHEME}{$APP_DOMAIN} {
 	encode zstd gzip
 
 	handle /api/* {
@@ -21,7 +26,10 @@
 		request_body {
 			max_size 60MB
 		}
-		reverse_proxy api:8000
+		# uvicorn چپ‌ترین آدرس X-Forwarded-For را برمی‌دارد؛ فقط آدرس واقعی بازدیدکننده فرستاده شود
+		reverse_proxy api:8000 {
+			header_up X-Forwarded-For {client_ip}
+		}
 	}
 
 	handle {

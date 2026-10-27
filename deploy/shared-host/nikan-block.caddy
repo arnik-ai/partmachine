@@ -1,0 +1,13 @@
+# بلوکی که با تأیید مالک به انتهای /opt/nikan/Caddyfile (Caddy سرور مشترک) اضافه می‌شود؛ روش در README.
+# HTTPS این‌جاست؛ Caddy خود PartMachine فقط روی 172.17.0.1:18080 است. نام به‌صورت متن ثابت است، چون
+# Caddy سرور فقط متغیرهای خودش را دارد. header_up جلوی جعل آدرس بازدیدکننده را می‌گیرد.
+
+# PartMachine (/opt/partmachine, deploy/shared-host)
+partmachine.84-32-10-40.sslip.io {
+	header -Server
+	# نشانی آزمایشی در موتورهای جست‌وجو ثبت نشود
+	header X-Robots-Tag "noindex, nofollow"
+	reverse_proxy 172.17.0.1:18080 {
+		header_up X-Forwarded-For {client_ip}
+	}
+}

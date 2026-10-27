@@ -303,3 +303,85 @@ jobs:
       - name: Logs on failure
         if: failure()
         run: $COMPOSE logs --no-color --tail=200
+
+  shared-host:
+    # سرور مشترک (deploy/shared-host): همان ایمیج‌هایی که روی سرور اجرا می‌شوند این‌جا ساخته و با همان
+    # فایل‌ها و اسکریپت سرور آزموده می‌شوند؛ پس از سبز شدن همه‌ی مرحله‌ها، publish-images همین‌ها را منتشر می‌کند
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    outputs:
+      tag: ${{ steps.build.outputs.tag }}
+    env:
+      PM: sh deploy/shared-host/pm.sh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the images the server will run
+        id: build
+        run: |
+          tag=$(git rev-parse --short=12 HEAD)
+          domain=$(sed -n 's/^APP_DOMAIN=//p' deploy/shared-host/domain.env)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          echo "DOMAIN=$domain" >> "$GITHUB_ENV"
+          src="org.opencontainers.image.source=https://github.com/${{ github.repository }}"
+          docker build --label "$src" -t "ghcr.io/arnik-ai/partmachine-api:$tag" backend
+          docker build --label "$src" -t "ghcr.io/arnik-ai/partmachine-backup:$tag" deploy/backup
+          docker build --label "$src" --build-arg "NEXT_PUBLIC_API_URL=https://$domain/api/v1" \
+            -t "ghcr.io/arnik-ai/partmachine-web:$tag" frontend
+      - name: Start it exactly as on the server
+        run: |
+          $PM init "$TAG"
+          $PM up
+          $PM smoke
+      - name: Only the internal edge port is open, and another Docker network reaches it
+        run: |
+          # روی سرور، Caddy سایت‌های دیگر در شبکه‌ی Docker خودش است و از همین راه به این پروژه می‌رسد
+          if ss -ltn | awk '{print $4}' | grep -Eq ':(80|443)$'; then echo "80/443 taken"; exit 1; fi
+          docker network create front
+          status=$(docker run --rm --network front caddy:2.11.7-alpine \
+            wget -qO- --header "Host: $DOMAIN" http://172.17.0.1:18080/api/v1/status)
+          echo "$status" | grep -q '"ok"'
+      - name: The visitor address from the front proxy reaches the API
+        run: |
+          # Caddy جلویی آدرس بازدیدکننده را در X-Forwarded-For می‌فرستد؛ محدودیت ورود باید روی همان باشد
+          curl -s -o /dev/null -H "Host: $DOMAIN" -H "X-Forwarded-For: 203.0.113.9" -H "Content-Type: application/json" \
+            -d '{"email":"nobody@example.com","password":"wrong-password-123"}' http://172.17.0.1:18080/api/v1/auth/login
+          want="rl:login-ip:$(printf '%s' 203.0.113.9 | sha256sum | cut -c1-32)"
+          keys=$($PM compose exec -T redis redis-cli --scan --pattern 'rl:login-ip:*')
+          echo "$keys"
+          echo "$keys" | grep -qx "$want"
+      - name: Keep the tested images for publishing
+        if: github.event_name == 'push'
+        run: |
+          docker save "ghcr.io/arnik-ai/partmachine-api:$TAG" "ghcr.io/arnik-ai/partmachine-backup:$TAG" \
+            "ghcr.io/arnik-ai/partmachine-web:$TAG" | gzip -1 > images.tar.gz
+      - if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-host-images
+          path: images.tar.gz
+          retention-days: 1
+      - name: Logs on failure
+        if: failure()
+        run: $PM compose logs --no-color --tail=200
+
+  publish-images:
+    # فقط این مرحله اجازه‌ی نوشتن در GHCR را دارد و هیچ کدی از مخزن اجرا نمی‌کند: ایمیج‌های آزموده‌ی
+    # shared-host را بارگذاری و با شناسه‌ی commit منتشر می‌کند (سرور فقط این‌ها را دانلود می‌کند)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/phase-4-production' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    needs: [shared-host, production-stack, e2e]
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ needs.shared-host.outputs.tag }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-host-images
+      - run: gunzip -c images.tar.gz | docker load
+      - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - run: |
+          for name in api backup web; do docker push "ghcr.io/arnik-ai/partmachine-$name:$TAG"; done
+          echo "::notice title=Published::ghcr.io/arnik-ai/partmachine-{api,backup,web}:$TAG"
