@@ -5,10 +5,10 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Any, Literal
 
-from sqlalchemy import ColumnElement, Subquery, and_, false, func, select
+from sqlalchemy import ColumnElement, ScalarSelect, and_, false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import Conflict, NotFound, field_error
+from app.core.errors import Conflict, Forbidden, NotFound, field_error
 from app.core.text import escape_like, normalize_search, normalize_text
 from app.core.time import business_today, utcnow
 from app.modules.agreements import service as agreements
@@ -34,8 +34,33 @@ from app.modules.rfqs.schemas import (
 from app.modules.suppliers.service import supplier_for_organization
 
 RFQ_NOT_FOUND = "درخواست موردنظر پیدا نشد."
+# تصمیم مالک (۲۰۲۶/۱۰/۲۶): نقشه‌ها و فایل‌های فنی فقط به قطعه‌سازی می‌رسد که ادمین مدارکش را تأیید کرده
+# است؛ بقیه خلاصه را می‌بینند و می‌توانند پیشنهاد بدهند
+FILES_NEED_VERIFICATION = (
+    "فایل‌های فنی فقط برای قطعه‌سازهای تأییدشده در دسترس است. از صفحه‌ی پروفایل شرکت، مدارک را برای"
+    " تأیید بفرستید."
+)
 DEFAULT_QUOTE_WINDOW = timedelta(days=7)
 FeedSort = Literal["newest", "closing"]
+
+
+async def supplier_is_verified(db: AsyncSession, user: CurrentUser) -> bool:
+    supplier = await supplier_for_organization(db, user.organization_id)
+    return supplier is not None and supplier.verified
+
+
+async def may_receive_drawings(
+    db: AsyncSession, user: CurrentUser, rfq: Rfq, mine: MyQuotationRef | None = None
+) -> bool:
+    """قطعه‌ساز تأییدشده، یا برنده‌ی همین RFQ حتی پیش از تأیید هویت: کارفرما خودش او را برای ساخت قطعه
+    انتخاب کرده و او بدون نقشه نمی‌تواند سفارش را انجام دهد. NDA همچنان جداگانه لازم است."""
+    if await supplier_is_verified(db, user):
+        return True
+    if rfq.awarded_quotation_id is None:
+        return False
+    if mine is None:
+        mine = await my_quotation(db, user, rfq.id)
+    return mine is not None and mine.id == rfq.awarded_quotation_id
 
 
 @dataclass
@@ -82,23 +107,26 @@ def to_out(rfq: Rfq, user: CurrentUser, view: RfqView, extras: ViewerExtras, tod
     )
 
 
-def active_counts() -> Subquery:
-    """تعداد پیشنهادهای فعال (پس‌گرفته‌نشده) هر RFQ."""
+# شمارش‌های فهرست‌ها برای هر ردیف همان صفحه جدا و با ایندکس rfq_id انجام می‌شود، نه با جمع زدن کل جدول
+# پیشنهادها و فایل‌ها در هر درخواست؛ آزمون بار ۲۰۲۶/۱۰/۲۶ نشان داد آن روش ۶۰٪ وقت پایگاه داده را می‌گرفت
+# و با بزرگ شدن سایت کندتر می‌شد.
+def active_quotes_sql() -> ScalarSelect[int]:
+    """تعداد پیشنهادهای فعال (پس‌گرفته‌نشده) همان RFQ ردیف."""
     return (
-        select(Quotation.rfq_id, func.count(Quotation.id).label("n"))
-        .where(Quotation.status == "active")
-        .group_by(Quotation.rfq_id)
-        .subquery()
+        select(func.count(Quotation.id))
+        .where(Quotation.rfq_id == Rfq.id, Quotation.status == "active")
+        .correlate(Rfq)
+        .scalar_subquery()
     )
 
 
-def file_counts() -> Subquery:
-    """تعداد فایل‌های پیوست هر RFQ."""
+def file_count_sql() -> ScalarSelect[int]:
+    """تعداد فایل‌های پیوست همان RFQ ردیف."""
     return (
-        select(StoredFile.rfq_id, func.count(StoredFile.id).label("n"))
-        .where(StoredFile.rfq_id.is_not(None))
-        .group_by(StoredFile.rfq_id)
-        .subquery()
+        select(func.count(StoredFile.id))
+        .where(StoredFile.rfq_id == Rfq.id)
+        .correlate(Rfq)
+        .scalar_subquery()
     )
 
 
@@ -208,8 +236,6 @@ async def list_organization_rfqs(
     db: AsyncSession, user: CurrentUser, *, limit: int, offset: int
 ) -> tuple[list[RfqOut], int]:
     today = business_today()
-    counts = active_counts()
-    files = file_counts()
     total = (
         await db.scalar(
             select(func.count(Rfq.id)).where(Rfq.organization_id == user.organization_id)
@@ -217,9 +243,7 @@ async def list_organization_rfqs(
         or 0
     )
     rows = await db.execute(
-        select(Rfq, func.coalesce(counts.c.n, 0), func.coalesce(files.c.n, 0))
-        .outerjoin(counts, counts.c.rfq_id == Rfq.id)
-        .outerjoin(files, files.c.rfq_id == Rfq.id)
+        select(Rfq, active_quotes_sql(), file_count_sql())
         .where(Rfq.organization_id == user.organization_id)
         .order_by(Rfq.created_at.desc(), Rfq.id)
         .limit(limit)
@@ -272,20 +296,18 @@ async def list_open_rfqs(
         if sort == "closing"
         else (Rfq.created_at.desc(),)
     )
-    files = file_counts()
     rows = await db.execute(
-        select(Rfq, Quotation.id, Quotation.status, func.coalesce(files.c.n, 0))
+        select(Rfq, Quotation.id, Quotation.status, file_count_sql())
         .outerjoin(Quotation, mine_on)
-        .outerjoin(files, files.c.rfq_id == Rfq.id)
         .where(*conditions)
         .order_by(*order, Rfq.id)
         .limit(limit)
         .offset(offset)
     )
     items = []
-    for rfq, quotation_id, quotation_status, file_count in rows.all():
+    for rfq, quotation_id, quotation_status, n_files in rows.all():
         mine = MyQuotationRef(id=quotation_id, status=quotation_status) if quotation_id else None
-        extras = ViewerExtras(my_quotation=mine, file_count=int(file_count))
+        extras = ViewerExtras(my_quotation=mine, file_count=int(n_files))
         items.append(to_out(rfq, user, RfqView.SUMMARY, extras, today))
     return items, total
 
@@ -344,12 +366,16 @@ async def get_rfq(db: AsyncSession, user: CurrentUser, rfq_id: uuid.UUID) -> Rfq
     rfq, view, mine = await _load(db, user, rfq_id)
     files = await rfq_files(db, rfq.id)
     extras = ViewerExtras(active_quotes=await active_quote_count(db, rfq.id), file_count=len(files))
+    files_allowed = view is RfqView.FULL
     if view is RfqView.SUMMARY:
         extras.my_quotation = mine
         extras.nda_accepted = await agreements.has_accepted_rfq_nda(
             db, user.organization_id, rfq.id
         )
-    if view is RfqView.FULL or extras.nda_accepted:
+        files_allowed = bool(extras.nda_accepted) and await may_receive_drawings(
+            db, user, rfq, mine
+        )
+    if files_allowed:
         extras.files = files
     is_winner = mine is not None and mine.id == rfq.awarded_quotation_id
     if rfq.status == "awarded" and (view is RfqView.FULL or is_winner):
@@ -420,7 +446,9 @@ async def accept_nda(
 ) -> RfqOut:
     """قطعه‌ساز NDA همین RFQ را از طرف سازمانش می‌پذیرد (یک‌بار برای هر سازمان)."""
     agreement = agreements.require_accepted([data], RFQ_NDA.key)
-    rfq, view, _ = await _load(db, user, rfq_id)
+    rfq, view, mine = await _load(db, user, rfq_id)
+    if view is RfqView.SUMMARY and not await may_receive_drawings(db, user, rfq, mine):
+        raise Forbidden(FILES_NEED_VERIFICATION, code="supplier_not_verified")
     if view is RfqView.SUMMARY:
         # درخواست هم‌زمان عضو دیگری از همین سازمان: فقط یکی ثبت می‌شود، نتیجه برای هر دو یکی است
         recorded = await agreements.record_rfq_nda(

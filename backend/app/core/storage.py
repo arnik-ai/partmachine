@@ -15,6 +15,7 @@ import asyncio
 import hashlib
 import os
 import re
+import shutil
 import tempfile
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -55,10 +56,19 @@ class Storage(Protocol):
 
     async def delete(self, key: str) -> None: ...
 
+    def free_bytes(self) -> int | None:
+        """فضای آزاد دیسکی که فایل‌ها رویش نوشته می‌شوند؛ None یعنی دیسک محلی در کار نیست (S3)."""
+        ...
+
 
 class LocalStorage:
     def __init__(self, root: str | Path) -> None:
         self.root = Path(root).resolve()
+
+    def free_bytes(self) -> int | None:
+        # پایگاه داده معمولاً روی همین دیسک است؛ پر شدنش با فایل کاربران، کل سایت را می‌خواباند
+        self.root.mkdir(parents=True, exist_ok=True)
+        return shutil.disk_usage(self.root).free
 
     def _path(self, key: str) -> Path:
         path = (self.root / key).resolve()
@@ -122,6 +132,9 @@ class S3Storage:
         self.bucket = bucket
         clean = prefix.strip("/")
         self.prefix = f"{clean}/" if clean else ""
+
+    def free_bytes(self) -> int | None:
+        return None
 
     def object_key(self, key: str) -> str:
         if not S3_KEY.fullmatch(key) or ".." in key:

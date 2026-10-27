@@ -138,7 +138,7 @@ docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod exe
 
   ```bash
   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod exec -T api \
-    python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/metrics').read().decode())"
+    python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/metrics').read().decode())"
   ```
 
 ## گزارش‌ها و وضعیت

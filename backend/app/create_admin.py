@@ -104,7 +104,9 @@ async def create_admin(email: str, full_name: str, password: str) -> AdminResult
 
 def _read_password(from_stdin: bool) -> str:
     if from_stdin:
-        return sys.stdin.readline().rstrip("\r\n")
+        # PowerShell ویندوز هنگام pipe کردن متن، نویسه‌ی نامرئی BOM را به اولش می‌چسباند؛ بدون حذفش رمز
+        # ذخیره‌شده با رمز تایپ‌شده یکی نمی‌شود و ادمین نمی‌تواند وارد شود
+        return sys.stdin.readline().rstrip("\r\n").removeprefix("﻿")
     first = getpass.getpass("رمز ادمین (حداقل ۱۲ کاراکتر): ")
     second = getpass.getpass("تکرار رمز: ")
     if first != second:

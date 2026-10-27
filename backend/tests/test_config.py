@@ -76,7 +76,10 @@ def test_s3_without_a_bucket_fails_even_in_development() -> None:
         ({"otp_sender": "console"}, "OTP_SENDER"),
         ({"message_sender": "console"}, "MESSAGE_SENDER"),
         ({"rate_limit_enabled": False}, "RATE_LIMIT_ENABLED"),
+        ({"rate_limit_fail_open": True}, "RATE_LIMIT_FAIL_OPEN"),
+        ({"docs_enabled": True}, "DOCS_ENABLED"),
         ({"admin_two_factor_required": False}, "ADMIN_TWO_FACTOR_REQUIRED"),
+        ({"password_hash_concurrency": 0}, "PASSWORD_HASH_CONCURRENCY"),
     ],
 )
 def test_unsafe_production_settings_are_reported(

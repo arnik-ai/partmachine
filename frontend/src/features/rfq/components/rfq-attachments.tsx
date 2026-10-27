@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Download, FileText, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { acceptanceOf, useAgreement } from "@/features/agreements/api";
 import { AgreementChecklist } from "@/features/agreements/components/agreement-checklist";
 import { allTermsAccepted } from "@/features/agreements/components/terms-checklist";
+import { useAuthStore } from "@/features/auth/store";
 import { downloadFile } from "@/features/files/api";
+import { useMySupplier } from "@/features/suppliers/hooks";
 import { errorMessage } from "@/lib/api-client";
 import { DEMO_MODE } from "@/lib/config";
 import { faNumber } from "@/lib/utils";
@@ -29,13 +32,48 @@ function sizeLabel(bytes: number): string {
 }
 
 /**
- * فایل‌های فنی RFQ. صاحب درخواست همیشه فهرست را می‌بیند؛ قطعه‌ساز پس از پذیرش تعهد عدم افشای
- * همین درخواست. هر دانلود با لینک کوتاه‌عمر و ثبت در سرور انجام می‌شود.
+ * فایل‌های فنی RFQ. صاحب درخواست همیشه فهرست را می‌بیند؛ قطعه‌ساز فقط اگر هویتش تأیید شده باشد و
+ * تعهد عدم افشای همین درخواست را بپذیرد (تصمیم مالک ۲۰۲۶/۱۰/۲۶؛ سرور هم همین را اعمال می‌کند).
+ * هر دانلود با لینک کوتاه‌عمر و ثبت در سرور انجام می‌شود.
  */
 export function RfqAttachments({ rfq }: { rfq: Rfq }) {
+  const role = useAuthStore((s) => s.user?.role);
   if (rfq.fileCount === 0) return null;
+  if (rfq.files.length === 0 && role === "supplier") return <SupplierFilesGate rfq={rfq} />;
   if (rfq.files.length === 0 && rfq.ndaAccepted === false) return <NdaGate rfq={rfq} />;
   return <FileList files={rfq.files} />;
+}
+
+function SupplierFilesGate({ rfq }: { rfq: Rfq }) {
+  const { data: supplier, isLoading } = useMySupplier();
+  if (isLoading) return null;
+  // برنده‌ی همین درخواست (سرور فقط برای او orderId می‌فرستد) حتی پیش از تأیید هویت نقشه را می‌گیرد،
+  // چون کارفرما او را برای ساخت قطعه انتخاب کرده است
+  const allowed = Boolean(supplier?.verified) || Boolean(rfq.orderId);
+  if (allowed && rfq.ndaAccepted === false) return <NdaGate rfq={rfq} />;
+  return <VerificationNeeded count={rfq.fileCount} />;
+}
+
+function VerificationNeeded({ count }: { count: number }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-primary" aria-hidden />
+          {faNumber(count)} فایل فنی محرمانه
+        </CardTitle>
+        <CardDescription>
+          فایل‌های فنی فقط برای قطعه‌سازهای تأییدشده در دسترس است. پس از تأیید مدارک شرکت، با پذیرش
+          تعهد عدم افشا فایل‌ها را می‌بینید. تا آن موقع هم می‌توانید پیشنهاد قیمت بدهید.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Link href="/profile" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          ارسال مدارک برای تأیید
+        </Link>
+      </CardContent>
+    </Card>
+  );
 }
 
 function FileList({ files }: { files: RfqFile[] }) {

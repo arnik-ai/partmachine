@@ -35,6 +35,13 @@
 
 	log {
 		output stdout
-		format json
+		# راز در آدرس به لاگ نمی‌رسد: توکن لینک دانلود (?token=)، لینک دعوت در صفحه‌ی ثبت‌نام (?invite=) و
+		# در API (/invites/…). کوکی و Authorization را خود Caddy به‌طور پیش‌فرض در لاگ حذف می‌کند.
+		format filter {
+			wrap json
+			fields {
+				request>uri regexp "(/invites/)[^/?]+|([?&](?:token|invite)=)[^&]*" "${1}${2}REDACTED"
+			}
+		}
 	}
 }

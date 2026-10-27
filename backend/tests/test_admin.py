@@ -1,13 +1,14 @@
 """ادمین حداقلی: ساخت فقط با CLI، پنهان بودن مسیرها از نقش‌های دیگر (404)، غیرفعال‌سازی با قطع
 فوری دسترسی، تأیید دستی مأمور خرید و آزمایشگاه، و رویدادهای audit با فیلتر."""
 
+import io
 from collections.abc import Callable
 from typing import Any
 
 import httpx
 import pytest
 
-from app.create_admin import AdminSetupError, create_admin
+from app.create_admin import AdminSetupError, _read_password, create_admin
 from tests.helpers import (
     ADMIN_PASSWORD,
     API,
@@ -34,6 +35,14 @@ async def test_admin_routes_are_hidden_from_everyone_else(
     assert admin.user["role"] == "admin"
     ok = await admin.client.get(f"{API}/admin/users", headers=admin.auth)
     assert ok.status_code == 200
+
+
+def test_password_from_a_windows_pipe_loses_the_invisible_bom(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PowerShell ویندوز هنگام pipe، BOM را به اول متن می‌چسباند (دیده‌شده ۲۰۲۶/۱۰/۲۶)."""
+    monkeypatch.setattr("sys.stdin", io.StringIO("﻿Admin-Passw0rd-long!\r\n"))
+    assert _read_password(from_stdin=True) == "Admin-Passw0rd-long!"
 
 
 async def test_create_admin_cli_is_idempotent_and_safe(client: httpx.AsyncClient) -> None:

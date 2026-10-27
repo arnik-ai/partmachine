@@ -234,11 +234,18 @@ async def two_factor_setup(
 @router.post("/2fa/enable", response_model=RecoveryCodesOut)
 async def two_factor_enable(
     payload: TwoFactorEnableInput,
+    request: Request,
     user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> RecoveryCodesOut:
-    """روشن کردن با رمز و نخستین کد اپ؛ کدهای پشتیبان فقط همین یک بار برگردانده می‌شوند."""
-    return RecoveryCodesOut(recovery_codes=await two_factor.enable(db, user, payload))
+    """روشن کردن با رمز و نخستین کد اپ؛ کدهای پشتیبان فقط همین یک بار برگردانده می‌شوند.
+
+    نشست‌های دیگر بسته و توکن دسترسی فعلی باطل می‌شود؛ همین دستگاه با `POST /auth/refresh` ادامه می‌دهد.
+    """
+    codes = await two_factor.enable(
+        db, user, payload, keep_refresh=request.cookies.get(REFRESH_COOKIE)
+    )
+    return RecoveryCodesOut(recovery_codes=codes)
 
 
 @router.post("/2fa/disable", status_code=204)

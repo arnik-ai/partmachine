@@ -118,6 +118,13 @@ async def render() -> str:
         "When the last backup succeeded (0 if never).",
     )
     lines.append(f"partmachine_backup_last_success_timestamp_seconds {str(last_backup or 0)}")
+    offsite = await redis.get("pm:backup:offsite")
+    lines += _family(
+        "partmachine_backup_offsite",
+        "gauge",
+        "Whether backups are kept off this server (1), only on it (0), or unknown yet (-1).",
+    )
+    lines.append(f"partmachine_backup_offsite {offsite if offsite in ('0', '1') else -1}")
 
     jobs: dict[str, dict[str, str]] = {}
     async for key in redis.scan_iter(match=f"{JOB_PREFIX}*"):

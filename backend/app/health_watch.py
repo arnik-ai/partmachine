@@ -30,6 +30,10 @@ STATE_KEY = "pm:health:state"
 BACKUP_KEY = "pm:backup:last_success"
 BACKUP_MISSING_KEY = "pm:health:backup_missing_since"
 BACKUP_ALERT_KEY = "pm:health:backup_alerted"
+# سرویس backup می‌نویسد: 1 یعنی مخزن پشتیبان بیرون از سرور است، 0 یعنی روی همین سرور
+BACKUP_OFFSITE_KEY = "pm:backup:offsite"
+BACKUP_ONSITE_ALERT_KEY = "pm:health:backup_onsite_alerted"
+BACKUP_ONSITE_ALERT_EVERY = 7 * 24 * 3600
 # پشتیبان روزانه است؛ دو ساعت فرصت برای پشتیبان طولانی
 BACKUP_MAX_AGE = 26 * 3600
 FAILURES_TO_ALERT = 2
@@ -131,6 +135,26 @@ async def check_backup() -> bool:
     return True
 
 
+async def check_backup_location() -> bool:
+    """True اگر همین حالا یادآوری «پشتیبان فقط روی همین سرور است» داده شد (هفته‌ای حداکثر یک بار).
+
+    سرویس backup پس از هر پشتیبان موفق می‌نویسد که مخزن بیرون از سرور است (1) یا نه (0). پشتیبانی که
+    روی همان سرور است با خراب شدن یا از دست رفتن سرور همراه داده‌ها از دست می‌رود.
+    """
+    redis = get_redis()
+    if await redis.get(BACKUP_OFFSITE_KEY) != "0":
+        return False
+    if not await redis.set(BACKUP_ONSITE_ALERT_KEY, "1", nx=True, ex=BACKUP_ONSITE_ALERT_EVERY):
+        return False
+    logger.warning("backups are kept on this server only (BACKUP_REPOSITORY is a local path)")
+    await _notify_admins(
+        "پشتیبان‌ها فقط روی همین سرور نگه داشته می‌شوند",
+        "اگر سرور خراب شود یا از دست برود، پشتیبان‌ها هم با آن از دست می‌روند. یک فضای جدا (مثلاً فضای"
+        " ابری S3-سازگار) را در BACKUP_REPOSITORY تنظیم کنید (docs/BACKUP_RESTORE.md).",
+    )
+    return True
+
+
 async def run() -> dict[str, int]:
     """کار worker؛ فقط در staging و production (یا با HEALTH_WATCH_ENABLED=true)."""
     if not settings.watch_health:
@@ -138,4 +162,6 @@ async def run() -> dict[str, int]:
     result = await update(await failing_targets())
     if await check_backup():
         result["backup_alerted"] = 1
+    if await check_backup_location():
+        result["backup_onsite_alerted"] = 1
     return result

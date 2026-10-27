@@ -1,8 +1,10 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthBootstrap } from "@/features/auth/components/auth-bootstrap";
+import { clearCacheOnUserChange } from "@/features/auth/cache-guard";
+import { useAuthStore } from "@/features/auth/store";
 import { ApiError } from "@/lib/api-client";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -20,6 +22,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
       }),
   );
+
+  useEffect(() => clearCacheOnUserChange(useAuthStore, queryClient), [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>

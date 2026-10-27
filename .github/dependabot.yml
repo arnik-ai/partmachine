@@ -1,0 +1,30 @@
+# به‌روزرسانی امنیتی وابستگی‌ها: هر هفته pull request جدا برای هر بخش؛ ادغام فقط با CI سبز و بازبینی.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # به‌روزرسانی‌های جزئی ابزار توسعه با هم، تا PRها زیاد نشوند
+      dev-tools:
+        dependency-type: development
+        update-types: [minor, patch]
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

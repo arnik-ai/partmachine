@@ -22,6 +22,13 @@ error_logger = logging.getLogger("partmachine.errors")
 
 _REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 _TOO_LARGE = "حجم درخواست بیش از حد مجاز است."
+# مسیرهایی که خود راز در آن‌هاست (توکن لینک دعوت)؛ در لاگ جای راز فقط {token} می‌آید
+_SECRET_PATH_RE = re.compile(r"(/invites/)[^/]+")
+
+
+def loggable_path(path: str) -> str:
+    return _SECRET_PATH_RE.sub(r"\1{token}", path)
+
 
 SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
@@ -102,15 +109,16 @@ class RequestContextMiddleware:
                 await self._send_json(send_wrapper, 500, error_body(GENERIC_500, "internal_error"))
         finally:
             duration_ms = round((time.perf_counter() - started) * 1000, 1)
+            path = loggable_path(str(scope.get("path", "")))
             logger.info(
                 "%s %s %s %sms",
                 scope.get("method"),
-                scope.get("path"),
+                path,
                 state["status"],
                 duration_ms,
                 extra={
                     "method": scope.get("method"),
-                    "path": scope.get("path"),
+                    "path": path,
                     "status": state["status"],
                     "duration_ms": duration_ms,
                     "event": "http_request",

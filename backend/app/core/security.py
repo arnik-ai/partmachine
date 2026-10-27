@@ -3,7 +3,9 @@
 - access token: JWT کوتاه‌عمر (HS256) با `jti` یکتا؛ فقط در حافظه‌ی فرانت نگه داشته می‌شود.
 - refresh token: رشته‌ی تصادفی مات (opaque)؛ فقط هش SHA-256 آن در DB ذخیره می‌شود و
   در کوکی HttpOnly به مرورگر می‌رود.
-- هش‌کردن Argon2 پرهزینه است؛ در thread جدا اجرا می‌شود تا event loop قفل نشود.
+- هش‌کردن Argon2 پرهزینه است؛ در thread جدا اجرا می‌شود تا event loop قفل نشود، و تعداد محاسبه‌های
+  هم‌زمان هر پروسه سقف دارد (`PASSWORD_HASH_CONCURRENCY`). آزمون بار ۲۰۲۶/۱۰/۲۶ نشان داد بدون این سقف،
+  موج ورود API را تا ۹ هسته‌ی CPU و ۲٫۲ گیگابایت حافظه می‌برد و بقیه‌ی درخواست‌ها می‌خوابیدند.
 """
 
 import asyncio
@@ -26,10 +28,13 @@ _ALGORITHM = "HS256"
 _hasher = PasswordHasher()
 # برای یکسان کردن زمان پاسخ وقتی ایمیل وجود ندارد (جلوگیری از کشف ایمیل‌ها با زمان‌سنجی)
 _DUMMY_HASH = _hasher.hash(secrets.token_urlsafe(16))
+# درخواست‌های بیشتر از سقف، بدون نگه داشتن اتصال پایگاه داده، پشت همین سقف صف می‌کشند
+_hash_slots = asyncio.Semaphore(settings.password_hash_concurrency)
 
 
 async def hash_password(password: str) -> str:
-    return await asyncio.to_thread(_hasher.hash, password)
+    async with _hash_slots:
+        return await asyncio.to_thread(_hasher.hash, password)
 
 
 async def verify_password(password: str, hashed: str) -> bool:
@@ -39,7 +44,8 @@ async def verify_password(password: str, hashed: str) -> bool:
         except (VerifyMismatchError, VerificationError, InvalidHashError):
             return False
 
-    return await asyncio.to_thread(_verify)
+    async with _hash_slots:
+        return await asyncio.to_thread(_verify)
 
 
 async def burn_password_check(password: str) -> None:

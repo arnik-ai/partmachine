@@ -59,6 +59,18 @@ async def set_quotes_due(rfq_id: str, days_from_today: int) -> None:
         )
 
 
+async def set_supplier_verified(account: Account, verified: bool = True) -> None:
+    """نشان «تأییدشده»‌ی قطعه‌ساز؛ در سامانه‌ی واقعی فقط ادمین پس از بررسی مدارک روشنش می‌کند."""
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "UPDATE suppliers SET verified = :v, verified_at = CASE WHEN :v THEN now() END"
+                " WHERE organization_id = :org"
+            ),
+            {"v": verified, "org": account.user["organizationId"]},
+        )
+
+
 async def register(
     client: httpx.AsyncClient,
     *,

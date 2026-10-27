@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     secret_key: str = DEV_SECRET_KEY
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 14
+    # Argon2 عمداً پرهزینه است (هر محاسبه ۶۴ مگابایت حافظه و ده‌ها میلی‌ثانیه CPU)؛ سقف محاسبه‌های هم‌زمان هر
+    # پروسه، تا موج ورود همه‌ی هسته‌ها و حافظه را از بقیه‌ی درخواست‌ها نگیرد
+    password_hash_concurrency: int = 2
 
     # رشته‌های جداشده با کاما
     cors_origins: str = "http://localhost:3100"
@@ -78,6 +81,11 @@ class Settings(BaseSettings):
     # اختیاری: پوشه‌ای داخل bucket، برای وقتی که چند محیط (مثلاً staging) یک bucket دارند
     s3_prefix: str = ""
     upload_max_bytes: int = 50 * 1024 * 1024
+    # سقف حجم بارگذاری هر سازمان در ۲۴ ساعت گذشته، تا چند حساب یک‌بارمصرف فضای سرور را پر نکنند؛ سقف کل
+    # (مثلاً برای طرح‌های اشتراک) تصمیم کسب‌وکاری است و این‌جا نیست
+    storage_org_daily_bytes: int = 2 * 1024**3
+    # فقط برای دیسک محلی: اگر فضای آزاد از این کمتر شود، آپلود پذیرفته نمی‌شود (پایگاه داده روی همان دیسک است)
+    storage_min_free_bytes: int = 5 * 1024**3
     download_link_ttl_seconds: int = 120
     business_timezone: str = "Asia/Tehran"
     log_level: str = "INFO"
@@ -147,6 +155,8 @@ class Settings(BaseSettings):
             found.append(
                 "DATABASE_URL must be a postgresql+asyncpg:// URL (SQLite is not supported)"
             )
+        if self.password_hash_concurrency < 1:
+            found.append("PASSWORD_HASH_CONCURRENCY must be at least 1")
         if self.storage_backend == "s3":
             missing = [
                 name
@@ -198,6 +208,12 @@ class Settings(BaseSettings):
         # فقط برای API آزمایشیِ آزمون مرورگر خاموش می‌شود؛ در staging و production هرگز
         if not self.rate_limit_enabled:
             found.append("RATE_LIMIT_ENABLED must not be disabled")
+        # با Redis پایین، سقف ورود و حدس رمز و کد نباید بی‌صدا از کار بیفتد
+        if self.rate_limit_should_fail_open:
+            found.append("RATE_LIMIT_FAIL_OPEN must not be enabled")
+        # نقشه‌ی کامل API (/docs و /openapi.json) در سایت واقعی عمومی نمی‌شود؛ staging برای آزمون آزاد است
+        if self.environment == "production" and self.show_docs:
+            found.append("DOCS_ENABLED must not be enabled in production")
         if not self.admin_two_factor_required:
             found.append("ADMIN_TWO_FACTOR_REQUIRED must not be disabled")
         return found

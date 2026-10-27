@@ -16,6 +16,7 @@ from tests.helpers import (
     register,
     rfq_body,
     set_quotes_due,
+    set_supplier_verified,
     signup_agreements,
 )
 
@@ -105,6 +106,7 @@ async def test_supplier_accepts_rfq_nda_once_per_organization(
 ) -> None:
     buyer = await register(client_factory())
     supplier = await register(client_factory(), role="supplier")
+    await set_supplier_verified(supplier)
     rfq = await create_rfq(buyer)
 
     before = await supplier.client.get(f"{API}/rfqs/{rfq['id']}", headers=supplier.auth)

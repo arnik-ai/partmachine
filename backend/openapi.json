@@ -1435,7 +1435,7 @@
           "auth"
         ],
         "summary": "Two Factor Enable",
-        "description": "روشن کردن با رمز و نخستین کد اپ؛ کدهای پشتیبان فقط همین یک بار برگردانده می‌شوند.",
+        "description": "روشن کردن با رمز و نخستین کد اپ؛ کدهای پشتیبان فقط همین یک بار برگردانده می‌شوند.\n\nنشست‌های دیگر بسته و توکن دسترسی فعلی باطل می‌شود؛ همین دستگاه با `POST /auth/refresh` ادامه می‌دهد.",
         "operationId": "two_factor_enable_api_v1_auth_2fa_enable_post",
         "requestBody": {
           "content": {

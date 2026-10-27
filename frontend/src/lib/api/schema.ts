@@ -249,6 +249,8 @@ export interface paths {
         /**
          * Two Factor Enable
          * @description روشن کردن با رمز و نخستین کد اپ؛ کدهای پشتیبان فقط همین یک بار برگردانده می‌شوند.
+         *
+         *     نشست‌های دیگر بسته و توکن دسترسی فعلی باطل می‌شود؛ همین دستگاه با `POST /auth/refresh` ادامه می‌دهد.
          */
         post: operations["two_factor_enable_api_v1_auth_2fa_enable_post"];
         delete?: never;

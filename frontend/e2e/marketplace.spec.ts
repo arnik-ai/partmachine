@@ -133,7 +133,9 @@ test("owner invites a colleague who joins and can later be removed", async ({ br
   await member.waitForURL(/\/login/);
 });
 
-test("drawings stay private until the supplier accepts the NDA", async ({ browser }) => {
+test("drawings stay private: an unverified supplier only sees the verification step", async ({
+  browser,
+}) => {
   const fileName = "نقشه-فلنج.pdf";
   const buyer = await register(browser, "buyer", "کارفرمای فایل");
   await buyer.goto("/rfqs/new");
@@ -154,16 +156,13 @@ test("drawings stay private until the supplier accepts the NDA", async ({ browse
   const rfqUrl = buyer.url().split("?")[0];
   await expect(buyer.getByRole("button", { name: `دانلود ${fileName}` })).toBeVisible();
 
+  // قطعه‌ساز تازه هنوز تأیید هویت نشده است: نه NDA و نه دانلود (تصمیم مالک ۲۰۲۶/۱۰/۲۶). مسیر
+  // قطعه‌ساز تأییدشده (NDA و دانلود) در تست‌های بک‌اند (test_files.test_download_rules) آزموده می‌شود.
   const supplier = await register(browser, "supplier", "قطعه‌ساز فایل", `کارگاه فایل ${stamp}`);
   await supplier.goto(rfqUrl);
   await expect(supplier.getByText("۱ فایل فنی محرمانه")).toBeVisible();
+  await expect(supplier.getByRole("link", { name: "ارسال مدارک برای تأیید" })).toBeVisible();
+  await expect(supplier.getByRole("button", { name: "می‌پذیرم و فایل‌ها را نشان بده" })).toHaveCount(0);
   await expect(supplier.getByRole("button", { name: `دانلود ${fileName}` })).toHaveCount(0);
-  await acceptTerms(supplier);
-  await supplier.getByRole("button", { name: "می‌پذیرم و فایل‌ها را نشان بده" }).click();
-
-  const downloadStarted = supplier.waitForEvent("download");
-  await supplier.getByRole("button", { name: `دانلود ${fileName}` }).click();
-  const download = await downloadStarted;
-  expect(download.suggestedFilename()).toBe(fileName);
 });
 

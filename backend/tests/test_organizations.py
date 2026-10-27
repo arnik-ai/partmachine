@@ -1,11 +1,13 @@
 """سازمان و اعضا (گام 2c فاز ۲): دعوت با لینک یک‌بارمصرف، عضو شدن، دسترسی مشترک به داده‌ی
 سازمان، مدیریت فقط توسط مدیر، ابطال و انقضای دعوت، و قطع فوری دسترسی عضو حذف‌شده."""
 
+import logging
 import uuid
 from collections.abc import Callable
 from typing import Any
 
 import httpx
+import pytest
 from sqlalchemy import text
 
 from app.db.session import engine
@@ -43,6 +45,20 @@ async def _join(client: httpx.AsyncClient, token: str, role: str) -> Account:
     assert response.status_code == 201, response.text
     data = response.json()
     return Account(client=client, user=data["user"], token=data["accessToken"])
+
+
+async def test_invite_tokens_never_reach_the_logs(
+    client_factory: Callable[[], httpx.AsyncClient], caplog: pytest.LogCaptureFixture
+) -> None:
+    """لینک دعوت تا ۷ روز عضویت می‌دهد؛ لاگ دسترسی فقط الگوی مسیر را نگه می‌دارد."""
+    owner = await register(client_factory())
+    invite = await _invite(owner)
+    with caplog.at_level(logging.INFO, logger="partmachine.access"):
+        assert (await client_factory().get(f"{API}/invites/{invite['token']}")).status_code == 200
+    logged = [r for r in caplog.records if r.name == "partmachine.access"]
+    assert logged and all(invite["token"] not in r.getMessage() for r in logged)
+    assert all(invite["token"] not in str(getattr(r, "path", "")) for r in logged)
+    assert any("/invites/{token}" in r.getMessage() for r in logged)
 
 
 async def test_member_joins_the_inviting_organization(

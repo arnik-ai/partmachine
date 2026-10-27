@@ -154,6 +154,12 @@ describe("safeNextPath", () => {
     ["?next=//evil.example", "/dashboard"],
     ["?next=/%5Cevil.example", "/dashboard"],
     ["?next=https://evil.example", "/dashboard"],
+    // مرورگر tab و خط تازه را از آدرس حذف می‌کند (بازبینی امنیتی ۲۰۲۶/۱۰/۲۶)
+    ["?next=/%09/evil.example", "/dashboard"],
+    ["?next=/%0A/evil.example", "/dashboard"],
+    ["?next=/%0D/evil.example", "/dashboard"],
+    ["?next=/%5C%5Cevil.example", "/dashboard"],
+    ["?next=/orders%3Fpage%3D2%23top", "/orders?page=2#top"],
     ["", "/dashboard"],
   ])("%s → %s", (search, expected) => {
     expect(safeNextPath(search)).toBe(expected);
