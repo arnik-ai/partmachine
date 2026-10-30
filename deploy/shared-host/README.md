@@ -34,12 +34,19 @@ sh deploy/shared-host/pm.sh smoke
 
 `/opt/nikan/Caddyfile` با bind mount تک‌فایلی داخل کانتینر است؛ فقط با `>>` یا `cat >` همان فایل را عوض کنید (ویرایشگر یا `sed -i` فایل تازه می‌سازد و Caddy فایل قبلی را می‌بیند).
 
+بلوک PartMachine از ۲۰۲۶/۱۰/۲۷ در فایل هست و **بعد از آن بلوک‌های پروژه‌های دیگر** (مثلاً گیاه سخنگو) آمده‌اند. برای تغییر، فقط همان بلوک (از خط `# PartMachine` تا اولین `}` تنها در ستون اول) جایگزین شود، هرگز «از آن‌جا تا آخر فایل». اول نسخه‌ی کامل تازه را در یک کانتینر جدا بیازمایید و diff را ببینید:
+
 ```sh
-cp -p /opt/nikan/Caddyfile /opt/nikan/Caddyfile.bak-$(date -u +%Y%m%dT%H%M%SZ)
-cat deploy/shared-host/nikan-block.caddy >> /opt/nikan/Caddyfile
-docker exec nikan-caddy-1 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile \
-  && docker exec nikan-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile \
-  || cat /opt/nikan/Caddyfile.bak-<زمان> > /opt/nikan/Caddyfile     # برگشت اگر معتبر نبود
+F=/opt/nikan/Caddyfile; C=/tmp/Caddyfile.candidate
+start=$(grep -n '^# PartMachine' "$F" | head -1 | cut -d: -f1)
+end=$(awk -v s="$start" 'NR > s && /^}$/ {print NR; exit}' "$F")
+# بلوک تازه دو تکه دارد (tarashino.com و هدایت www)؛ اگر بلوک فعلی هم دو تکه است، end را تا } دوم بگیرید
+{ head -n $((start - 1)) "$F"; sed -n '/^# PartMachine \/ Tarashino/,$p' deploy/shared-host/nikan-block.caddy; tail -n +$((end + 1)) "$F"; } > "$C"
+docker run --rm --pull never -e SITE_DOMAIN=... -e MINIAPPS_DOMAIN=... -e COIN_DOMAIN=... \
+  -v "$C:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+diff "$F" "$C"                                   # فقط بلوک PartMachine باید عوض شده باشد
+cp -p "$F" "$F.bak-$(date -u +%Y%m%dT%H%M%SZ)" && cat "$C" > "$F"
+docker exec nikan-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 ```
 
 `reload` بدون ری‌استارت است و اگر تنظیم تازه بالا نیاید، Caddy با تنظیم قبلی ادامه می‌دهد. پیش و پس از آن، سایت لاله، miniapps و coin را بیازمایید.
