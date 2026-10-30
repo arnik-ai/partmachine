@@ -16,7 +16,7 @@ export function Stage({ panels }: { panels: LandingCopy["panels"] }) {
       <div className="stage-bar">
         <span className="stage-url">
           <Mark width={15} height={14} />
-          tarashino.ir
+          tarashino.com
         </span>
         <span className="dots">
           <i />

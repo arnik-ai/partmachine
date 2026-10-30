@@ -20,4 +20,4 @@ export const INSPECTIONS_ENABLED = process.env.NEXT_PUBLIC_INSPECTIONS_ENABLED =
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 /** نشانی اصلی سایت برای canonical، sitemap و داده‌ی ساختاریافته (NEXT_PUBLIC_SITE_URL) */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tarashino.ir").replace(/\/+$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tarashino.com").replace(/\/+$/, "");

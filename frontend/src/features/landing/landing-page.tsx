@@ -444,7 +444,7 @@ export async function LandingPage({ lang }: { lang: Lang }) {
               </span>
               <span>
                 <i>WEB</i>
-                <b className="latin">tarashino.ir</b>
+                <b className="latin">tarashino.com</b>
               </span>
             </div>
           </div>

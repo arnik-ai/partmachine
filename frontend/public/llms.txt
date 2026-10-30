@@ -4,7 +4,7 @@
 
 ## Key facts
 
-- Website: https://tarashino.ir (Persian) and https://tarashino.ir/en (English)
+- Website: https://tarashino.com (Persian) and https://tarashino.com/en (English)
 - Users: buyers, manufacturers (part makers) and quality-control labs
 - Drawings are visible only to manufacturers who accept the NDA for that request, and every download is logged.
 - Manufacturers receive the "Verified" badge after the Tarashino team reviews their company documents.
@@ -19,10 +19,10 @@ CNC machining, plastic injection molding, sheet metal fabrication, casting, weld
 
 ## Pages
 
-- [Home, Persian](https://tarashino.ir/)
-- [Home, English](https://tarashino.ir/en)
-- [Sign up](https://tarashino.ir/register)
-- [Log in](https://tarashino.ir/login)
+- [Home, Persian](https://tarashino.com/)
+- [Home, English](https://tarashino.com/en)
+- [Sign up](https://tarashino.com/register)
+- [Log in](https://tarashino.com/login)
 
 ## فارسی
 

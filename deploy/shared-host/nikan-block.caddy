@@ -1,13 +1,19 @@
-# بلوکی که با تأیید مالک به انتهای /opt/nikan/Caddyfile (Caddy سرور مشترک) اضافه می‌شود؛ روش در README.
-# HTTPS این‌جاست؛ Caddy خود PartMachine فقط روی 172.17.0.1:18080 است. نام به‌صورت متن ثابت است، چون
-# Caddy سرور فقط متغیرهای خودش را دارد. header_up جلوی جعل آدرس بازدیدکننده را می‌گیرد.
+# بلوکی که با تأیید مالک در انتهای /opt/nikan/Caddyfile (Caddy سرور مشترک) است؛ روش در README.
+# Caddy خود PartMachine فقط روی 172.17.0.1:18080 است. نام‌ها متن ثابت‌اند، چون Caddy سرور فقط متغیرهای خودش را دارد.
 
-# PartMachine (/opt/partmachine, deploy/shared-host)
-partmachine.84-32-10-40.sslip.io {
+# PartMachine / Tarashino (/opt/partmachine, deploy/shared-host)
+# tarashino.com is on ArvanCloud: Arvan holds the HTTPS certificate, redirects http to https and reaches this
+# server over plain HTTP. So the name is http:// here, with no redirect back to https (that would loop through
+# Arvan). The global trusted_proxies (Arvan's ranges) make {client_ip} the visitor; header_up keeps it unforgeable.
+http://tarashino.com {
 	header -Server
-	# نشانی آزمایشی در موتورهای جست‌وجو ثبت نشود
-	header X-Robots-Tag "noindex, nofollow"
 	reverse_proxy 172.17.0.1:18080 {
 		header_up X-Forwarded-For {client_ip}
+		header_up X-Forwarded-Proto https
 	}
+}
+
+# www and the earlier sslip.io test name go to the main name (the site image is built for one name only).
+http://www.tarashino.com, partmachine.84-32-10-40.sslip.io {
+	redir https://tarashino.com{uri} 308
 }
