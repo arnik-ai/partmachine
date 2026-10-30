@@ -23,3 +23,10 @@ https://tarashino.com {
 http://www.tarashino.com, partmachine.84-32-10-40.sslip.io {
 	redir https://tarashino.com{uri} 308
 }
+
+# Arvan also reaches www over HTTPS. It only redirects (no data passes), and Let's Encrypt cannot validate it
+# through Arvan's HTTPS hop before a certificate exists, so Caddy's own internal certificate is used here.
+https://www.tarashino.com {
+	tls internal
+	redir https://tarashino.com{uri} 308
+}
