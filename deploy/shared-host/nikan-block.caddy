@@ -2,19 +2,15 @@
 # Caddy خود PartMachine فقط روی 172.17.0.1:18080 است. نام‌ها متن ثابت‌اند، چون Caddy سرور فقط متغیرهای خودش را دارد.
 
 # PartMachine / Tarashino (/opt/partmachine, deploy/shared-host)
-# tarashino.com is on ArvanCloud: Arvan holds the HTTPS certificate, redirects http to https and reaches this
-# server over plain HTTP. So the name is http:// here, with no redirect back to https (that would loop through
-# Arvan). The global trusted_proxies (Arvan's ranges) make {client_ip} the visitor; header_up keeps it unforgeable.
+# tarashino.com is on ArvanCloud. Since 2026-10-30 Arvan reaches this server over HTTPS (origin protocol HTTPS in
+# Arvan's panel; verified: Arvan's edges connect to 443 only), so passwords and drawings are encrypted on that hop
+# too. The certificate is Let's Encrypt; Caddy answers HTTP-01 renewals on 443 as well, through Arvan's redirect.
+# The global trusted_proxies (Arvan's ranges) make {client_ip} the visitor; header_up keeps it unforgeable.
+# If Arvan's origin protocol is ever set back to HTTP, the redirect below loops: switch it back to HTTPS.
 http://tarashino.com {
-	header -Server
-	reverse_proxy 172.17.0.1:18080 {
-		header_up X-Forwarded-For {client_ip}
-		header_up X-Forwarded-Proto https
-	}
+	redir https://tarashino.com{uri} 308
 }
 
-# Encrypted hop: Arvan can reach this server over HTTPS with this certificate (Let's Encrypt, HTTP-01 through
-# Arvan). Once Arvan's origin protocol is HTTPS and verified, the plain http:// block above is no longer needed.
 https://tarashino.com {
 	header -Server
 	reverse_proxy 172.17.0.1:18080 {
