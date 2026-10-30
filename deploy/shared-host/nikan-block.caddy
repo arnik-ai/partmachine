@@ -13,6 +13,16 @@ http://tarashino.com {
 	}
 }
 
+# Encrypted hop: Arvan can reach this server over HTTPS with this certificate (Let's Encrypt, HTTP-01 through
+# Arvan). Once Arvan's origin protocol is HTTPS and verified, the plain http:// block above is no longer needed.
+https://tarashino.com {
+	header -Server
+	reverse_proxy 172.17.0.1:18080 {
+		header_up X-Forwarded-For {client_ip}
+		header_up X-Forwarded-Proto https
+	}
+}
+
 # www and the earlier sslip.io test name go to the main name (the site image is built for one name only).
 http://www.tarashino.com, partmachine.84-32-10-40.sslip.io {
 	redir https://tarashino.com{uri} 308

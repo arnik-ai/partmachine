@@ -147,7 +147,7 @@ export async function LandingPage({ lang }: { lang: Lang }) {
 
         <div className="scene-band">
           <div className="wrap">
-            <div className="scene">
+            <div className="mscene">
               <MachiningScene kind="lathe" label={c.scenes.latheLabel} caption={c.scenes.latheCaption} />
             </div>
           </div>
@@ -249,7 +249,7 @@ export async function LandingPage({ lang }: { lang: Lang }) {
 
         <div className="scene-band">
           <div className="wrap">
-            <div className="scene">
+            <div className="mscene">
               <MachiningScene kind="laser" label={c.scenes.laserLabel} caption={c.scenes.laserCaption} />
             </div>
           </div>
