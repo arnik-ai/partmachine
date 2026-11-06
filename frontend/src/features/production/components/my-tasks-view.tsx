@@ -12,9 +12,8 @@ import {
   showToast,
   tickOrderStep,
   useOrderEntries,
+  useSignedInWorker,
   useToday,
-  useViewAs,
-  useWorkerName,
 } from "../api";
 import { dueText, durationText, firstName, shortDate } from "../format";
 import { stepTitle } from "../gadgets";
@@ -26,16 +25,15 @@ import { IssueSheet } from "./sheets";
 const DOUBLE_TAP_GUARD_MS = 600;
 
 function useMyTasks() {
-  const viewAs = useViewAs();
+  const worker = useSignedInWorker();
   const entries = useOrderEntries();
-  return useMemo(() => tasksOf(viewAs, entries), [viewAs, entries]);
+  return useMemo(() => tasksOf(worker?.id ?? "", entries), [worker, entries]);
 }
 
 /** پنل کارگر: فقط کارهای خودش، بدون مبلغ و مشتری؛ با یک ضربه «انجام شد» */
 export function MyTasksView() {
-  const viewAs = useViewAs();
+  const worker = useSignedInWorker();
   const today = useToday();
-  const workerName = useWorkerName();
   const { now, later } = useMyTasks();
   const [issueFor, setIssueFor] = useState<{ orderId: string; stepId: string } | null>(null);
   const lastTick = useRef(-Infinity);
@@ -56,7 +54,7 @@ export function MyTasksView() {
   return (
     <>
       <div>
-        <h1 className="text-xl font-bold">سلام {firstName(workerName(viewAs))}</h1>
+        <h1 className="text-xl font-bold">سلام {firstName(worker?.name ?? "")}</h1>
         <p className={SUB}>{summary}</p>
       </div>
       {now.map(({ order, row }) => (

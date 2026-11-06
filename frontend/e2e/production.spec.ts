@@ -11,8 +11,9 @@ test("ماژول پیگیری تولید در سایت واقعی خاموش ا�
     "/production/people",
     "/production/new",
     "/production/order?id=flange",
-    "/production/tasks",
-    "/production/done",
+    "/worker",
+    "/worker/login",
+    "/worker/done",
   ]) {
     const response = await page.goto(path);
     expect(response?.status(), path).toBe(404);

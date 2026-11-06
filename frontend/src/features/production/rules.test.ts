@@ -237,6 +237,12 @@ describe("نمایش‌ها", () => {
     expect(tasksOf("nobody", entries)).toEqual({ now: [], later: [], done: [] });
   });
 
+  it("هر کارگر نمونه شماره‌ی معتبر و یکتا دارد تا بتواند وارد پنل کارگر شود", () => {
+    const mobiles = buildDemoData(THURSDAY).workers.map((worker) => worker.mobile ?? "");
+    expect(mobiles.every(isValidMobile)).toBe(true);
+    expect(new Set(mobiles).size).toBe(mobiles.length);
+  });
+
   it("داده‌ی نمونه در هر روز هفته همان وضعیت‌ها را نشان می‌دهد", () => {
     for (let offset = 0; offset < 14; offset++) {
       const today = addDays(THURSDAY, offset);
