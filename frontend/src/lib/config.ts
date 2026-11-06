@@ -16,6 +16,12 @@ export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 /** آزمایشگاه کنترل کیفیت (NEXT_PUBLIC_INSPECTIONS_ENABLED): فعلاً خاموش و برای فاز بعد؛ هم‌زمان با INSPECTIONS_ENABLED بک‌اند */
 export const INSPECTIONS_ENABLED = process.env.NEXT_PUBLIC_INSPECTIONS_ENABLED === "true";
 
+/**
+ * پیگیری تولید: فعلاً فقط فرانت با داده‌ی نمونه، پس فقط در نسخه‌ی نمایشی روشن است
+ * تا هیچ داده‌ی ساختگی به سایت واقعی نرسد. بعد از ساخته شدن بک‌اند پرچم مستقل می‌گیرد.
+ */
+export const PRODUCTION_ENABLED = DEMO_MODE;
+
 /** مسیر پایه (فقط نسخه‌ی نمایشی: /partmachine)؛ برای آدرس service worker */
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
