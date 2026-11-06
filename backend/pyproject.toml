@@ -5,7 +5,7 @@ description = "PartMachine — industrial B2B marketplace API"
 requires-python = ">=3.12"
 # نسخه‌ها دقیق pin شده‌اند تا build تکرارپذیر باشد؛ ارتقا آگاهانه و با اجرای تست‌ها انجام شود.
 dependencies = [
-    "fastapi==0.137.2",
+    "fastapi==0.162.0",
     "starlette==1.3.1",
     "uvicorn[standard]==0.49.0",
     "sqlalchemy[asyncio]==2.0.51",
