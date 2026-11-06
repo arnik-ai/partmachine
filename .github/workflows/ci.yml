@@ -384,7 +384,7 @@ jobs:
     env:
       TAG: ${{ needs.shared-host.outputs.tag }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: shared-host-images
       - run: gunzip -c images.tar.gz | docker load
