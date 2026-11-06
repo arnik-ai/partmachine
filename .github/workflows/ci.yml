@@ -106,7 +106,7 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -182,7 +182,7 @@ jobs:
           # خاموش است (تست‌های بک‌اند خود محدودیت را می‌آزمایند و تولید اجازه‌ی خاموش کردنش را نمی‌دهد)
           # ادمین آزمون هم بدون ورود دومرحله‌ای (آزمون جدای two-factor همان مسیر را با حساب عادی می‌آزماید)
           RATE_LIMIT_ENABLED=false ADMIN_TWO_FACTOR_REQUIRED=false nohup uvicorn app.main:app --port 8100 > "$RUNNER_TEMP/api.log" 2>&1 &
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
