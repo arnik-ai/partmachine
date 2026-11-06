@@ -221,7 +221,7 @@ jobs:
           E2E_BASE_URL: http://localhost:3100
       - name: Keep the report and server logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-report
           path: |
@@ -363,7 +363,7 @@ jobs:
           docker save "ghcr.io/arnik-ai/partmachine-api:$TAG" "ghcr.io/arnik-ai/partmachine-backup:$TAG" \
             "ghcr.io/arnik-ai/partmachine-web:$TAG" | gzip -1 > images.tar.gz
       - if: github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: shared-host-images
           path: images.tar.gz
