@@ -68,9 +68,10 @@ export function gadgetIcon(key: string): LucideIcon {
 
 let sequence = 0;
 
+/** داده‌ی نمونه بین بارگذاری‌ها می‌ماند، پس شمارنده به‌تنهایی شناسه‌ی یکتا نمی‌سازد */
 export function nextId(prefix: string): string {
   sequence += 1;
-  return `${prefix}-${sequence}`;
+  return `${prefix}-${Date.now().toString(36)}-${sequence}`;
 }
 
 export function createStep(key: string, assigneeId: string | null = null): Step {

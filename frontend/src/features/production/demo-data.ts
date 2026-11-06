@@ -43,11 +43,11 @@ export function buildDemoData(today: string): DemoData {
     company: "کارگاه نمونه‌سازان",
     calendar: { offWeekdays: [5], hoursPerDay: 8 },
     workers: [
-      { id: "ali", name: "علی رضایی", mobile: null },
-      { id: "hasan", name: "حسن مرادی", mobile: null },
-      { id: "reza", name: "رضا نوری", mobile: null },
-      { id: "sara", name: "سارا کریمی", mobile: null },
-      { id: "narges", name: "نرگس امینی", mobile: null },
+      { id: "ali", name: "علی رضایی", mobile: "09000000001" },
+      { id: "hasan", name: "حسن مرادی", mobile: "09000000002" },
+      { id: "reza", name: "رضا نوری", mobile: "09000000003" },
+      { id: "sara", name: "سارا کریمی", mobile: "09000000004" },
+      { id: "narges", name: "نرگس امینی", mobile: "09000000005" },
     ],
     jobTypes: [
       { id: "machining", name: "قطعه‌ی تراشکاری", steps: open("cutting", "turning", "milling", "qc", "packing") },

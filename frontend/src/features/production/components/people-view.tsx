@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Plus } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { SITE_URL } from "@/lib/config";
 import { cn, faNumber } from "@/lib/utils";
 import { addWorker, useOrderEntries, useWorkers } from "../api";
 import { tasksOf } from "../rules";
@@ -29,6 +33,17 @@ export function PeopleView() {
       <p className={SUB}>
         هر نفر با شماره موبایل و کد پیامکی وارد می‌شود و فقط کارهای خودش را می‌بیند؛ مبلغ سفارش‌ها را نمی‌بیند.
       </p>
+      <Card className="flex flex-wrap items-center justify-between gap-3 p-3.5">
+        <div className="grid min-w-0">
+          <span className="text-sm font-semibold">پنل کارگرها جداست</span>
+          <span className={SUB}>
+            این آدرس را برایشان بفرستید: <span dir="ltr">{new URL(SITE_URL).host}/worker</span>
+          </span>
+        </div>
+        <Link href="/worker" target="_blank" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          باز کردن پنل کارگر
+        </Link>
+      </Card>
       <ul className="grid grid-cols-2 gap-2.5 min-[560px]:grid-cols-3">
         {rows.map(({ worker, tasks }) => {
           const late = tasks.now.filter((task) => task.row.lateBy > 0).length;

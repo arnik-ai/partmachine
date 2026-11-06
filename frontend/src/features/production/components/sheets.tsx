@@ -417,7 +417,8 @@ export function WorkerSheet({
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const inputRef = useFocusOnOpen<HTMLInputElement>();
-  const ready = Boolean(name.trim()) && isValidMobile(mobile);
+  const taken = useWorkers().some((worker) => worker.mobile === mobile);
+  const ready = Boolean(name.trim()) && isValidMobile(mobile) && !taken;
   return (
     <Sheet title="افزودن کارگر" onClose={onClose}>
       <form
@@ -450,7 +451,13 @@ export function WorkerSheet({
               setMobile(normalizeDigits(event.target.value).replace(/\D/g, "").slice(0, 11))
             }
           />
-          <p className={SUB}>با همین شماره و کد پیامکی وارد می‌شود.</p>
+          {taken ? (
+            <p role="alert" className="text-[13px] text-destructive">
+              این شماره قبلاً ثبت شده است.
+            </p>
+          ) : (
+            <p className={SUB}>با همین شماره و کد پیامکی وارد می‌شود.</p>
+          )}
         </div>
         <Button type="submit" className="w-full" disabled={!ready}>
           ساختن حساب

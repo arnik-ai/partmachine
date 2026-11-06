@@ -1,15 +1,15 @@
 import { useCallback, useMemo } from "react";
 import { useProductionStore } from "./demo-store";
 import { planOrder } from "./rules";
-import type { OrderEntry } from "./types";
+import type { OrderEntry, Worker } from "./types";
 
 /**
- * تنها درِ ورود صفحه‌ها به داده. فعلاً همه‌چیز از دیتای نمونه در حافظه‌ی مرورگر می‌آید؛
+ * تنها درِ ورود صفحه‌ها به داده. فعلاً همه‌چیز داده‌ی نمونه است و فقط در همین مرورگر می‌ماند؛
  * وقتی بک‌اند ساخته شد فقط همین فایل به API وصل می‌شود و صفحه‌ها دست نمی‌خورند.
  */
 
 export {
-  CEO,
+  DEMO_OTP,
   addWorker,
   clearIssue,
   createJobType,
@@ -18,12 +18,14 @@ export {
   newStep,
   renameJobType,
   reportIssue,
+  resetDemo,
   reworkOrder,
   setCalendar,
   setJobTypeSteps,
   setOrderSteps,
-  setViewAs,
   showToast,
+  signInWorker,
+  signOutWorker,
   startOrder,
   tickOrderStep,
 } from "./demo-store";
@@ -33,8 +35,17 @@ export const useCalendar = () => useProductionStore((state) => state.calendar);
 export const useCompany = () => useProductionStore((state) => state.company);
 export const useWorkers = () => useProductionStore((state) => state.workers);
 export const useJobTypes = () => useProductionStore((state) => state.jobTypes);
-export const useViewAs = () => useProductionStore((state) => state.viewAs);
 export const useToast = () => useProductionStore((state) => state.toast);
+
+/** کارگری که در پنل کارگر وارد شده است */
+export function useSignedInWorker(): Worker | null {
+  const workerId = useProductionStore((state) => state.workerId);
+  const workers = useWorkers();
+  return useMemo(
+    () => workers.find((worker) => worker.id === workerId) ?? null,
+    [workers, workerId],
+  );
+}
 
 /** سفارش‌ها همراه با برنامه و وضعیت محاسبه‌شده‌ی هر کدام */
 export function useOrderEntries(): OrderEntry[] {

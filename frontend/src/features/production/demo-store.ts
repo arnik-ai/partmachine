@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { buildDemoData, sampleStep, type DemoData } from "./demo-data";
 import { cloneSteps, nextId, stepTitle } from "./gadgets";
 import { firstName, tehranToday } from "./format";
@@ -6,11 +7,14 @@ import { reworkTo, tickStep, undoTick } from "./rules";
 import type { JobType, ProductionOrder, Step, WorkCalendar } from "./types";
 
 /**
- * وضعیت نسخه‌ی نمایشی، فقط در حافظه‌ی همین مرورگر؛ هیچ‌چیز ذخیره یا ارسال نمی‌شود.
- * پیام‌های «خبر داده شد» هم فقط نمایشی‌اند تا بک‌اند و سرویس پیامک وصل شود.
+ * وضعیت نسخه‌ی نمایشی. فقط در همین مرورگر می‌ماند و چیزی به جایی فرستاده نمی‌شود، تا بتوان
+ * پنل مدیرعامل و پنل کارگر را در دو پنجره کنار هم دید. پیام‌های «خبر داده شد» هم نمایشی‌اند.
  */
 
-export const CEO = "ceo";
+const STORAGE_KEY = "tarashino-production-demo";
+
+/** کد ورود نسخه‌ی نمونه؛ کد واقعی را سرور می‌سازد و پیامک می‌کند */
+export const DEMO_OTP = "123456";
 
 export type Toast = {
   id: number;
@@ -18,17 +22,49 @@ export type Toast = {
   undo?: () => void;
 };
 
-type ProductionState = DemoData & {
+type SavedState = DemoData & {
   today: string;
-  /** «نمایش به‌عنوان»: مدیرعامل یا شناسه‌ی یک کارگر */
-  viewAs: string;
+  /** کارگری که در پنل کارگر وارد شده است */
+  workerId: string | null;
+};
+
+type ProductionState = SavedState & {
   toast: Toast | null;
 };
 
-export const useProductionStore = create<ProductionState>(() => {
+function freshState(): SavedState {
   const today = tehranToday();
-  return { ...buildDemoData(today), today, viewAs: CEO, toast: null };
-});
+  return { ...buildDemoData(today), today, workerId: null };
+}
+
+export const useProductionStore = create<ProductionState>()(
+  persist((): ProductionState => ({ ...freshState(), toast: null }), {
+    name: STORAGE_KEY,
+    version: 1,
+    storage: createJSONStorage(() => localStorage),
+    partialize: (state): SavedState => ({
+      company: state.company,
+      calendar: state.calendar,
+      workers: state.workers,
+      jobTypes: state.jobTypes,
+      orders: state.orders,
+      today: state.today,
+      workerId: state.workerId,
+    }),
+    // نمونه هر روز از نو ساخته می‌شود تا تاریخ‌هایش کهنه نشود
+    merge: (saved, current) => {
+      const state = saved as SavedState | undefined;
+      return state?.today === current.today ? { ...current, ...state } : current;
+    },
+  }),
+);
+
+// تیک در یک پنجره همان لحظه در پنجره‌ی دیگر همین مرورگر دیده می‌شود
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key === STORAGE_KEY) void useProductionStore.persist.rehydrate();
+  });
+}
 
 const { setState: set, getState: get } = useProductionStore;
 
@@ -62,8 +98,17 @@ export function hideToast(): void {
   set({ toast: null });
 }
 
-export function setViewAs(viewAs: string): void {
-  set({ viewAs });
+export function signInWorker(workerId: string): void {
+  set({ workerId });
+}
+
+export function signOutWorker(): void {
+  set({ workerId: null });
+}
+
+/** نمونه را به حالت اول برمی‌گرداند */
+export function resetDemo(): void {
+  set({ ...freshState(), toast: null });
 }
 
 export function setCalendar(calendar: WorkCalendar): void {
