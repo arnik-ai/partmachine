@@ -50,6 +50,8 @@ export type LandingCopy = {
   config: { eyebrow: string; title: string; lead: string } & ConfiguratorCopy;
   /** نقشه‌ی شبکه‌ی ایران؛ {a}، {b} و {c} نام شهرها */
   network: { eyebrow: string; title: string; lead: string; caption: string; note: string };
+  /** صحنه‌های متحرک تولید (تراش CNC و برش لیزر)؛ label برای صفحه‌خوان، caption روی تصویر */
+  scenes: { latheLabel: string; latheCaption: string; laserLabel: string; laserCaption: string };
   services: { eyebrow: string; title: string; labels: Record<CapabilityValue, string> };
   /** نمای انفجاری: هر جزء اتصال فلنجی با خدمت تولیدش (at = آستانه‌ی نمایش برچسب) */
   explode: { title: string; lead: string; hint: string; pickHint: string; cta: string; close: string; parts: ExplodePart[] };
@@ -178,6 +180,12 @@ export const LANDING: Record<Lang, LandingCopy> = {
       lead: "درخواست از یک شهر ثبت می‌شود و ساخت در شهر دیگری انجام می‌شود؛ همه در یک پرونده.",
       caption: "درخواست از {a} ← ساخت در {b}",
       note: "مسیرها نمونه‌اند.",
+    },
+    scenes: {
+      latheLabel: "تراش CNC: ابزار پله‌های یک محور فولادی را می‌تراشد",
+      latheCaption: "✓ قطعه آماده است",
+      laserLabel: "برش لیزر: نشان تراشینو از ورق فولادی بریده می‌شود",
+      laserCaption: "برش لیزر · دقت ±۰٫۱ میلی‌متر",
     },
     roles: {
       eyebrow: "راهکارها",
@@ -389,6 +397,12 @@ export const LANDING: Record<Lang, LandingCopy> = {
       lead: "A request is posted in one city and made in another, all in one order file.",
       caption: "Requested in {a} → made in {b}",
       note: "Routes are examples.",
+    },
+    scenes: {
+      latheLabel: "CNC turning: the tool cuts the steps of a steel shaft",
+      latheCaption: "✓ Part ready",
+      laserLabel: "Laser cutting: the Tarashino mark is cut from a steel sheet",
+      laserCaption: "Laser cutting · ±0.1 mm accuracy",
     },
     roles: {
       eyebrow: "Solutions",

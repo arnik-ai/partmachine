@@ -2,6 +2,8 @@
 
 import asyncio
 import hashlib
+import threading
+import time
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -11,6 +13,7 @@ import jwt
 import pytest
 from sqlalchemy import text
 
+from app.core import security
 from app.core.config import settings
 from app.db.session import engine
 from app.modules.identity import service as identity_service
@@ -221,6 +224,33 @@ async def test_logout_revokes_session(client_factory: Callable[[], httpx.AsyncCl
     assert (await other.post(f"{API}/auth/refresh", headers=CSRF)).status_code == 401
 
 
+@pytest.mark.parametrize("closed_by", ["logout", "password_change"])
+async def test_recently_rotated_token_dies_with_its_session(
+    client_factory: Callable[[], httpx.AsyncClient], closed_by: str
+) -> None:
+    """مهلت چند ثانیه‌ای برگه‌های هم‌زمان، پس از خروج یا تغییر رمز راه بازگشت به نشست نیست."""
+    browser = client_factory()
+    account = await register(browser)
+    previous = browser.cookies["pm_refresh"]
+    rotated = await browser.post(f"{API}/auth/refresh", headers=CSRF)
+    assert rotated.status_code == 200
+    if closed_by == "logout":
+        assert (await browser.post(f"{API}/auth/logout", headers=CSRF)).status_code == 204
+    else:
+        changed = await browser.post(
+            f"{API}/auth/change-password",
+            json={"currentPassword": PASSWORD, "newPassword": "Another-long-passw0rd"},
+            headers={"Authorization": f"Bearer {rotated.json()['accessToken']}"},
+        )
+        assert changed.status_code == 200, changed.text
+        assert account.user["id"] == changed.json()["user"]["id"]
+
+    # همان چند ثانیه‌ی پس از چرخش؛ توکن قبلی دیگر نشست تازه نمی‌سازد
+    other = client_factory()
+    other.cookies.set("pm_refresh", previous, path="/api/v1/auth")
+    assert (await other.post(f"{API}/auth/refresh", headers=CSRF)).status_code == 401
+
+
 async def test_wrong_password_is_rate_limited_per_email(client: httpx.AsyncClient) -> None:
     account = await register(client)
     wrong = {"email": account.user["email"], "password": "wrong-password"}
@@ -281,3 +311,48 @@ async def test_tampered_or_expired_tokens_are_rejected(
     response = await client.get(f"{API}/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 401
     assert response.json()["code"] == "token_invalid"
+
+
+async def test_password_hashing_is_bounded_per_process(monkeypatch: pytest.MonkeyPatch) -> None:
+    """موج ورود: بیش از سقف، محاسبه‌ی Argon2 هم‌زمان اجرا نمی‌شود (بقیه صف می‌کشند)."""
+    active = peak = 0
+    guard = threading.Lock()
+
+    class SlowHasher:
+        def hash(self, password: str) -> str:
+            nonlocal active, peak
+            with guard:
+                active += 1
+                peak = max(peak, active)
+            time.sleep(0.05)
+            with guard:
+                active -= 1
+            return "hashed"
+
+    monkeypatch.setattr(security, "_hasher", SlowHasher())
+    await asyncio.gather(*(security.hash_password("x") for _ in range(8)))
+    assert peak == settings.password_hash_concurrency
+
+
+async def test_login_holds_no_database_connection_while_checking_the_password(
+    client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """اتصال‌های پایگاه داده در موج ورود صرف انتظار برای Argon2 نمی‌شوند (آزمون بار ۲۰۲۶/۱۰/۲۶)."""
+    account = await register(client)
+    checked_out: list[int] = []
+    real = security._hasher
+
+    class WatchingHasher:
+        def verify(self, hashed: str, password: str) -> bool:
+            checked_out.append(engine.sync_engine.pool.checkedout())  # type: ignore[attr-defined]
+            return bool(real.verify(hashed, password))
+
+        def check_needs_rehash(self, hashed: str) -> bool:
+            return bool(real.check_needs_rehash(hashed))
+
+    monkeypatch.setattr(security, "_hasher", WatchingHasher())
+    response = await client.post(
+        f"{API}/auth/login", json={"email": account.user["email"], "password": PASSWORD}
+    )
+    assert response.status_code == 200, response.text
+    assert checked_out == [0]

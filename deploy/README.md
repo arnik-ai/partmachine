@@ -2,6 +2,8 @@
 
 > مخاطب: کسی که تراشینو را روی سرور نصب یا به‌روز می‌کند. راهنمای کامل (staging، پایش و پشتیبان) در گام‌های بعدی فاز ۴ به `docs/DEPLOYMENT.md` اضافه می‌شود.
 
+> **سرور مشترک با سایت‌های دیگر:** این راهنما برای سرور اختصاصی است و Caddy آن پورت ۸۰ و ۴۴۳ را می‌گیرد. روی سروری که سایت دیگری دارد (مثل سرور فعلی مالک) فقط [`shared-host/`](shared-host/README.md) و اسکریپت `pm.sh` آن را به کار ببرید، هرگز این compose را به‌تنهایی.
+
 ## چه چیزی بالا می‌آید
 
 با یک دستور این سرویس‌ها به این ترتیب بالا می‌آیند:
@@ -22,7 +24,7 @@
 ## پیش‌نیازها
 
 - سروری با Docker و Docker Compose.
-- یک دامنه یا زیردامنه (مثلاً `tarashino.ir`) که رکورد DNS آن به IP سرور اشاره کند.
+- یک دامنه یا زیردامنه (مثلاً `tarashino.com`) که رکورد DNS آن به IP سرور اشاره کند.
 - پورت‌های ۸۰ و ۴۴۳ از اینترنت باز باشند تا Caddy گواهی Let's Encrypt بگیرد.
 
 ## نصب بار اول
@@ -138,7 +140,7 @@ docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod exe
 
   ```bash
   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod exec -T api \
-    python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/metrics').read().decode())"
+    python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/metrics').read().decode())"
   ```
 
 ## گزارش‌ها و وضعیت

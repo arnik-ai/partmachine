@@ -40,7 +40,11 @@ export function startTwoFactorSetup(): Promise<TwoFactorSetup> {
   return apiFetch<TwoFactorSetup>("/auth/2fa/setup", { method: "POST" });
 }
 
-/** روشن کردن با رمز و نخستین کد اپ؛ کدهای پشتیبان فقط همین یک بار برمی‌گردند */
+/**
+ * روشن کردن با رمز و نخستین کد اپ؛ کدهای پشتیبان فقط همین یک بار برمی‌گردند.
+ * سرور همه‌ی نشست‌ها جز نشست همین مرورگر را می‌بندد و نشست این مرورگر را از کوکی refresh می‌شناسد؛
+ * بدون فرستادن کوکی (API روی origin دیگر) این مرورگر هم بیرون می‌افتد و کدها را نمی‌بیند.
+ */
 export async function enableTwoFactor(
   setupToken: string,
   code: string,
@@ -49,6 +53,7 @@ export async function enableTwoFactor(
   const result = await apiFetch<{ recoveryCodes: string[] }>("/auth/2fa/enable", {
     method: "POST",
     body: { setupToken, code, password },
+    credentials: "include",
   });
   await reloadUser();
   return result.recoveryCodes;

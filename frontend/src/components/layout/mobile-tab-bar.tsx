@@ -14,6 +14,7 @@ import {
   Package,
   ShieldCheck,
   Users,
+  Workflow,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/profile": Building2,
   "/organization": Users,
   "/admin": ShieldCheck,
+  "/production": Workflow,
 };
 
 /** نام کوتاه هر بخش برای منوی پایین */
@@ -42,10 +44,11 @@ const SHORT: Record<string, string> = {
   "/profile": "پروفایل",
   "/organization": "سازمان",
   "/admin": "مدیریت",
+  "/production": "تولید",
 };
 
 /** ترتیب اهمیت: سه بخش اول کنار «خانه» می‌آیند، بقیه در «بیشتر» */
-const PRIORITY = ["/rfqs/open", "/rfqs", "/admin", "/quotations", "/orders", "/profile", "/suppliers", "/organization"];
+const PRIORITY = ["/production", "/rfqs/open", "/rfqs", "/admin", "/quotations", "/orders", "/profile", "/suppliers", "/organization"];
 
 function rank(href: string): number {
   const i = PRIORITY.indexOf(href);

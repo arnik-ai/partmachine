@@ -1,18 +1,25 @@
 """پایش (گام 4e فاز ۴): آمار Prometheus، وضعیت عمومی برای سرویس‌های بیرونی، و هشدار «سایت پایین است»
 که فقط هنگام تغییر وضعیت به ادمین‌ها اعلان می‌دهد."""
 
+import re
 import time
 from collections.abc import Callable
+from urllib.parse import urlsplit
 
 import httpx
 import pytest
 from sqlalchemy import text
+from starlette.applications import Starlette
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.responses import PlainTextResponse
+from starlette.routing import Route
 
 from app import health_watch
 from app.core import metrics
 from app.core.config import settings
 from app.core.redis import get_redis
 from app.db.session import engine
+from tests.conftest import BACKEND_DIR
 from tests.helpers import API, make_admin
 
 
@@ -116,6 +123,45 @@ async def test_stale_backups_alert_admins_once_per_outage(
     assert await health_notifications() == ["هشدار: بیش از یک روز است پشتیبان‌گیری انجام نشده"] * 2
     body = (await client_factory().get("/metrics")).text
     assert "partmachine_backup_last_success_timestamp_seconds" in body
+
+
+async def test_backups_kept_on_the_same_server_are_reported_weekly(
+    client_factory: Callable[[], httpx.AsyncClient],
+) -> None:
+    await make_admin(client_factory())
+    redis = get_redis()
+    assert await health_watch.check_backup_location() is False  # هنوز پشتیبانی گرفته نشده است
+    await redis.set(health_watch.BACKUP_OFFSITE_KEY, "1")
+    assert await health_watch.check_backup_location() is False
+    await redis.set(health_watch.BACKUP_OFFSITE_KEY, "0")
+    assert await health_watch.check_backup_location() is True
+    assert await health_watch.check_backup_location() is False  # تا یک هفته تکراری نمی‌آید
+    assert await health_notifications() == ["پشتیبان‌ها فقط روی همین سرور نگه داشته می‌شوند"]
+    body = (await client_factory().get("/metrics")).text
+    assert "partmachine_backup_offsite 0" in body
+
+
+async def test_the_worker_health_probe_passes_the_production_host_check() -> None:
+    """worker سلامت API را با آدرس داخلی (API_INTERNAL_URL) می‌آزماید؛ همان میزبان باید در ALLOWED_HOSTS
+    باشد، وگرنه پاسخ 400 هشدار دروغ «سایت پایین است» می‌دهد (پیدا شده در بازبینی ۲۰۲۶/۱۰/۲۶)."""
+    compose = (BACKEND_DIR.parent / "deploy" / "docker-compose.prod.yml").read_text(
+        encoding="utf-8"
+    )
+    hosts = re.search(r"^\s*ALLOWED_HOSTS:\s*(.+)$", compose, re.M)
+    internal = re.search(r"^\s*API_INTERNAL_URL:\s*(.+)$", compose, re.M)
+    assert hosts and internal
+    allowed = [
+        h.strip() for h in hosts.group(1).replace("${APP_DOMAIN}", "app.example.ir").split(",")
+    ]
+    probe_host = urlsplit(internal.group(1).strip()).hostname
+
+    app = Starlette(routes=[Route("/ready", lambda request: PlainTextResponse("ok"))])
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app)) as client:
+        probe = await client.get(f"http://{probe_host}:8000/ready")
+        outsider = await client.get("http://evil.example/ready")
+    assert probe.status_code == 200
+    assert outsider.status_code == 400
 
 
 async def test_a_fresh_install_waits_a_day_for_the_first_backup() -> None:

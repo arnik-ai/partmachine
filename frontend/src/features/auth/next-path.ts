@@ -5,7 +5,15 @@
 export function safeNextPath(search: string, fallback = "/dashboard"): string {
   const next = new URLSearchParams(search).get("next");
   if (!next || !next.startsWith("/")) return fallback;
-  // «//host» و «/\host» در مرورگر به دامنه‌ی دیگری اشاره می‌کنند
-  if (next.startsWith("//") || next.startsWith("/\\")) return fallback;
-  return next;
+  // مرورگر هنگام ساختن آدرس، tab و خط تازه را حذف و «\» را «/» می‌کند؛ پس «/\t/evil.example» همان
+  // «//evil.example» است. آدرس با همان تجزیه‌گر مرورگر ساخته و فقط وقتی پذیرفته می‌شود که در همین سایت بماند.
+  const base = "https://same-site.invalid";
+  let url: URL;
+  try {
+    url = new URL(next, base);
+  } catch {
+    return fallback;
+  }
+  if (url.origin !== base) return fallback;
+  return `${url.pathname}${url.search}${url.hash}`;
 }

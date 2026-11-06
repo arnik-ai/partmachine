@@ -28,20 +28,28 @@ ensure_repo() {
 
 record_success() {
   touch "$STATUS_FILE"
-  # برای /metrics و هشدار «پشتیبان‌گیری انجام نشده» در worker
+  # برای /metrics و هشدارهای «پشتیبان‌گیری انجام نشده» و «پشتیبان فقط روی همین سرور است» در worker
   if [ -n "${REDIS_HOST:-}" ]; then
+    case "$RESTIC_REPOSITORY" in
+      /* | local:*) offsite=0 ;;
+      *) offsite=1 ;;
+    esac
     REDISCLI_AUTH="${REDIS_PASSWORD:-}" redis-cli -h "$REDIS_HOST" \
-      SET pm:backup:last_success "$(date +%s)" >/dev/null || log "WARNING: could not record the backup in Redis"
+      MSET pm:backup:last_success "$(date +%s)" pm:backup:offsite "$offsite" >/dev/null \
+      || log "WARNING: could not record the backup in Redis"
   fi
 }
 
 run_backup() {
   started=$(date +%s)
+  # پایگاه داده و فایل‌های یک نوبت برچسب مشترک دارند تا بازگردانی هر دو از همان لحظه باشد
+  run_tag="run-$(date -u +%Y%m%dT%H%M%SZ)"
   ensure_repo
-  restic backup --host "$HOST_TAG" --tag db --stdin-filename partmachine.dump --stdin-from-command -- \
+  restic backup --host "$HOST_TAG" --tag db --tag "$run_tag" \
+    --stdin-filename partmachine.dump --stdin-from-command -- \
     pg_dump --format=custom --no-owner --no-privileges
   if [ -d "$STORAGE_DIR" ] && [ -n "$(ls -A "$STORAGE_DIR" 2>/dev/null)" ]; then
-    restic backup --host "$HOST_TAG" --tag files "$STORAGE_DIR"
+    restic backup --host "$HOST_TAG" --tag files --tag "$run_tag" "$STORAGE_DIR"
   fi
   restic forget --host "$HOST_TAG" --keep-daily "$KEEP_DAILY" --prune
   record_success
@@ -61,8 +69,23 @@ restore() {
     -c "CREATE DATABASE \"$PGDATABASE\""
   restic dump --host "$HOST_TAG" --tag db "$snapshot" /partmachine.dump \
     | pg_restore --no-owner --no-privileges --exit-on-error -d "$PGDATABASE"
-  if restic snapshots --host "$HOST_TAG" --tag files --json | grep -q '"id"'; then
-    log "restoring files"
+  # فایل‌ها از همان نوبتی که پایگاه داده از آن آمد (برچسب run-…)، نه از آخرین پشتیبان
+  if [ "$snapshot" = latest ]; then
+    db_info=$(restic snapshots --host "$HOST_TAG" --tag db --latest 1 --json)
+  else
+    db_info=$(restic snapshots --host "$HOST_TAG" --json "$snapshot")
+  fi
+  run_tag=$(printf '%s' "$db_info" | grep -o '"run-[0-9TZ]*"' | head -n 1 | tr -d '"')
+  if [ -n "$run_tag" ]; then
+    if restic snapshots --host "$HOST_TAG" --tag "files,$run_tag" --json | grep -q '"id"'; then
+      log "restoring files from the same backup run ($run_tag)"
+      restic restore --host "$HOST_TAG" --tag "files,$run_tag" latest --target /
+    else
+      log "that backup run had no files to restore"
+    fi
+  elif restic snapshots --host "$HOST_TAG" --tag files --json | grep -q '"id"'; then
+    # پشتیبان‌های پیش از برچسب run-… فقط آخرین نسخه‌ی فایل‌ها را دارند
+    log "WARNING: this database snapshot has no run tag; restoring the latest files instead"
     restic restore --host "$HOST_TAG" --tag files latest --target /
   fi
   log "restore finished in $(( $(date +%s) - started ))s"

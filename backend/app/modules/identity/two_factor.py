@@ -27,18 +27,23 @@ import segno
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import rate_limit
 from app.core.config import settings
 from app.core.errors import Conflict, Forbidden, Unauthorized, field_error
-from app.core.security import create_signed_token, decode_signed_token, verify_password
+from app.core.security import (
+    create_signed_token,
+    decode_signed_token,
+    hash_token,
+    verify_password,
+)
 from app.core.text import ascii_digits
 from app.core.time import utcnow
 from app.modules.audit import service as audit
 from app.modules.identity.deps import CurrentUser
-from app.modules.identity.models import RecoveryCode, User
+from app.modules.identity.models import RecoveryCode, RefreshToken, User
 from app.modules.identity.schemas import (
     TwoFactorChallengeOut,
     TwoFactorCodeInput,
@@ -191,7 +196,34 @@ async def setup(db: AsyncSession, current: CurrentUser) -> TwoFactorSetupOut:
     )
 
 
-async def enable(db: AsyncSession, current: CurrentUser, data: TwoFactorEnableInput) -> list[str]:
+async def _close_other_sessions(
+    db: AsyncSession, user_id: uuid.UUID, keep_refresh: str | None
+) -> None:
+    """همه‌ی نشست‌های کاربر جز نشست همین دستگاه (کوکی refresh همین درخواست) بسته می‌شوند."""
+    keep_family = None
+    if keep_refresh:
+        keep_family = await db.scalar(
+            select(RefreshToken.family_id).where(
+                RefreshToken.token_hash == hash_token(keep_refresh),
+                RefreshToken.user_id == user_id,
+                RefreshToken.revoked_at.is_(None),
+            )
+        )
+    stmt = update(RefreshToken).where(
+        RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None)
+    )
+    if keep_family is not None:
+        stmt = stmt.where(RefreshToken.family_id != keep_family)
+    await db.execute(stmt.values(revoked_at=utcnow()))
+
+
+async def enable(
+    db: AsyncSession,
+    current: CurrentUser,
+    data: TwoFactorEnableInput,
+    *,
+    keep_refresh: str | None = None,
+) -> list[str]:
     payload = decode_signed_token(data.setup_token, SETUP_TOKEN)
     if payload is None or payload.get("sub") != str(current.id):
         raise field_error("code", SETUP_EXPIRED)
@@ -213,6 +245,11 @@ async def enable(db: AsyncSession, current: CurrentUser, data: TwoFactorEnableIn
     user.totp_secret = encrypt_secret(secret)
     user.totp_enabled_at = utcnow()
     user.totp_last_step = step
+    # نشست‌هایی که فقط با رمز باز شده‌اند (مثلاً با رمزی که لو رفته) نباید با روشن شدن این‌جا دسترسی
+    # کامل، مثلاً دسترسی ادمین، بگیرند: توکن‌های دسترسی قبلی با بالا رفتن نسخه باطل و نشست‌های دیگر بسته
+    # می‌شوند. همین دستگاه که کد اپ را نشان داد، با refresh بعدی (خودکار در فرانت) ادامه می‌دهد.
+    user.token_version += 1
+    await _close_other_sessions(db, user.id, keep_refresh)
     await db.execute(delete(RecoveryCode).where(RecoveryCode.user_id == user.id))
     codes = _new_recovery_codes(db, user.id)
     _record(db, user, "auth.two_factor_enabled")

@@ -28,6 +28,8 @@ const NAV_LINKS: readonly NavLink[] = [
   { href: "/rfqs", label: "درخواست‌های من", roles: ["buyer", "agent"] },
   { href: "/organization", label: "سازمان من", roles: ["buyer", "supplier", "agent", "qc"] },
   { href: "/orders", label: "سفارش‌ها", roles: ["buyer", "agent", "supplier", "qc", "admin"] },
+  // فقط نسخه‌ی نمایشی و برای دیدن همه؛ بعد از ساخته شدن بک‌اند فقط قطعه‌ساز
+  { href: "/production", label: "پیگیری تولید", demoOnly: true },
 ];
 
 function linksFor(role: string | undefined): NavLink[] {

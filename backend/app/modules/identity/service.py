@@ -114,6 +114,8 @@ async def register(
     existing = await db.scalar(select(User.id).where(User.email == data.email))
     if existing is not None:
         raise Conflict("این ایمیل قبلاً ثبت شده است. اگر حساب دارید وارد شوید.", code="email_taken")
+    # اتصال پایگاه داده در مدت هش کردن رمز (Argon2) نگه داشته نمی‌شود
+    await db.commit()
 
     hashed_password = await hash_password(data.password)
     organization = Organization(id=uuid.uuid4(), name=data.company_name or data.full_name)
@@ -219,6 +221,9 @@ async def login(
 ) -> IssuedSession | TwoFactorChallengeOut:
     await rate_limit.ensure_below(rate_limit.LOGIN_FAILURES_PER_EMAIL, email)
     user = await db.scalar(select(User).where(User.email == email))
+    # بررسی رمز (Argon2) کند است؛ اتصال پایگاه داده در این مدت به استخر برمی‌گردد تا موج ورود اتصال‌ها را از
+    # درخواست‌های دیگر نگیرد (user با expire_on_commit=False خوانا می‌ماند)
+    await db.commit()
     if user is None:
         await burn_password_check(password)
         await rate_limit.record(rate_limit.LOGIN_FAILURES_PER_EMAIL, email)
@@ -253,6 +258,15 @@ async def complete_two_factor_login(db: AsyncSession, data: TwoFactorLoginInput)
     return issued
 
 
+async def _family_alive(db: AsyncSession, family_id: uuid.UUID) -> bool:
+    live = await db.scalar(
+        select(RefreshToken.id)
+        .where(RefreshToken.family_id == family_id, RefreshToken.revoked_at.is_(None))
+        .limit(1)
+    )
+    return live is not None
+
+
 async def refresh(db: AsyncSession, raw_token: str) -> IssuedSession:
     """چرخش refresh token. استفاده‌ی مجدد از توکن باطل‌شده = سرقت احتمالی ⇒ ابطال کل خانواده."""
     token = await db.scalar(
@@ -268,7 +282,13 @@ async def refresh(db: AsyncSession, raw_token: str) -> IssuedSession:
         raise Unauthorized(SESSION_INVALID, code="session_expired")
 
     if token.revoked_at is not None:
-        benign_race = token.replaced_by_id is not None and now - token.revoked_at <= REUSE_GRACE
+        # چند برگه‌ی هم‌زمان: توکنی که همین الان چرخیده، تا چند ثانیه نشانه‌ی سرقت نیست؛ مگر این‌که خروج یا
+        # تغییر رمز در این فاصله همه‌ی توکن‌های این نشست را بسته باشد
+        benign_race = (
+            token.replaced_by_id is not None
+            and now - token.revoked_at <= REUSE_GRACE
+            and await _family_alive(db, token.family_id)
+        )
         if not benign_race:
             revoked = await db.execute(
                 update(RefreshToken)

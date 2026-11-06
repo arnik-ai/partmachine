@@ -1,6 +1,7 @@
 """فایل‌های خصوصی (گام 2d فاز ۲): آپلود با بررسی محتوای واقعی، پیوست به RFQ، قواعد دانلود
 (مالک، قطعه‌ساز پس از NDA، بقیه هیچ)، لینک کوتاه‌عمر و حذف فایل پیوست‌نشده."""
 
+import asyncio
 import struct
 from collections.abc import Callable
 from datetime import timedelta
@@ -11,6 +12,7 @@ import httpx
 import pytest
 from sqlalchemy import text
 
+from app.core.config import settings
 from app.core.security import create_signed_token
 from app.core.storage import LocalStorage
 from app.db.session import engine
@@ -20,10 +22,14 @@ from tests.helpers import (
     PDF_BYTES,
     Account,
     accept_nda,
+    award,
     create_rfq,
+    make_deal,
     register,
     rfq_body,
+    set_supplier_verified,
     stored_keys,
+    submit_quote,
     upload_file,
 )
 
@@ -113,6 +119,57 @@ async def test_size_limit_per_purpose(client: httpx.AsyncClient) -> None:
     assert (await upload_file(buyer, content=large_pdf)).status_code == 201
 
 
+async def test_each_organization_has_a_rolling_daily_upload_quota(
+    client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """چند حساب یک‌بارمصرف نمی‌توانند فضای سرور را پر کنند؛ ولی سقف چرخان است و شرکتی را که در طول
+    زمان فایل زیاد دارد (فایل پیوست‌شده حذف‌شدنی نیست) برای همیشه نمی‌بندد."""
+    buyer = await register(client)
+    monkeypatch.setattr(settings, "storage_org_daily_bytes", len(PDF_BYTES) * 2)
+    assert (await upload_file(buyer)).status_code == 201
+    assert (await upload_file(buyer)).status_code == 201
+    full = await upload_file(buyer)
+    assert full.status_code == 429 and full.json()["code"] == "storage_quota_exceeded"
+    assert len(stored_keys()) == 2
+    # سازمان دیگر سهم خودش را دارد
+    assert (await upload_file(await register(client))).status_code == 201
+
+    # ۲۴ ساعت بعد، بارگذاری‌های دیروز دیگر شمرده نمی‌شوند
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "UPDATE files SET created_at = created_at - interval '25 hours' WHERE organization_id = :o"
+            ),
+            {"o": buyer.user["organizationId"]},
+        )
+    assert (await upload_file(buyer)).status_code == 201
+
+
+async def test_parallel_uploads_cannot_jointly_pass_the_quota(
+    client_factory: Callable[[], httpx.AsyncClient], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """شمارش دقیق زیر قفل همان سازمان: آپلودهای هم‌زمان با هم از سقف رد نمی‌شوند."""
+    buyer = await register(client_factory())
+    monkeypatch.setattr(settings, "storage_org_daily_bytes", len(PDF_BYTES) * 2)
+    results = await asyncio.gather(*(upload_file(buyer) for _ in range(6)))
+    codes = sorted(r.status_code for r in results)
+    assert codes == [201, 201, 429, 429, 429, 429], codes
+    assert len(stored_keys()) == 2
+
+
+async def test_uploads_stop_before_the_disk_fills(
+    client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """پایگاه داده روی همان دیسک است؛ پیش از پر شدن دیسک، آپلود با پیام روشن متوقف می‌شود."""
+    if settings.storage_backend != "local":
+        pytest.skip("فقط برای ذخیره روی دیسک محلی")
+    buyer = await register(client)
+    monkeypatch.setattr(settings, "storage_min_free_bytes", 10**18)
+    response = await upload_file(buyer)
+    assert response.status_code == 507 and response.json()["code"] == "storage_full"
+    assert stored_keys() == []
+
+
 async def test_only_rfq_creators_upload_attachments(client: httpx.AsyncClient) -> None:
     supplier = await register(client, role="supplier")
     assert (await upload_file(supplier)).status_code == 403
@@ -162,12 +219,26 @@ async def test_download_rules(client_factory: Callable[[], httpx.AsyncClient]) -
 
     summary = (await supplier.client.get(f"{API}/rfqs/{rfq['id']}", headers=supplier.auth)).json()
     assert summary["fileCount"] == 1 and summary["files"] == []
+    # قطعه‌ساز تأییدنشده نه NDA را می‌پذیرد و نه فایل می‌گیرد (تصمیم مالک ۲۰۲۶/۱۰/۲۶)
+    unverified = await _download(supplier, file_id)
+    assert unverified.status_code == 403 and unverified.json()["code"] == "supplier_not_verified"
+    nda_refused = await accept_nda(supplier, rfq["id"])
+    assert nda_refused.status_code == 403
+    assert nda_refused.json()["code"] == "supplier_not_verified"
+
+    await set_supplier_verified(supplier)
     blocked = await _download(supplier, file_id)
     assert blocked.status_code == 403 and blocked.json()["code"] == "nda_required"
-
     after_nda = (await accept_nda(supplier, rfq["id"])).json()
     assert [f["id"] for f in after_nda["files"]] == [file_id]
     assert (await _download(supplier, file_id)).content == PDF_BYTES
+
+    # لغو تأیید هویت دسترسی را فوراً قطع می‌کند، حتی با NDA پذیرفته‌شده
+    await set_supplier_verified(supplier, False)
+    revoked = await _download(supplier, file_id)
+    assert revoked.status_code == 403 and revoked.json()["code"] == "supplier_not_verified"
+    hidden = (await supplier.client.get(f"{API}/rfqs/{rfq['id']}", headers=supplier.auth)).json()
+    assert hidden["ndaAccepted"] is True and hidden["files"] == []
 
     assert (await _download(other_buyer, file_id)).status_code == 404
     anonymous = await client_factory().post(f"{API}/files/{file_id}/link")
@@ -178,6 +249,30 @@ async def test_download_rules(client_factory: Callable[[], httpx.AsyncClient]) -
             text("SELECT count(*) FROM audit_events WHERE action = 'file.downloaded'")
         )
     assert downloads == 2
+
+
+async def test_the_awarded_supplier_gets_the_drawings_before_verification(
+    client_factory: Callable[[], httpx.AsyncClient],
+) -> None:
+    """کارفرما قطعه‌سازِ هنوز تأییدنشده‌ای را برنده کرده است: او برای ساخت قطعه نقشه لازم دارد
+    (پس از NDA)، ولی پیشنهاددهنده‌ی بازنده‌ی تأییدنشده همچنان هیچ فایلی نمی‌گیرد."""
+    deal = await make_deal(client_factory, with_drawing=True)
+    file_id = deal.rfq["files"][0]["id"]
+    loser = await register(client_factory(), role="supplier")
+    assert (await submit_quote(loser, deal.rfq["id"], price=2_500_000_000)).status_code == 201
+    assert (await award(deal)).status_code == 200
+
+    before_nda = await _download(deal.supplier, file_id)
+    assert before_nda.status_code == 403 and before_nda.json()["code"] == "nda_required"
+    after_nda = await accept_nda(deal.supplier, deal.rfq["id"])
+    assert after_nda.status_code == 200, after_nda.text
+    assert [f["id"] for f in after_nda.json()["files"]] == [file_id]
+    assert (await _download(deal.supplier, file_id)).content == PDF_BYTES
+
+    refused = await accept_nda(loser, deal.rfq["id"])
+    assert refused.status_code == 403 and refused.json()["code"] == "supplier_not_verified"
+    blocked = await _download(loser, file_id)
+    assert blocked.status_code == 403 and blocked.json()["code"] == "supplier_not_verified"
 
 
 async def test_download_links_are_signed_and_short_lived(client: httpx.AsyncClient) -> None:

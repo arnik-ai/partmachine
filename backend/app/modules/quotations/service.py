@@ -153,7 +153,6 @@ async def list_mine(
     if supplier is None:
         return [], 0
     today = business_today()
-    counts = rfq_service.active_counts()
     total = (
         await db.scalar(
             select(func.count(Quotation.id)).where(Quotation.supplier_id == supplier.id)
@@ -161,9 +160,8 @@ async def list_mine(
         or 0
     )
     rows = await db.execute(
-        select(Quotation, Rfq, func.coalesce(counts.c.n, 0))
+        select(Quotation, Rfq, rfq_service.active_quotes_sql())
         .join(Rfq, Rfq.id == Quotation.rfq_id)
-        .outerjoin(counts, counts.c.rfq_id == Rfq.id)
         .where(Quotation.supplier_id == supplier.id)
         .order_by(Quotation.updated_at.desc(), Quotation.id)
         .limit(limit)

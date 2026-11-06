@@ -16,7 +16,7 @@ from app.db.session import engine
 from app.modules.audit.models import AuditEvent
 from app.modules.identity.two_factor import WRONG_CODE
 from app.reset_two_factor import reset_two_factor
-from tests.helpers import ADMIN_PASSWORD, API, PASSWORD, Account, make_admin, register
+from tests.helpers import ADMIN_PASSWORD, API, CSRF, PASSWORD, Account, login, make_admin, register
 
 
 def code_at(secret: str, steps_ahead: int = 0) -> str:
@@ -40,6 +40,11 @@ async def enable(account: Account, password: str = PASSWORD) -> tuple[str, list[
         headers=account.auth,
     )
     assert enabled.status_code == 200, enabled.text
+    # توکن دسترسی قبلی باطل شد؛ همین دستگاه مثل فرانت با refresh (کوکی خودش) ادامه می‌دهد
+    assert (await account.client.get(f"{API}/auth/me", headers=account.auth)).status_code == 401
+    refreshed = await account.client.post(f"{API}/auth/refresh", headers=CSRF)
+    assert refreshed.status_code == 200, refreshed.text
+    account.token = refreshed.json()["accessToken"]
     return body["secret"], enabled.json()["recoveryCodes"]
 
 
@@ -216,6 +221,22 @@ async def test_admins_must_turn_it_on_before_any_admin_access(
         headers=admin.auth,
     )
     assert off.status_code == 403
+
+
+async def test_enabling_closes_every_other_session(
+    client_factory: Callable[[], httpx.AsyncClient], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """رمز لورفته: نشستی که پیش از روشن شدن فقط با رمز باز شده، بعد از آن نه ادامه می‌یابد و نه ادمین می‌شود."""
+    monkeypatch.setattr(settings, "admin_two_factor_required", True)
+    admin = await make_admin(client_factory())
+    other = await login(client_factory(), admin.user["email"], ADMIN_PASSWORD)
+    await enable(admin, ADMIN_PASSWORD)
+    stale = await other.client.get(f"{API}/admin/verifications", headers=other.auth)
+    assert stale.status_code == 401
+    assert (await other.client.post(f"{API}/auth/refresh", headers=CSRF)).status_code == 401
+    # دستگاهی که کد اپ را نشان داد، با نشست خودش ادامه می‌دهد
+    mine = await admin.client.get(f"{API}/admin/verifications", headers=admin.auth)
+    assert mine.status_code == 200, mine.text
 
 
 @pytest.fixture

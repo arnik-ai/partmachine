@@ -1,0 +1,68 @@
+# PartMachine روی سروری که با سایت‌ها و ربات‌های دیگر مشترک است، پشت Caddy همان سرور (README همین پوشه).
+# فقط با pm.sh و روی deploy/docker-compose.prod.yml اجرا می‌شود؛ تنها تفاوت‌ها با سرور اختصاصی:
+# - ایمیج‌ها همان‌هایی‌اند که CI ساخته و آزموده (GHCR، با شناسه‌ی commit)؛ روی این سرور چیزی ساخته نمی‌شود
+# - Caddy این پروژه پورت ۸۰ و ۴۴۳ نمی‌گیرد و فقط روی 172.17.0.1:18080 (نشانی داخلی Docker، بیرون از
+#   اینترنت) با HTTP ساده گوش می‌دهد؛ HTTPS را Caddy سرور انجام می‌دهد
+# - سقف CPU و حافظه، وزن CPU کمتر و اولویت بالاتر برای قربانی شدن در کمبود حافظه، تا سرویس‌های دیگر سرور
+#   همیشه جلوتر باشند
+
+x-shared: &shared
+  # وزن CPU نصف پیش‌فرض: هنگام شلوغی، سرویس‌های دیگر سرور سهم بیشتری می‌گیرند
+  cpu_shares: 512
+  # اگر حافظه‌ی کل سرور تمام شود، کرنل اول پروسه‌های این پروژه را می‌بندد
+  oom_score_adj: 300
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  db:
+    <<: *shared
+    mem_limit: ${DB_MEM_LIMIT:-768m}
+    cpus: 1.0
+
+  redis:
+    <<: *shared
+    cpus: 0.5
+
+  migrate:
+    <<: *shared
+    image: ghcr.io/arnik-ai/partmachine-api:${IMAGE_TAG:?IMAGE_TAG را تنظیم کنید}
+    mem_limit: 384m
+    cpus: 1.0
+
+  api:
+    <<: *shared
+    build: !reset null
+    image: ghcr.io/arnik-ai/partmachine-api:${IMAGE_TAG:?IMAGE_TAG را تنظیم کنید}
+    cpus: 1.5
+
+  worker:
+    <<: *shared
+    image: ghcr.io/arnik-ai/partmachine-api:${IMAGE_TAG:?IMAGE_TAG را تنظیم کنید}
+    cpus: 0.5
+
+  backup:
+    <<: *shared
+    build: !reset null
+    image: ghcr.io/arnik-ai/partmachine-backup:${IMAGE_TAG:?IMAGE_TAG را تنظیم کنید}
+    cpus: 0.5
+
+  web:
+    <<: *shared
+    build: !reset null
+    image: ghcr.io/arnik-ai/partmachine-web:${IMAGE_TAG:?IMAGE_TAG را تنظیم کنید}
+    cpus: 1.0
+
+  caddy:
+    <<: *shared
+    # نسخه‌ی ثابت: برچسب caddy:2-alpine مال Caddy سرور است و دانلود دوباره‌اش نسخه‌ی آن را جابه‌جا می‌کند
+    image: caddy:2.11.7-alpine
+    cpus: 0.5
+    ports: !override
+      - "${EDGE_BIND:-172.17.0.1}:${EDGE_PORT:-18080}:80"
+    environment:
+      CADDY_SITE_SCHEME: "http://"
+      CADDY_TRUSTED_PROXIES: private_ranges
