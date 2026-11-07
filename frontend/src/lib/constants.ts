@@ -23,9 +23,17 @@ export function capabilityLabel(value: string): string {
 /** متریال‌های رایج */
 export const MATERIALS = [
   "فولاد St37",
+  "فولاد CK15",
   "فولاد CK45",
+  "فولاد MO40",
+  "فولاد VCN",
+  "فولاد SPK",
+  "فولاد گرمکار",
   "استیل 304",
   "استیل 316",
+  "اینکونل",
+  "Hastelloy X",
+  "تیتانیوم",
   "آلومینیوم 6061",
   "آلومینیوم 7075",
   "برنج",
