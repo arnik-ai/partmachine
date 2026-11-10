@@ -5,12 +5,12 @@
 # NEXT_PUBLIC_API_URL هنگام build در کد مرورگر جاسازی می‌شود و الزامی است. نشست کوکی‌دار
 # فقط وقتی کار می‌کند که فرانت و API هم‌سایت باشند (مثلاً app. و api. زیر یک دامنه).
 
-FROM node:22-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 WORKDIR /app
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
@@ -20,7 +20,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
