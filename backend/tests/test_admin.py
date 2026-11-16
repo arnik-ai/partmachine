@@ -22,8 +22,10 @@ from tests.helpers import (
 
 
 async def test_admin_routes_are_hidden_from_everyone_else(
-    client_factory: Callable[[], httpx.AsyncClient],
+    client_factory: Callable[[], httpx.AsyncClient], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # ثبت‌نام مأمور خرید بسته است؛ این تست برای ساختن حساب آن نقش موقتاً بازش می‌کند
+    monkeypatch.setattr(settings, "agent_signup_enabled", True)
     anonymous = await client_factory().get(f"{API}/admin/users")
     assert anonymous.status_code == 401  # فرانت با 401 نشست را تازه می‌کند
     for role in ("buyer", "supplier", "agent", "qc"):

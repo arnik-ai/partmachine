@@ -143,8 +143,14 @@ async def test_refresh_tokens_are_stored_only_as_hashes(client: httpx.AsyncClien
 
 @pytest.mark.parametrize("role", ["agent", "qc"])
 async def test_agent_and_qc_can_register_but_start_unverified(
-    client: httpx.AsyncClient, role: str
+    client: httpx.AsyncClient, role: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """نقشی که ادمین دستی تأیید می‌کند، تأییدنشده شروع می‌کند.
+
+    ثبت‌نام مأمور خرید به خواسته‌ی کارفرما بسته است (`test_agent_signup_is_closed`)؛ این‌جا
+    برای آزمودن همان رفتارِ «تأییدنشده» موقتاً باز می‌شود.
+    """
+    monkeypatch.setattr(settings, "agent_signup_enabled", True)
     account = await register(client, role=role, company="آزمایشگاه نمونه" if role == "qc" else None)
     assert account.user["role"] == role
     assert account.user["verified"] is False
@@ -371,4 +377,4 @@ async def test_agent_signup_is_closed(client: httpx.AsyncClient) -> None:
         },
     )
     assert response.status_code == 422
-    assert "role" in response.json()["errors"]
+    assert [error["field"] for error in response.json()["errors"]] == ["role"]
