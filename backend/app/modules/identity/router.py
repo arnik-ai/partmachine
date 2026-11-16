@@ -154,10 +154,10 @@ async def me(
 @router.get("/options", response_model=AuthOptionsOut)
 async def options() -> AuthOptionsOut:
     """قابلیت‌هایی که به ارسال کد وابسته‌اند (تا انتخاب سرویس پیامک/ایمیل در تولید خاموش‌اند)."""
-    enabled = otp.is_enabled()
     return AuthOptionsOut(
-        password_reset=enabled,
-        phone_verification=enabled,
+        password_reset=otp.is_enabled("email"),
+        phone_verification=otp.is_enabled("sms"),
+        sms_login=otp.is_enabled("sms"),
         admin_two_factor_required=settings.admin_two_factor_required,
     )
 
@@ -192,6 +192,30 @@ async def confirm_password_reset(
 ) -> AuthSession | TwoFactorChallengeOut:
     await rate_limit.hit(rate_limit.OTP_VERIFY_PER_IP, client_ip(request))
     result = await service.confirm_password_reset(db, payload)
+    if isinstance(result, TwoFactorChallengeOut):
+        return result
+    _set_refresh_cookie(response, result.refresh_token)
+    return result.session
+
+
+@router.post("/login/sms/request", response_model=MessageOut, status_code=202)
+async def request_sms_login(
+    payload: PhoneCodeInput, request: Request, db: AsyncSession = Depends(get_db)
+) -> MessageOut:
+    """کد ورود را به شماره‌ی تأییدشده پیامک می‌کند."""
+    await service.request_sms_login(db, payload.phone, client_ip(request))
+    return MessageOut(detail=service.SMS_LOGIN_SENT)
+
+
+@router.post("/login/sms/verify", response_model=AuthSession | TwoFactorChallengeOut)
+async def confirm_sms_login(
+    payload: PhoneVerifyInput,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> AuthSession | TwoFactorChallengeOut:
+    await rate_limit.hit(rate_limit.OTP_VERIFY_PER_IP, client_ip(request))
+    result = await service.confirm_sms_login(db, payload)
     if isinstance(result, TwoFactorChallengeOut):
         return result
     _set_refresh_cookie(response, result.refresh_token)

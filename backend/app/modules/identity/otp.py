@@ -23,7 +23,7 @@ from app.core.messaging import Channel, get_sender
 from app.core.redis import get_redis
 from app.core.text import fa_digits
 
-Purpose = Literal["password_reset", "phone_verification"]
+Purpose = Literal["password_reset", "phone_verification", "sms_login"]
 
 CODE_TTL_SECONDS = 600
 MAX_ATTEMPTS = 5
@@ -37,8 +37,12 @@ CODE_EXPIRED = "کد منقضی شده یا معتبر نیست؛ یک کد تا
 TOO_MANY_WRONG = "کد چند بار اشتباه وارد شد؛ یک کد تازه بگیرید."
 
 
-def is_enabled() -> bool:
-    return get_sender().enabled
+def is_enabled(channel: Channel | None = None) -> bool:
+    """آیا کد یک‌بارمصرف فرستاده می‌شود؟ با نام کانال، پشتیبانی همان کانال بررسی می‌شود."""
+    sender = get_sender()
+    if not sender.enabled:
+        return False
+    return channel is None or channel in sender.channels
 
 
 def _key(purpose: Purpose, subject: str) -> str:
@@ -55,9 +59,11 @@ def _unavailable() -> ServiceUnavailable:
     return ServiceUnavailable("سرویس موقتاً در دسترس نیست. لطفاً چند لحظه بعد دوباره تلاش کنید.")
 
 
-async def throttle(*, purpose: Purpose, subject: str, destination: str, ip: str) -> None:
+async def throttle(
+    *, purpose: Purpose, subject: str, destination: str, ip: str, channel: Channel
+) -> None:
     """فاصله‌ی ارسال دوباره و سقف‌ها؛ برای مقصد ناموجود هم اجرا می‌شود تا پاسخ‌ها یکسان بمانند."""
-    if not is_enabled():
+    if not is_enabled(channel):
         raise ServiceUnavailable(FEATURE_OFF, code="otp_disabled")
     await rate_limit.hit(rate_limit.OTP_SEND_PER_IP, ip)
     cooldown = f"{_key(purpose, subject)}:cooldown"

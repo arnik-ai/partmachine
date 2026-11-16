@@ -109,9 +109,34 @@ export async function changePassword(input: ChangePasswordInput): Promise<AuthSe
 
 export function getAuthOptions(): Promise<AuthOptions> {
   if (DEMO_MODE) {
-    return Promise.resolve({ passwordReset: false, phoneVerification: false, adminTwoFactorRequired: false });
+    return Promise.resolve({
+      passwordReset: false,
+      phoneVerification: false,
+      smsLogin: false,
+      adminTwoFactorRequired: false,
+    });
   }
   return apiFetch<AuthOptions>("/auth/options", { auth: false });
+}
+
+/** ورود با پیامک، قدم اول: کد به شماره‌ی تأییدشده فرستاده می‌شود */
+export function requestSmsLoginCode(phone: string): Promise<{ detail: string }> {
+  return apiFetch<{ detail: string }>("/auth/login/sms/request", {
+    method: "POST",
+    body: { phone },
+    auth: false,
+  });
+}
+
+/** ورود با پیامک، قدم دوم؛ حسابی که ورود دومرحله‌ای دارد پس از آن کد اپ را هم وارد می‌کند */
+export async function confirmSmsLogin(phone: string, code: string): Promise<LoginResult> {
+  const result = await apiFetch<LoginResult>("/auth/login/sms/verify", {
+    method: "POST",
+    body: { phone, code },
+    auth: false,
+    credentials: "include",
+  });
+  return isTwoFactorChallenge(result) ? result : applySession(result);
 }
 
 export function requestPasswordReset(email: string): Promise<{ detail: string }> {

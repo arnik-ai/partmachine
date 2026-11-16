@@ -32,6 +32,8 @@ class SentCode:
 
 class CodeSender(Protocol):
     enabled: bool
+    # کانال‌هایی که این ارسال‌کننده واقعاً می‌فرستد؛ قابلیت وابسته به کانالِ پشتیبانی‌نشده خاموش می‌ماند
+    channels: frozenset[Channel]
 
     async def send(
         self, *, channel: Channel, destination: str, code: str, purpose: str
@@ -48,6 +50,7 @@ def mask(destination: str) -> str:
 
 class ConsoleSender:
     enabled = True
+    channels: frozenset[Channel] = frozenset({"email", "sms"})
 
     def __init__(self) -> None:
         self.outbox: list[SentCode] = []
@@ -63,6 +66,7 @@ class ConsoleSender:
 
 class DisabledSender:
     enabled = False
+    channels: frozenset[Channel] = frozenset()
 
     async def send(self, *, channel: Channel, destination: str, code: str, purpose: str) -> None:
         raise RuntimeError("code sending is disabled")  # فراخواننده پیش از ارسال enabled را می‌بیند
@@ -74,7 +78,16 @@ _sender: CodeSender | None = None
 def get_sender() -> CodeSender:
     global _sender
     if _sender is None:
-        _sender = ConsoleSender() if settings.otp_sender_name == "console" else DisabledSender()
+        name = settings.otp_sender_name
+        if name == "console":
+            _sender = ConsoleSender()
+        elif name == "kavenegar":
+            # وارد کردن داخل تابع: app.core.sms خودش از همین ماژول Channel را می‌گیرد
+            from app.core.sms import SmsCodeSender
+
+            _sender = SmsCodeSender()
+        else:
+            _sender = DisabledSender()
     return _sender
 
 

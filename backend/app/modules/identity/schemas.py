@@ -194,6 +194,8 @@ class AuthOptionsOut(CamelModel):
 
     password_reset: bool
     phone_verification: bool
+    # ورود با کد پیامکی (برای حسابی که شماره‌اش تأیید شده است)
+    sms_login: bool = False
     # ادمین بدون ورود دومرحله‌ای به بخش مدیریت راه ندارد (فرانت راهنمای روشن کردن را نشان می‌دهد)
     admin_two_factor_required: bool = True
 

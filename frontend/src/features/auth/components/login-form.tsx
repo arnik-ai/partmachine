@@ -17,16 +17,22 @@ import {
 import { useAuthOptions } from "@/features/account/api";
 import { ApiError, errorMessage } from "@/lib/api-client";
 import { useHydrated } from "@/lib/use-hydrated";
+import { cn } from "@/lib/utils";
 import { DEMO_MODE } from "@/lib/config";
 import { isTwoFactorChallenge, login, startDemoSession } from "../api";
 import { safeNextPath } from "../next-path";
+import { SmsLoginForm } from "./sms-login-form";
 import { TwoFactorStep } from "./two-factor-step";
 
 export function LoginForm() {
   // تا آماده شدن صفحه قفل است؛ انتخاب زودهنگام گم نمی‌شود و رمز هرگز در آدرس صفحه نمی‌رود
   const hydrated = useHydrated();
   const router = useRouter();
-  const canReset = useAuthOptions().data?.passwordReset ?? false;
+  const authOptions = useAuthOptions().data;
+  const canReset = authOptions?.passwordReset ?? false;
+  // ورود با پیامک فقط وقتی پیشنهاد می‌شود که سرویس پیامک وصل باشد
+  const canSms = authOptions?.smsLogin ?? false;
+  const [method, setMethod] = useState<"password" | "sms">("password");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -72,7 +78,33 @@ export function LoginForm() {
         <CardDescription>به بازار صنعتی قطعه‌سازی خوش آمدید</CardDescription>
       </CardHeader>
       <CardContent>
-        {challenge ? (
+        {canSms && !challenge && (
+          <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-muted p-1" role="tablist">
+            {([
+              ["password", "ورود با رمز"],
+              ["sms", "ورود با پیامک"],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={method === value}
+                onClick={() => setMethod(value)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm transition-colors",
+                  method === value
+                    ? "bg-card font-medium text-card-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        {canSms && method === "sms" && !challenge ? (
+          <SmsLoginForm disabled={!hydrated} />
+        ) : challenge ? (
           <TwoFactorStep
             challenge={challenge}
             onDone={() => router.push(safeNextPath(window.location.search))}
