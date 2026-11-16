@@ -49,6 +49,7 @@ logger = logging.getLogger("partmachine.auth")
 INVALID_CREDENTIALS = "ایمیل یا رمز عبور درست نیست."
 RESET_SENT = "اگر حسابی با این ایمیل وجود داشته باشد، کد بازیابی برایش فرستاده شد."
 PHONE_SENT = "کد تأیید به این شماره فرستاده شد."
+SMS_LOGIN_SENT = "اگر این شماره در تراشینو تأیید شده باشد، کد ورود برایش پیامک شد."
 PHONE_TAKEN = "این شماره برای حساب دیگری تأیید شده است."
 SESSION_INVALID = "نشست شما معتبر نیست. لطفاً دوباره وارد شوید."
 # دو تب که هم‌زمان نشست را تازه می‌کنند نباید کاربر را بیرون بیندازند
@@ -107,6 +108,11 @@ async def register(
         return await _register_with_invite(db, data, data.invite_token, client)
     if data.role == "qc" and not settings.inspections_enabled:
         raise field_error("role", "ثبت‌نام آزمایشگاه کنترل کیفیت فعلاً فعال نیست.")
+    if data.role == "agent" and not settings.agent_signup_enabled:
+        raise field_error(
+            "role",
+            "ثبت‌نام مأمور خرید فعلاً فعال نیست؛ حساب مأمور خرید فقط با دعوت سازمان ساخته می‌شود.",
+        )
     # پذیرش قوانین نقش در سرور هم الزامی است، نه فقط در فرم
     agreement = agreements.require_accepted(
         data.accepted_agreements, SIGNUP_AGREEMENT_BY_ROLE[data.role]
@@ -407,7 +413,9 @@ async def change_password(
 
 async def request_password_reset(db: AsyncSession, email: str, ip: str) -> None:
     """پاسخ برای ایمیل موجود و ناموجود یکسان است تا فهرست کاربران لو نرود."""
-    await otp.throttle(purpose="password_reset", subject=email, destination=email, ip=ip)
+    await otp.throttle(
+        purpose="password_reset", subject=email, destination=email, ip=ip, channel="email"
+    )
     user = await db.scalar(select(User).where(User.email == email))
     if user is None or not user.is_active:
         return
@@ -435,6 +443,39 @@ async def confirm_password_reset(
     return result
 
 
+async def request_sms_login(db: AsyncSession, phone: str, ip: str) -> None:
+    """ورود با پیامک: کد فقط برای شماره‌ای فرستاده می‌شود که در حسابی تأیید شده است.
+
+    پاسخ برای شماره‌ی موجود و ناموجود یکسان است تا فهرست شماره‌های کاربران لو نرود.
+    """
+    await otp.throttle(purpose="sms_login", subject=phone, destination=phone, ip=ip, channel="sms")
+    user = await db.scalar(select(User).where(User.phone == phone))
+    if user is None or not user.is_active or user.phone_verified_at is None:
+        return
+    await otp.issue(purpose="sms_login", subject=phone, channel="sms", destination=phone)
+
+
+async def confirm_sms_login(
+    db: AsyncSession, data: PhoneVerifyInput
+) -> IssuedSession | TwoFactorChallengeOut:
+    """کد پیامکی را مصرف می‌کند و نشست می‌دهد؛ حساب دومرحله‌ای کد اپ را هم لازم دارد."""
+    await otp.consume(purpose="sms_login", subject=data.phone, code=data.code)
+    user = await db.scalar(
+        select(User).where(User.phone == data.phone, User.phone_verified_at.is_not(None))
+    )
+    if user is None or not user.is_active:
+        raise field_error("code", otp.CODE_EXPIRED)
+    result: IssuedSession | TwoFactorChallengeOut
+    if user.totp_enabled_at is not None:
+        # ورود با پیامک نباید راهی برای دور زدن مرحله‌ی دوم باشد
+        await db.commit()
+        result = two_factor.challenge(user)
+    else:
+        result = await _new_session(db, user)
+    await rate_limit.reset(rate_limit.LOGIN_FAILURES_PER_EMAIL, user.email)
+    return result
+
+
 def _phone_subject(user_id: uuid.UUID, phone: str) -> str:
     return f"{user_id}:{phone}"
 
@@ -446,7 +487,9 @@ async def request_phone_code(db: AsyncSession, current: CurrentUser, phone: str,
     if owner is not None:
         raise field_error("phone", PHONE_TAKEN)
     subject = _phone_subject(current.id, phone)
-    await otp.throttle(purpose="phone_verification", subject=subject, destination=phone, ip=ip)
+    await otp.throttle(
+        purpose="phone_verification", subject=subject, destination=phone, ip=ip, channel="sms"
+    )
     await otp.issue(purpose="phone_verification", subject=subject, channel="sms", destination=phone)
 
 

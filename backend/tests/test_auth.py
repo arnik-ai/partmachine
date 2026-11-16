@@ -356,3 +356,19 @@ async def test_login_holds_no_database_connection_while_checking_the_password(
     )
     assert response.status_code == 200, response.text
     assert checked_out == [0]
+
+
+async def test_agent_signup_is_closed(client: httpx.AsyncClient) -> None:
+    """ثبت‌نام مأمور خرید (خواسته‌ی کارفرما) بسته است — در فرم و در خود API."""
+    response = await client.post(
+        f"{API}/auth/register",
+        json={
+            "email": f"agent-{uuid.uuid4().hex[:10]}@example.com",
+            "password": PASSWORD,
+            "fullName": "مأمور خرید",
+            "role": "agent",
+            "acceptedAgreements": signup_agreements("agent"),
+        },
+    )
+    assert response.status_code == 422
+    assert "role" in response.json()["errors"]
