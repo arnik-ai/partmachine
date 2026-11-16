@@ -91,6 +91,8 @@ html:has(.lp), html:has(.lp) body { background: #0d0c12; }
   .lp .btn-sm { min-height: 40px; padding-inline: 16px; border-radius: 12px; font-size: .9rem; }
   .lp .btn-text { min-height: 40px; padding-inline: 10px; display: inline-flex; align-items: center; color: var(--fg-2); text-decoration: none; font-weight: 500; }
   .lp .btn-text:hover { color: var(--fg); }
+  /* جای دکمه‌های ورود تا معلوم شدن نشست کاربر؛ از پریدن چیدمان سرصفحه جلوگیری می‌کند */
+  .lp .auth-slot { display: inline-block; inline-size: 132px; min-height: 40px; }
   .lp .arrow { display: inline-block; transition: transform .25s var(--ease-out); }
   .lp .btn:hover .arrow { transform: translateX(-4px); }
 
@@ -361,6 +363,12 @@ html:has(.lp), html:has(.lp) body { background: #0d0c12; }
   .lp .eyebrow-chip { padding-block: 6px; padding-inline: 10px 14px; border-radius: 99px; border: 1px solid var(--line); background: rgba(139, 92, 246, .08); color: var(--fg-2); font-weight: 500; }
   .lp .eyebrow-chip::before { display: none; }
   .lp .eyebrow-chip svg { flex: none; color: #ecebf2; overflow: visible; }
+  /* عنوان بالای صفحه لینک زنده به بخش «چرا تراشینو» است */
+  .lp .eyebrow-link { text-decoration: none; cursor: pointer; transition: border-color .25s var(--ease-out), background .25s var(--ease-out), color .25s var(--ease-out); }
+  .lp .eyebrow-link:hover { border-color: var(--violet-light); background: rgba(139, 92, 246, .16); color: var(--fg); }
+  .lp .eyebrow-link:focus-visible { outline: 2px solid var(--violet-light); outline-offset: 3px; }
+  .lp .eyebrow-arrow { display: inline-flex; margin-inline-start: 2px; transition: transform .25s var(--ease-out); }
+  .lp .eyebrow-link:hover .eyebrow-arrow { transform: translateY(2px); }
   .lp .stage-url { display: inline-flex; align-items: center; gap: 8px; padding: 3px 12px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255, 255, 255, .04); font-family: var(--font-latin); direction: ltr; }
   .lp .stage-url svg { color: #ecebf2; overflow: visible; }
   .lp .closing-mark { position: relative; width: 96px; height: 90px; margin: 0 auto 28px; }

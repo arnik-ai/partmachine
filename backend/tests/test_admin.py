@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 import pytest
 
+from app.core.config import settings
 from app.create_admin import AdminSetupError, _read_password, create_admin
 from tests.helpers import (
     ADMIN_PASSWORD,
@@ -21,8 +22,10 @@ from tests.helpers import (
 
 
 async def test_admin_routes_are_hidden_from_everyone_else(
-    client_factory: Callable[[], httpx.AsyncClient],
+    client_factory: Callable[[], httpx.AsyncClient], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # ثبت‌نام مأمور خرید بسته است؛ این تست برای ساختن حساب آن نقش موقتاً بازش می‌کند
+    monkeypatch.setattr(settings, "agent_signup_enabled", True)
     anonymous = await client_factory().get(f"{API}/admin/users")
     assert anonymous.status_code == 401  # فرانت با 401 نشست را تازه می‌کند
     for role in ("buyer", "supplier", "agent", "qc"):
@@ -120,8 +123,10 @@ async def test_deactivation_cuts_access_immediately(
 
 
 async def test_manual_verification_is_only_for_agents_and_labs(
-    client_factory: Callable[[], httpx.AsyncClient],
+    client_factory: Callable[[], httpx.AsyncClient], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # ثبت‌نام مأمور خرید بسته است؛ برای آزمودن تأیید دستی، همان مسیر موقتاً باز می‌شود
+    monkeypatch.setattr(settings, "agent_signup_enabled", True)
     agent = await register(client_factory(), role="agent")
     supplier = await register(client_factory(), role="supplier")
     admin = await make_admin(client_factory())

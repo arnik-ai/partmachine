@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { Fragment } from "react";
 import { BackButton } from "@/components/layout/back-button";
+import { LandingAuthActions, LandingAuthLinks } from "./components/auth-actions";
 import { CAPABILITIES } from "@/lib/constants";
 import { HeroScene } from "./components/hero-scene";
 import { MachiningScene } from "./components/machining-scene";
@@ -79,12 +80,9 @@ export async function LandingPage({ lang }: { lang: Lang }) {
               </svg>
               <span lang={en ? "fa" : "en"}>{c.nav.switchTo}</span>
             </Link>
-            <Link className="btn-text" href="/login">
-              {c.nav.login}
-            </Link>
-            <Link className="btn btn-ghost btn-sm" href="/register">
-              {c.nav.register}
-            </Link>
+            <LandingAuthActions
+              labels={{ login: c.nav.login, register: c.nav.register, dashboard: c.nav.dashboard }}
+            />
           </div>
         </div>
         <div className="progress" id="progress" />
@@ -95,10 +93,16 @@ export async function LandingPage({ lang }: { lang: Lang }) {
           <div className="aurora" aria-hidden="true" />
           <div className="wrap hero-grid">
             <div>
-              <span className="eyebrow eyebrow-chip">
+              {/* خواسته‌ی کارفرما: این عنوان لینک زنده به بخش «چرا تراشینو» باشد */}
+              <a className="eyebrow eyebrow-chip eyebrow-link" href="#trust">
                 <Mark width={18} height={17} />
                 <span>{c.hero.eyebrow}</span>
-              </span>
+                <span className="eyebrow-arrow" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M12 5v14M5 12l7 7 7-7" />
+                  </svg>
+                </span>
+              </a>
               <div className="engrave">
               <h1 id="hero-title">
                 <span className="l1">
@@ -426,8 +430,10 @@ export async function LandingPage({ lang }: { lang: Lang }) {
               <a href="#roles">{c.nav.roles}</a>
               <a href="#trust">{c.nav.trust}</a>
               <a href="#faq">{c.nav.faq}</a>
-              <Link href="/login">{c.nav.login}</Link>
-              <Link href="/register">{c.nav.register}</Link>
+              <Link href="/terms">{c.footer.terms}</Link>
+              <LandingAuthLinks
+                labels={{ login: c.nav.login, register: c.nav.register, dashboard: c.nav.dashboard }}
+              />
             </nav>
             <div className="tb-strip" aria-hidden="true">
               <span>

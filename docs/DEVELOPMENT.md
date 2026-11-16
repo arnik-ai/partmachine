@@ -138,7 +138,12 @@ cd backend
 | `S3_REGION` / `S3_ADDRESSING_STYLE` / `S3_PREFIX` | `us-east-1` / `path` / — | طبق راهنمای سرویس؛ `S3_PREFIX` پوشه‌ای اختیاری داخل bucket |
 | `UPLOAD_MAX_BYTES` | `52428800` (۵۰MB) | سقف کلی بدنه‌ی بارگذاری؛ هر نوع فایل سقف کوچک‌تر خودش را دارد |
 | `DOWNLOAD_LINK_TTL_SECONDS` | `120` | — |
-| `OTP_SENDER` | `console` در توسعه (کد در لاگ API) | پیش‌فرض `disabled`؛ `console` در تولید مجاز نیست. سرویس واقعی پیامک/ایمیل فقط پس از تأیید مالک |
+| `OTP_SENDER` | `console` در توسعه (کد در لاگ API) | پیش‌فرض `disabled`؛ `console` در تولید مجاز نیست. `kavenegar` یعنی سرویس پیامک واقعی (هزینه دارد؛ فقط با تأیید مالک) |
+| `SMS_API_KEY` / `SMS_OTP_TEMPLATE` | — | با `OTP_SENDER=kavenegar` هر دو الزامی‌اند، وگرنه برنامه بالا نمی‌آید. الگو باید خط **خدماتی** باشد نه تبلیغاتی |
+| `SMS_BASE_URL` / `SMS_TIMEOUT_SECONDS` | `https://api.kavenegar.com/v1` / `10` | فقط اگر سرویس آدرس دیگری بدهد |
+| `PAYMENT_GATEWAY` | `disabled` | `zarinpal` درگاه را روشن می‌کند. **فقط برای وجه خودِ پلتفرم**؛ پول سفارش‌ها از پلتفرم عبور نمی‌کند (O6) |
+| `PAYMENT_MERCHANT_ID` | — | با درگاه روشن الزامی است (شناسه‌ی پذیرنده) |
+| `PAYMENT_BASE_URL` / `PAYMENT_TIMEOUT_SECONDS` | `https://payment.zarinpal.com` / `15` | برای محیط آزمایشی درگاه یا سرویس دیگر |
 | `MESSAGE_SENDER` | `console` در توسعه (ایمیل اعلان‌ها در لاگ worker) | پیش‌فرض `disabled` و صف ارسال خالی؛ `console` مجاز نیست (S9) |
 | `SITE_URL` | `http://localhost:3100` | آدرس https سایت، برای لینک‌های داخل ایمیل و هشدار پایین بودن سایت (compose تولید خودش می‌گذارد) |
 | `API_INTERNAL_URL` | `http://localhost:8100` | آدرس داخلی API برای هشدار worker (compose تولید: `http://api:8000`) |

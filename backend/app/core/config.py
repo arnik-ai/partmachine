@@ -13,11 +13,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["development", "test", "staging", "production"]
 # ارسال کد یک‌بارمصرف (P8): console فقط برای توسعه و تست (کد در لاگ)؛ تا انتخاب و تأیید سرویس
-# پیامک/ایمیل واقعی، در تولید disabled است
-OtpSender = Literal["console", "disabled"]
+# پیامک/ایمیل واقعی، در تولید disabled است. kavenegar یعنی سرویس پیامک واقعی (app/core/sms.py)
+OtpSender = Literal["console", "disabled", "kavenegar"]
 # ایمیل و پیامک اعلان‌ها (S9): console فقط برای توسعه و تست (پیام در لاگ)؛ تا انتخاب و تأیید سرویس،
 # در تولید disabled است و چیزی در صف ارسال گذاشته نمی‌شود
 MessageSender = Literal["console", "disabled"]
+# درگاه پرداخت اینترنتی (فقط برای وجه خودِ پلتفرم؛ پول سفارش‌ها از پلتفرم عبور نمی‌کند — O6).
+# disabled یعنی کد هست و خاموش است؛ تا تصمیم مالک و گرفتن شناسه‌ی پذیرنده همین می‌ماند.
+PaymentProvider = Literal["disabled", "zarinpal"]
 # محل نگهداری فایل‌ها: دیسک محلی (توسعه یا یک سرور) یا فضای ابری S3-سازگار
 StorageBackend = Literal["local", "s3"]
 S3AddressingStyle = Literal["path", "virtual", "auto"]
@@ -64,6 +67,9 @@ class Settings(BaseSettings):
     admin_two_factor_required: bool = True
     # آزمایشگاه کنترل کیفیت (بازرسی سفارش‌ها) فعلاً خاموش است و برای فاز بعد نگه داشته شده
     inspections_enabled: bool = False
+    # ثبت‌نام مأمور خرید به خواسته‌ی کارفرما بسته است؛ نقش در سامانه می‌ماند (حساب‌های موجود،
+    # تأیید دستی ادمین و دعوت سازمانی کار می‌کنند) و با روشن کردن این کلید دوباره باز می‌شود
+    agent_signup_enabled: bool = False
     rate_limit_fail_open: bool | None = None
     log_json: bool | None = None
 
@@ -91,6 +97,17 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     # None یعنی «بر اساس محیط»: console در development/test، disabled در staging/production
     otp_sender: OtpSender | None = None
+    # سرویس پیامک (OTP_SENDER=kavenegar). تا پر نشدن این‌ها سرویس روشن نمی‌شود.
+    sms_api_key: SecretStr = SecretStr("")
+    # نام الگوی تأییدشده‌ی کد یک‌بارمصرف نزد سرویس (خط خدماتی، نه پیامک تبلیغاتی)
+    sms_otp_template: str = ""
+    sms_base_url: str = "https://api.kavenegar.com/v1"
+    sms_timeout_seconds: float = 10.0
+    # درگاه پرداخت؛ تا وصل نشدن شناسه‌ی پذیرنده خاموش می‌ماند
+    payment_gateway: PaymentProvider = "disabled"
+    payment_merchant_id: SecretStr = SecretStr("")
+    payment_base_url: str = "https://payment.zarinpal.com"
+    payment_timeout_seconds: float = 15.0
     # None یعنی «بر اساس محیط»: console در development/test، disabled در staging/production
     message_sender: MessageSender | None = None
     # آدرس سایت، برای لینک‌های داخل ایمیل و پیامک و بررسی در دسترس بودن سایت
@@ -148,9 +165,28 @@ class Settings(BaseSettings):
     def json_logs(self) -> bool:
         return self.log_json if self.log_json is not None else self.is_production_like
 
+    @property
+    def sms_configured(self) -> bool:
+        return bool(self.sms_api_key.get_secret_value().strip() and self.sms_otp_template.strip())
+
     def problems(self) -> list[str]:
         """تنظیمات ناامن یا نامعتبر را برمی‌گرداند؛ لیست خالی یعنی آماده‌ی اجرا."""
         found: list[str] = []
+        if (
+            self.payment_gateway != "disabled"
+            and not self.payment_merchant_id.get_secret_value().strip()
+        ):
+            found.append(f"PAYMENT_GATEWAY={self.payment_gateway} needs PAYMENT_MERCHANT_ID")
+        if self.otp_sender_name == "kavenegar" and not self.sms_configured:
+            missing = [
+                name
+                for name, value in (
+                    ("SMS_API_KEY", self.sms_api_key.get_secret_value()),
+                    ("SMS_OTP_TEMPLATE", self.sms_otp_template),
+                )
+                if not value.strip()
+            ]
+            found.append(f"OTP_SENDER=kavenegar needs {', '.join(missing)}")
         if not self.database_url.startswith("postgresql+asyncpg://"):
             found.append(
                 "DATABASE_URL must be a postgresql+asyncpg:// URL (SQLite is not supported)"

@@ -48,6 +48,8 @@ export interface PasswordResetConfirmInput {
 export interface AuthOptions {
   passwordReset: boolean;
   phoneVerification: boolean;
+  /** ورود با کد پیامکی (برای حسابی که شماره‌اش تأیید شده است) */
+  smsLogin?: boolean;
   /** ادمین بدون ورود دومرحله‌ای به بخش مدیریت راه ندارد */
   adminTwoFactorRequired?: boolean;
 }
