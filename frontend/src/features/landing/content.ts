@@ -32,6 +32,8 @@ export type LandingCopy = {
     faq: string;
     login: string;
     register: string;
+    /** کاربری که نشست دارد جای «ورود» این را می‌بیند */
+    dashboard: string;
     switchTo: string;
     switchLabel: string;
   };
@@ -58,7 +60,7 @@ export type LandingCopy = {
   trust: { eyebrow: string; title: string; cards: Card[] };
   faq: { eyebrow: string; title: string; items: Faq[] };
   closing: { title: string; cta: string };
-  footer: { about: string; services: string; servicesTag: string; platform: string; platformTag: string; sheet: string; rev: string; copy: string; mark: string };
+  footer: { about: string; services: string; servicesTag: string; platform: string; platformTag: string; terms: string; sheet: string; rev: string; copy: string; mark: string };
 };
 
 const FA_SERVICES = Object.fromEntries(CAPABILITIES.map((c) => [c.value, c.label])) as Record<
@@ -85,6 +87,7 @@ export const LANDING: Record<Lang, LandingCopy> = {
       faq: "سؤالات متداول",
       login: "ورود",
       register: "ثبت‌نام",
+      dashboard: "داشبورد من",
       switchTo: "EN",
       switchLabel: "English version",
     },
@@ -279,6 +282,7 @@ export const LANDING: Record<Lang, LandingCopy> = {
       servicesTag: "SERVICES",
       platform: "تراشینو",
       platformTag: "PLATFORM",
+      terms: "قوانین عمومی",
       sheet: "۰۱ از ۰۱",
       rev: "۱۴۰۵",
       copy: "© ۱۴۰۵ تراشینو. همه‌ی حقوق محفوظ است.",
@@ -303,6 +307,7 @@ export const LANDING: Record<Lang, LandingCopy> = {
       faq: "FAQ",
       login: "Log in",
       register: "Sign up",
+      dashboard: "My dashboard",
       switchTo: "فا",
       switchLabel: "نسخه‌ی فارسی",
     },
@@ -517,6 +522,7 @@ export const LANDING: Record<Lang, LandingCopy> = {
       servicesTag: "خدمات تولید",
       platform: "Tarashino",
       platformTag: "تراشینو",
+      terms: "Terms",
       sheet: "01 of 01",
       rev: "2026",
       copy: "© 2026 Tarashino. All rights reserved.",

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { TarashinoMark } from "@/components/brand/tarashino-mark";
 
 export function Footer() {
@@ -8,7 +9,12 @@ export function Footer() {
           <TarashinoMark className="h-4 w-4 text-primary" />
           تراشینو — سفارش ساخت قطعات صنعتی
         </span>
-        <span>اتصال امن کارفرما و قطعه‌ساز</span>
+        <span className="flex items-center gap-4">
+          <Link href="/terms" className="hover:text-foreground hover:underline">
+            قوانین عمومی
+          </Link>
+          <span>اتصال امن کارفرما و قطعه‌ساز</span>
+        </span>
       </div>
     </footer>
   );

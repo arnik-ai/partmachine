@@ -20,13 +20,18 @@ import {
 import { ApiError, errorMessage } from "@/lib/api-client";
 import { DEMO_MODE } from "@/lib/config";
 import { useHydrated } from "@/lib/use-hydrated";
+import { faNumber } from "@/lib/utils";
 import { CAPABILITIES, CITIES, MATERIALS } from "@/lib/constants";
 import type { CapabilityValue } from "@/lib/constants";
 import { acceptanceOf, useAgreement } from "@/features/agreements/api";
 import { AgreementChecklist } from "@/features/agreements/components/agreement-checklist";
 import { allTermsAccepted } from "@/features/agreements/components/terms-checklist";
 import { useCreateRfq } from "../hooks";
+import { ExpertHelp } from "./expert-help";
 import { RfqFileUpload, type UploadState } from "./file-upload";
+
+/** هدف راهنمای شرح فنی: کارفرما در حد ۵۰ کلمه بگوید این چه قطعه‌ای است */
+const DESCRIPTION_WORD_TARGET = 50;
 
 /** تاریخ امروز به وقت محلی مرورگر، به قالب YYYY-MM-DD */
 function localToday(): string {
@@ -67,6 +72,12 @@ export function RfqForm() {
   const [deadline, setDeadline] = useState("");
   // اختیاری: اگر خالی بماند سرور ۷ روز بعد (و نه دیرتر از مهلت تحویل) را می‌گذارد
   const [quotesDue, setQuotesDue] = useState("");
+
+  // شرح فنی کنترل‌شده است تا شمارنده‌ی کلمات زنده بماند
+  const [description, setDescription] = useState<string>(
+    params.get("spec")?.slice(0, 2000) ?? "",
+  );
+  const descriptionWords = description.trim().split(/\s+/).filter(Boolean).length;
 
   const terms = agreement?.items ?? [];
   const termsOk = terms.length > 0 && allTermsAccepted(terms, accepted);
@@ -116,6 +127,16 @@ export function RfqForm() {
       <CardContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
+            <Label>فایل‌های فنی (نقشه، CAD، PDF)</Label>
+            <RfqFileUpload onChange={setUploads} />
+            <p className="text-xs text-muted-foreground">
+              فایل‌ها خصوصی‌اند: فقط سازمان شما و قطعه‌سازهایی که تعهد عدم افشا را بپذیرند
+              می‌توانند آن‌ها را دانلود کنند.
+            </p>
+            <FieldError message={fieldErrors.fileIds} />
+          </div>
+
+          <div className="flex flex-col gap-2">
             <Label htmlFor="title">عنوان درخواست</Label>
             <Input
               id="title"
@@ -133,11 +154,22 @@ export function RfqForm() {
               id="description"
               name="description"
               required
-              defaultValue={params.get("spec")?.slice(0, 2000) ?? undefined}
-              placeholder="تلرانس‌ها، استاندارد، پرداخت سطح، بسته‌بندی و سایر الزامات..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="این قطعه چیست و کجا به کار می‌رود؟ سپس تلرانس‌ها، استاندارد، پرداخت سطح، بسته‌بندی و سایر الزامات..."
             />
+            <p className="text-xs text-muted-foreground">
+              در حد {faNumber(DESCRIPTION_WORD_TARGET)} کلمه توضیح دهید این چه قطعه‌ای است و کجا
+              استفاده می‌شود، بعد الزامات فنی را بنویسید.
+              {descriptionWords > 0 && (
+                <span className="px-1">— تا این‌جا {faNumber(descriptionWords)} کلمه</span>
+              )}
+            </p>
             <FieldError message={fieldErrors.description} />
           </div>
+
+          {/* خواسته‌ی کارفرما: گزینه‌ی تماس با کارشناس برای پیشنهاد روش ساخت */}
+          <ExpertHelp />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
@@ -225,16 +257,6 @@ export function RfqForm() {
               </p>
               <FieldError message={fieldErrors.quotesDue} />
             </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label>فایل‌های فنی (نقشه، CAD، PDF)</Label>
-            <RfqFileUpload onChange={setUploads} />
-            <p className="text-xs text-muted-foreground">
-              فایل‌ها خصوصی‌اند: فقط سازمان شما و قطعه‌سازهایی که تعهد عدم افشا را بپذیرند
-              می‌توانند آن‌ها را دانلود کنند.
-            </p>
-            <FieldError message={fieldErrors.fileIds} />
           </div>
 
           <AgreementChecklist
